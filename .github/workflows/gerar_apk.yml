@@ -1,0 +1,61 @@
+name: Fábrica de APK Android 📱
+
+# O GATILHO: Quando o robô deve trabalhar?
+on:
+  push:
+    branches: [ "main", "master" ] # Roda quando você faz upload na branch principal
+  workflow_dispatch: # Permite rodar manualmente clicando num botão
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # Usa um computador Linux do GitHub
+
+    steps:
+    # 1. Baixa o seu código
+    - name: 📥 Baixando Código (Checkout)
+      uses: actions/checkout@v3
+
+    # 2. Instala o Java 17 (Necessário pro Android moderno)
+    - name: ☕ Configurando Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    # 3. Instala o Node.js e Cordova
+    - name: 📦 Instalando Cordova
+      run: |
+        npm install -g cordova
+        cordova telemetry off
+
+    # 4. Cria o Projeto Cordova do Zero
+    - name: 🏗️ Criando Estrutura do App
+      run: |
+        # Cria o projeto temporário
+        cordova create app-temp com.seuprojeto.app "Seu App"
+        
+        # Copia seus arquivos para dentro do projeto
+        # (Assume que seu index.html está na pasta 'www' na raiz do repo)
+        rm -rf app-temp/www/*
+        cp -r www/* app-temp/www/
+        
+        # Se tiver config.xml personalizado na raiz, usa ele
+        if [ -f config.xml ]; then cp config.xml app-temp/; fi
+
+    # 5. Adiciona Android e Compila
+    - name: 📱 Compilando APK
+      run: |
+        cd app-temp
+        cordova platform add android
+        # Instala plugin para corrigir erro de tela branca/login (opcional mas recomendado)
+        cordova plugin add cordova-plugin-ionic-webview
+        
+        # Compila
+        cordova build android --release -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
+
+    # 6. Salva o APK para você baixar
+    - name: 📤 Upload do APK Pronto
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: app-temp/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
