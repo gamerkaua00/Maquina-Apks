@@ -1,4 +1,4 @@
-name: Fábrica de APK Android 📱
+name: Fábrica TURBO V8 (Plugins + Ícone) 🚀
 
 on:
   push:
@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Baixando Código (Checkout)
+    - name: 📥 Baixando Código
       uses: actions/checkout@v3
 
-    - name: ☕ Configurando Java
+    - name: ☕ Configurando Java 17
       uses: actions/setup-java@v3
       with:
         distribution: 'temurin'
@@ -22,32 +22,55 @@ jobs:
     - name: 📦 Instalando Cordova
       run: |
         npm install -g cordova
-        # Linha de telemetria removida para evitar erro
 
-    - name: 🏗️ Criando Estrutura do App
+    - name: 🏗️ Criando a Base do App
       run: |
-        cordova create app-temp com.kaua.app "Seu App"
+        # Cria o projeto
+        cordova create app-temp com.kaua.app "Seu App Turbo"
         
-        # Limpa e copia o site da pasta www
+        # Limpa o exemplo padrão e copia SEU site
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
-        
-        # Se tiver config.xml na raiz, usa ele
-        if [ -f config.xml ]; then cp config.xml app-temp/; fi
 
-    - name: 📱 Compilando APK
+    - name: 🎨 Configurando Ícone Automático
+      run: |
+        cd app-temp
+        # Verifica se existe um icon.png na pasta do site
+        if [ -f "www/icon.png" ]; then
+          echo "🔥 Ícone personalizado encontrado! Aplicando..."
+          # Copia para a raiz
+          cp www/icon.png .
+          # Adiciona a tag de ícone no config.xml usando um comando de substituição (sed)
+          sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
+        else
+          echo "⚠️ Nenhum icon.png encontrado. Usando padrão."
+        fi
+
+    - name: 🔌 Instalando Superpoderes (Plugins)
       run: |
         cd app-temp
         cordova platform add android
         
-        # Instala o plugin para corrigir erro de tela branca (localhost)
+        # 1. Resolve tela branca e login (Essencial)
         cordova plugin add cordova-plugin-ionic-webview
         
-        # Compila o APK
-        cordova build android --release -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
+        # 2. Permite Vibração do celular
+        cordova plugin add cordova-plugin-vibration
+        
+        # 3. Notificações Locais (Avisos agendados)
+        cordova plugin add cordova-plugin-local-notifications
+        
+        # 4. Caixas de Diálogo Nativas (Popups bonitos)
+        cordova plugin add cordova-plugin-dialogs
 
-    - name: 📤 Upload do APK Pronto
+    - name: 📱 Compilando APK (Modo Instalação Fácil)
+      run: |
+        cd app-temp
+        # Gera o APK Debug (que seu celular aceita instalar)
+        cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
+
+    - name: 📤 Entregando o APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-release
-        path: app-temp/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+        name: app-turbo-debug
+        path: app-temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
