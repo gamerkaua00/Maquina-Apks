@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16.9 (Fix Final Build Error) 🚀
+name: Fábrica Turbo V17 (Deep Fix Gradle) 🚀
 
 on:
   push:
@@ -16,6 +16,7 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
+      # --- 1. CONFIGURAÇÃO DE AMBIENTE ---
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
         with:
@@ -23,9 +24,9 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-v3-${{ hashFiles('**/*.gradle*') }}
+          key: ${{ runner.os }}-gradle-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-gradle-v3-
+            ${{ runner.os }}-gradle-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -47,6 +48,7 @@ jobs:
         run: |
           npm install -g cordova
 
+      # --- 2. CRIAÇÃO DO APP ---
       - name: 🏗️ Criando a Base do App
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
@@ -58,7 +60,7 @@ jobs:
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone
+      - name: 🎨 Configurando Ícone e Permissões
         run: |
           cd app-temp
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
@@ -70,22 +72,25 @@ jobs:
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
-          # Injeção de Permissões
+          # Injeção de Permissões Essenciais
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
+          # Força versão no Config.xml também
+          sed -i '/<widget/a \    <preference name="android-minSdkVersion" value="24" />' config.xml
+          sed -i '/<widget/a \    <preference name="android-targetSdkVersion" value="33" />' config.xml
+          sed -i '/<widget/a \    <preference name="android-compileSdkVersion" value="33" />' config.xml
 
-      - name: 🔌 Instalando Plugins, Preparando e Corrigindo
+      # --- 3. INSTALAÇÃO DE PLUGINS ---
+      - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
-          
-          # 1. Adiciona Plataforma
-          echo "📱 Adicionando Android..."
+          echo "📱 Adicionando Plataforma Android..."
           cordova platform add android@12.0.0
           
-          # 2. Plugins Base
-          echo "🔌 Instalando Plugins Base..."
           cordova plugin remove cordova-plugin-whitelist || true
+          
+          # Plugins Base
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -95,9 +100,8 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # 3. Plugins Opcionais (Features)
+          # Leitura do features.json
           if [ -f "../features.json" ]; then
-            echo "📄 Lendo features.json..."
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
@@ -135,24 +139,32 @@ jobs:
                cordova plugin add cordova-plugin-media-capture
             fi
           fi
+
+      # --- 4. CIRURGIA DE CÓDIGO (A CORREÇÃO) ---
+      - name: 🚑 Reparando Scripts do Gradle (Fix Definitivo)
+        run: |
+          cd app-temp
+          echo "🔧 Iniciando reparo profundo nos plugins..."
           
-          # 4. PREPARAR (Gera os arquivos gradle para podermos editar)
-          echo "⚙️ Preparando plataforma..."
-          cordova prepare android
-          
-          # 5. CIRURGIA (Correção de erros antigos do Gradle)
-          echo "🚑 Aplicando correções nos plugins..."
-          
+          # Garante que o diretório existe
           if [ -d "platforms/android" ]; then
-              # Usa xargs -r para não falhar se não achar arquivos
-              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile /implementation /g'
-              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile(/implementation(/g'
-              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/debugCompile/debugImplementation/g'
-              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/releaseCompile/releaseImplementation/g'
-              echo "✅ Correções aplicadas com sucesso."
+              # 1. Substitui 'compile' por 'implementation' (Correção do Gradle 8)
+              # Usamos grep -rl para achar os arquivos e sed para substituir
+              grep -rl "compile" platforms/android | xargs sed -i 's/compile/implementation/g' || true
+              grep -rl "debugCompile" platforms/android | xargs sed -i 's/debugCompile/debugImplementation/g' || true
+              grep -rl "releaseCompile" platforms/android | xargs sed -i 's/releaseCompile/releaseImplementation/g' || true
+              
+              echo "✅ Dependências corrigidas (compile -> implementation)."
+              
+              # 2. Força o compileSdkVersion nos arquivos build.gradle que estiverem faltando
+              # Isso resolve o erro 'compileSdkVersion is not specified'
+              find platforms/android -name "build.gradle" -exec sed -i 's/compileSdkVersion -1/compileSdkVersion 33/g' {} +
+              find platforms/android -name "build.gradle" -exec sed -i 's/targetSdkVersion -1/targetSdkVersion 33/g' {} +
+              
+              echo "✅ Versões do SDK forçadas para 33."
           else
-              echo "⚠️ AVISO: Pasta platforms/android não encontrada. O build pode falhar."
-              ls -la
+              echo "❌ ERRO: Pasta platforms/android não encontrada. Cordova falhou?"
+              exit 1
           fi
 
       - name: 🏷️ Detectando Nome e ID
@@ -171,12 +183,14 @@ jobs:
           cd app-temp
           rm -rf ~/.gradle/caches/
 
+      # --- 5. BUILD ---
       - name: 📱 Compilando APK
         env:
-          # Força versões via Variável de Ambiente
+          # Variáveis de ambiente para forçar o Cordova a usar as versões certas
           ORG_GRADLE_PROJECT_cdvCompileSdkVersion: 33
           ORG_GRADLE_PROJECT_cdvTargetSdkVersion: 33
           ORG_GRADLE_PROJECT_cdvMinSdkVersion: 24
+          ORG_GRADLE_PROJECT_cdvBuildToolsVersion: 33.0.2
         run: |
           cd app-temp
           echo "🚀 Iniciando Build..."
@@ -192,25 +206,23 @@ jobs:
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
           fi
 
+      # --- 6. UPLOAD ---
       - name: 📤 Upload Turbo (4x Mirrors)
         id: upload_fast
         run: |
           APK="${{ env.APK_FINAL }}"
           LINK=""
           
-          # Tenta Litterbox
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
-          # Tenta 0x0.st
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
-          # Tenta File.io
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
              LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
