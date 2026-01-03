@@ -1,10 +1,1 @@
-{
-  "notification": false,
-  "vibration": false,
-  "camera": false,
-  "geolocation": false,
-  "battery": false,
-  "network": false,
-  "browser": false,
-  "sharing": false
-}
+{"notification":false,"vibration":false,"camera":false,"geolocation":false,"orientation":false,"battery":false,"fullscreen":false,"flashlight":false,"microphone":false,"insomnia":false}
