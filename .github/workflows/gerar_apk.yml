@@ -1,4 +1,4 @@
-name: Fábrica Turbo V20 (No-Check Fix) 🚀
+name: Fábrica Turbo V17 (Upgrade Android 14 / SDK 34) 🚀
 
 on:
   push:
@@ -16,17 +16,17 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
+      # --- CACHE ---
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
-        continue-on-error: true
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-v6-${{ github.run_id }}
+          key: ${{ runner.os }}-gradle-v7-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-gradle-v6-
+            ${{ runner.os }}-gradle-v7-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -39,15 +39,17 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: 🛠️ Configurando Android SDK
+      - name: 🛠️ Configurando Android SDK (Versão 34)
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
+          # Instala SDK 34 (Android 14) para satisfazer dependências novas
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-34"
 
       - name: 📦 Instalando Cordova
         run: |
           npm install -g cordova
 
+      # --- CRIAÇÃO DO APP ---
       - name: 🏗️ Criando a Base do App
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
@@ -71,17 +73,22 @@ jobs:
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
-          # Injeção de Permissões
+          # Injeção de Permissões e Versão do SDK 34
+          sed -i '/<widget/a \    <preference name="android-compileSdkVersion" value="34" />' config.xml
+          sed -i '/<widget/a \    <preference name="android-targetSdkVersion" value="34" />' config.xml
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      # --- PASSO ATÔMICO V20 ---
-      - name: ⚙️ Configuração Total do Android
+      # --- PLUGINS ---
+      - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
+          # Android 12.0.0 (Base)
+          cordova platform add android@12.0.0
           
-          echo "🔌 1. Instalando Plugins..."
+          cordova plugin remove cordova-plugin-whitelist || true
+          
           # Plugins Base
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
@@ -92,7 +99,7 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Plugins Opcionais (Features)
+          # Features
           if [ -f "../features.json" ]; then
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
@@ -132,31 +139,27 @@ jobs:
             fi
           fi
           
-          echo "📱 2. Adicionando Plataforma Android..."
-          cordova platform add android@12.0.0
-          
-          echo "💉 3. Removendo Whitelist (se existir)..."
-          cordova plugin remove cordova-plugin-whitelist || true
-          
-          echo "🏗️ 4. Forçando criação dos arquivos (Prepare)..."
+          # PREPARAR (Gera arquivos gradle)
+          echo "⚙️ Preparando plataforma..."
           cordova prepare android
+
+          echo "⏳ Aguardando sistema de arquivos (5s)..."
+          sleep 5
+
+          echo "🚑 Aplicando correções nos plugins..."
+          # Troca compile por implementation
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile /implementation /g'
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile(/implementation(/g'
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/debugCompile/debugImplementation/g'
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/releaseCompile/releaseImplementation/g'
           
-          echo "⏳ 5. Aguardando sistema de arquivos (10s)..."
-          sleep 10
+          # FORÇA VERSÃO 34 NOS ARQUIVOS GRADLE (FIX DEFINITIVO)
+          find . -name "build.gradle" -exec sed -i 's/compileSdkVersion -1/compileSdkVersion 34/g' {} +
+          find . -name "build.gradle" -exec sed -i 's/targetSdkVersion -1/targetSdkVersion 34/g' {} +
+          # Se já tiver 33, troca por 34
+          find . -name "build.gradle" -exec sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' {} +
           
-          echo "🚑 6. Aplicando Cirurgia no Gradle (Busca Global)..."
-          # Correção V20: Busca em TUDO (.) em vez de pasta especifica
-          # Se der erro no sed, continua (|| true)
-          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile /implementation /g' || true
-          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile(/implementation(/g' || true
-          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/debugCompile/debugImplementation/g' || true
-          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/releaseCompile/releaseImplementation/g' || true
-          
-          # Força versão 33 nos build.gradle
-          find . -name "build.gradle" -exec sed -i 's/compileSdkVersion -1/compileSdkVersion 33/g' {} + || true
-          find . -name "build.gradle" -exec sed -i 's/targetSdkVersion -1/targetSdkVersion 33/g' {} + || true
-          
-          echo "✅ Processo de reparo finalizado."
+          echo "✅ Atualizado para SDK 34."
 
       - name: 🏷️ Detectando Nome e ID
         id: get_name
@@ -176,19 +179,20 @@ jobs:
 
       - name: 📱 Compilando APK
         env:
-          ORG_GRADLE_PROJECT_cdvCompileSdkVersion: 33
-          ORG_GRADLE_PROJECT_cdvTargetSdkVersion: 33
+          # Força versões via Variável de Ambiente para 34
+          ORG_GRADLE_PROJECT_cdvCompileSdkVersion: 34
+          ORG_GRADLE_PROJECT_cdvTargetSdkVersion: 34
           ORG_GRADLE_PROJECT_cdvMinSdkVersion: 24
+          ORG_GRADLE_PROJECT_cdvBuildToolsVersion: 34.0.0
         run: |
           cd app-temp
           echo "🚀 Iniciando Build..."
+          # Removemos cdvBuildDebug e usamos apenas build, o gradle novo entende melhor
           cordova build android --debug --packageType=apk
           
-          # Busca global
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "❌ ERRO: APK não encontrado! Listando arquivos:"
-            find . -name "*.apk"
+            echo "❌ ERRO: APK não encontrado!"
             exit 1
           else
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
@@ -202,19 +206,14 @@ jobs:
           APK="${{ env.APK_FINAL }}"
           LINK=""
           
-          # 1. Litterbox
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
-          
-          # 2. 0x0.st
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
-          
-          # 3. File.io
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
              LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
@@ -242,7 +241,7 @@ jobs:
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: 🔔 Notificar Discord
         if: success() && env.DISCORD_WEBHOOK != ''
         env:
