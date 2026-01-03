@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.0 (Download Direto + Full Power) 🚀
+name: Fábrica Inteligente v3.1 (Rastreador de APK) 🛡️
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # Permissão necessária para criar Releases e Uploads
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Baixando Código (Checkout)
+    - name: 📥 Baixando Código
       uses: actions/checkout@v3
 
     - name: ☕ Configurando Java 17
@@ -28,109 +28,77 @@ jobs:
 
     - name: 🏗️ Criando a Base do App
       run: |
-        # Cria projeto temporário
         cordova create app-temp com.kaua.app "Seu App"
-        
-        # Limpa o padrão e copia o site do usuário
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
 
-    - name: 🎨 Configurando Ícone Automático
+    - name: 🎨 Configurando Ícone
       run: |
         cd app-temp
         if [ -f "www/icon.png" ]; then
-          echo "🔥 Ícone personalizado encontrado!"
+          echo "🔥 Ícone encontrado!"
           cp www/icon.png .
           sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
         fi
 
-    - name: 🔌 Instalando Plugins (Leitura do features.json)
+    - name: 🔌 Instalando Plugins
       run: |
         cd app-temp
         cordova platform add android
         
-        # --- PLUGINS OBRIGATÓRIOS (Base do sistema) ---
-        echo "🔧 Instalando plugins base..."
+        # Plugins Base
         cordova plugin add cordova-plugin-ionic-webview
         cordova plugin add cordova-plugin-device
         cordova plugin add cordova-plugin-dialogs
 
-        # --- PLUGINS OPCIONAIS (Lê do features.json) ---
+        # Leitura do features.json
         if [ -f "../features.json" ]; then
-          echo "📄 Lendo preferências do usuário..."
-          
-          # Usa ferramenta 'jq' do Linux para ler o JSON
           USE_NOTIF=$(jq -r '.notification' ../features.json)
           USE_VIBRA=$(jq -r '.vibration' ../features.json)
           USE_CAM=$(jq -r '.camera' ../features.json)
           USE_GPS=$(jq -r '.geolocation' ../features.json)
-          
-          # NOVOS RECURSOS V3.0
           USE_BATTERY=$(jq -r '.battery' ../features.json)
           USE_NETWORK=$(jq -r '.network' ../features.json)
           USE_ORIENT=$(jq -r '.orientation' ../features.json)
           USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
 
-          if [ "$USE_NOTIF" = "true" ]; then
-            echo "🔔 Adicionando Notificações..."
-            cordova plugin add cordova-plugin-local-notification || echo "⚠️ Aviso: Falha na notificação"
-          fi
-
-          if [ "$USE_VIBRA" = "true" ]; then
-            echo "📳 Adicionando Vibração..."
-            cordova plugin add cordova-plugin-vibration
-          fi
-
-          if [ "$USE_CAM" = "true" ]; then
-            echo "📸 Adicionando Câmera..."
-            cordova plugin add cordova-plugin-camera
-          fi
-
-          if [ "$USE_GPS" = "true" ]; then
-            echo "📍 Adicionando Geolocalização..."
-            cordova plugin add cordova-plugin-geolocation
-          fi
-
-          if [ "$USE_BATTERY" = "true" ]; then
-            echo "🔋 Adicionando Status da Bateria..."
-            cordova plugin add cordova-plugin-battery-status
-          fi
-
-          if [ "$USE_NETWORK" = "true" ]; then
-            echo "📡 Adicionando Informações de Rede..."
-            cordova plugin add cordova-plugin-network-information
-          fi
-
-          if [ "$USE_ORIENT" = "true" ]; then
-            echo "🔄 Adicionando Controle de Orientação..."
-            cordova plugin add cordova-plugin-screen-orientation
-          fi
-          
-          if [ "$USE_FULLSCREEN" = "true" ]; then
-            echo "📺 Adicionando Tela Cheia..."
-            cordova plugin add cordova-plugin-fullscreen
-          fi
-
-        else
-          echo "ℹ️ features.json não encontrado. Usando apenas o básico."
+          if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
+          if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
+          if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
+          if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
+          if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
+          if [ "$USE_NETWORK" = "true" ]; then cordova plugin add cordova-plugin-network-information; fi
+          if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
+          if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
         fi
 
-    - name: 📱 Compilando APK (Modo Debug)
+    - name: 📱 Compilando e Rastreando APK
       run: |
         cd app-temp
-        # O argumento --gradleArg=-PcdvMinSdkVersion=24 ajuda a evitar erros com plugins modernos
+        # Compila
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
         
-        # Renomeia para ficar bonito no download
-        mv platforms/android/app/build/outputs/apk/debug/app-debug.apk app-instalavel.apk
+        echo "🔍 Procurando o APK gerado..."
+        # O comando find procura o arquivo em qualquer subpasta
+        APK_PATH=$(find . -name "app-debug.apk" | head -n 1)
+        
+        if [ -z "$APK_PATH" ]; then
+          echo "❌ ERRO CRÍTICO: O arquivo app-debug.apk não foi encontrado!"
+          exit 1
+        else
+          echo "✅ APK encontrado em: $APK_PATH"
+          # Move para a raiz do workspace para facilitar o upload
+          mv "$APK_PATH" $GITHUB_WORKSPACE/app-instalavel.apk
+          echo "📦 APK movido para a raiz com sucesso."
+        fi
 
-    - name: 🚀 Criar Link de Download Direto (Release)
+    - name: 🚀 Criar Download Direto (Release)
       uses: softprops/action-gh-release@v1
       if: success()
       with:
-        tag_name: v${{ github.run_number }} # Cria uma versão única (v1, v2, v3...)
+        tag_name: v${{ github.run_number }}
         name: "APK Pronto (Versão ${{ github.run_number }})"
-        body: "Seu aplicativo foi fabricado com sucesso! Clique no arquivo apk abaixo para instalar."
-        files: app-temp/app-instalavel.apk
+        body: "Seu aplicativo foi fabricado com sucesso! Clique no arquivo abaixo para baixar e instalar."
+        files: app-instalavel.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
