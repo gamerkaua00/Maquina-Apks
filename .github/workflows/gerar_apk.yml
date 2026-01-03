@@ -1,4 +1,4 @@
-name: Fábrica Turbo V7 (Full Power + Unblock) 🚀
+name: Fábrica Inteligente v3.7 (Fix Whitelist Conflict) 🛡️
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
 
     - name: 🏗️ Criando a Base do App
       run: |
-        cordova create app-temp com.kaua.app "Seu App Turbo"
+        cordova create app-temp com.kaua.app "Seu App"
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
 
@@ -51,28 +51,23 @@ jobs:
           sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
         fi
 
-    - name: 🔌 Instalando Super Plugins
+    - name: 🔌 Instalando Plugins
       run: |
         cd app-temp
+        # Android 12 já tem Whitelist nativa. Não instalar o plugin externo!
         cordova platform add android@12.0.0
         
-        # --- KITS DE SOBREVIVÊNCIA (Sempre instalados) ---
-        echo "🔧 Instalando Kit Essencial..."
-        cordova plugin add cordova-plugin-ionic-webview  # Corrige tela branca
-        cordova plugin add cordova-plugin-device         # Identifica o celular
-        cordova plugin add cordova-plugin-dialogs        # Popups nativos
-        cordova plugin add cordova-plugin-android-permissions # Permissões Android 13+
+        # Plugins Base
+        cordova plugin add cordova-plugin-ionic-webview
+        cordova plugin add cordova-plugin-device
+        cordova plugin add cordova-plugin-dialogs
+        cordova plugin add cordova-plugin-android-permissions
         
-        # --- KIT DESTRAVA BOTÕES (Crucial) ---
-        # Permite acessar qualquer site (Google, APIs, etc) sem travar o app
-        cordova plugin add cordova-plugin-whitelist
-        cordova plugin add cordova-plugin-inappbrowser # Para abrir links externos
+        # Navegador Interno (Para abrir Google, Links externos)
+        cordova plugin add cordova-plugin-inappbrowser
 
-        # --- LEITURA DO MENU DE OPÇÕES (features.json) ---
+        # Leitura do features.json
         if [ -f "../features.json" ]; then
-          echo "📄 Lendo lista de desejos do usuário..."
-          
-          # Lê opções
           USE_NOTIF=$(jq -r '.notification' ../features.json)
           USE_VIBRA=$(jq -r '.vibration' ../features.json)
           USE_CAM=$(jq -r '.camera' ../features.json)
@@ -80,8 +75,6 @@ jobs:
           USE_BATTERY=$(jq -r '.battery' ../features.json)
           USE_NETWORK=$(jq -r '.network' ../features.json)
           USE_ORIENT=$(jq -r '.orientation' ../features.json)
-          
-          # Novos V5/V7
           USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
           USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
           USE_MIC=$(jq -r '.microphone' ../features.json)
@@ -95,78 +88,53 @@ jobs:
           if [ "$USE_NETWORK" = "true" ]; then cordova plugin add cordova-plugin-network-information; fi
           if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
           
-          if [ "$USE_FULLSCREEN" = "true" ]; then 
-             echo "📺 Tela Cheia Ativada"
-             cordova plugin add cordova-plugin-fullscreen
-          fi
-          
-          if [ "$USE_FLASHLIGHT" = "true" ]; then
-             echo "🔦 Lanterna Ativada"
-             cordova plugin add cordova-plugin-flashlight
-          fi
+          if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
+          if [ "$USE_FLASHLIGHT" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
           
           if [ "$USE_MIC" = "true" ]; then
-             echo "🎤 Microfone/Media Ativado"
              cordova plugin add cordova-plugin-media
              cordova plugin add cordova-plugin-media-capture
           fi
           
-          if [ "$USE_INSOMNIA" = "true" ]; then
-             echo "☕ Insomnia (Tela Ligada) Ativado"
-             cordova plugin add cordova-plugin-insomnia
-          fi
+          if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
         fi
-
-    - name: 🏷️ Detectando Nome do App
-      id: get_name
-      run: |
-        cd app-temp
-        APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-        echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
     - name: 🧹 Limpando Cache
       run: |
         cd app-temp
         rm -rf ~/.gradle/caches/
 
-    - name: 📱 Compilando APK
+    - name: 📱 Compilando e Rastreando APK
       run: |
         cd app-temp
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
         
+        echo "🔍 Procurando APK..."
         APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
+        
         if [ -z "$APK_PATH" ]; then
           echo "❌ ERRO: APK não encontrado!"
+          find "$GITHUB_WORKSPACE" -name "*.apk"
           exit 1
         else
-          # Renomeia para o nome real do app
-          SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
-          mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
-          echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
+          echo "✅ APK encontrado: $APK_PATH"
+          mv "$APK_PATH" "$GITHUB_WORKSPACE/app-instalavel.apk"
         fi
 
-    - name: 📤 Upload Rápido (Transfer.sh)
-      id: upload_fast
-      run: |
-        echo "Subindo ${{ env.APK_FINAL }}..."
-        curl --upload-file ${{ env.APK_FINAL }} https://transfer.sh/${{ env.APK_FINAL }} > link_externo.txt
-        echo "LINK_MIRROR=$(cat link_externo.txt)" >> $GITHUB_ENV
-
-    - name: 🚀 Criar Release (Link Direto)
+    - name: 🚀 Criar Download Direto (Release)
       uses: softprops/action-gh-release@v1
       if: success()
       with:
         tag_name: v${{ github.run_number }}
-        name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
-        body: |
-          ✅ **Seu App está pronto!**
-          
-          📱 **Nome:** ${{ env.APP_NAME }}
-          
-          ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
-          MIRROR_LINK: ${{ env.LINK_MIRROR }}
-          
-          _(Servidor de backup no Assets abaixo)_
-        files: ${{ env.APK_FINAL }}
+        name: "APK Pronto (Versão ${{ github.run_number }})"
+        body: "Seu aplicativo foi fabricado com sucesso! Clique no arquivo abaixo para baixar."
+        files: app-instalavel.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 📤 Backup: Upload no Actions
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: APK-Debug-Backup
+        path: app-instalavel.apk
