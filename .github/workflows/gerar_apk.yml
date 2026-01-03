@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.1 (Rastreador de APK) 🛡️
+name: Fábrica Inteligente v3.2 (Correção de Dependências) 🛡️
 
 on:
   push:
@@ -71,6 +71,13 @@ jobs:
           if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
           if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
         fi
+
+    - name: 🧹 Limpando Cache do Gradle (Correção de Erro 403)
+      run: |
+        cd app-temp
+        # Força limpeza para evitar dependências corrompidas ou bloqueadas
+        cordova clean android
+        rm -rf ~/.gradle/caches/
 
     - name: 📱 Compilando e Rastreando APK
       run: |
