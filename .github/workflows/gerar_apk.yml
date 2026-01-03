@@ -1,4 +1,4 @@
-name: Fábrica Super Turbo V5 (Mirror Link + Full Plugins) 🚀
+name: Fábrica Turbo V7 (Full Power + Unblock) 🚀
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
 
     - name: 🏗️ Criando a Base do App
       run: |
-        cordova create app-temp com.kaua.app "Seu App"
+        cordova create app-temp com.kaua.app "Seu App Turbo"
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
 
@@ -56,13 +56,23 @@ jobs:
         cd app-temp
         cordova platform add android@12.0.0
         
-        # Plugins Essenciais
-        cordova plugin add cordova-plugin-ionic-webview
-        cordova plugin add cordova-plugin-device
-        cordova plugin add cordova-plugin-dialogs
+        # --- KITS DE SOBREVIVÊNCIA (Sempre instalados) ---
+        echo "🔧 Instalando Kit Essencial..."
+        cordova plugin add cordova-plugin-ionic-webview  # Corrige tela branca
+        cordova plugin add cordova-plugin-device         # Identifica o celular
+        cordova plugin add cordova-plugin-dialogs        # Popups nativos
+        cordova plugin add cordova-plugin-android-permissions # Permissões Android 13+
+        
+        # --- KIT DESTRAVA BOTÕES (Crucial) ---
+        # Permite acessar qualquer site (Google, APIs, etc) sem travar o app
+        cordova plugin add cordova-plugin-whitelist
+        cordova plugin add cordova-plugin-inappbrowser # Para abrir links externos
 
-        # Leitura do features.json
+        # --- LEITURA DO MENU DE OPÇÕES (features.json) ---
         if [ -f "../features.json" ]; then
+          echo "📄 Lendo lista de desejos do usuário..."
+          
+          # Lê opções
           USE_NOTIF=$(jq -r '.notification' ../features.json)
           USE_VIBRA=$(jq -r '.vibration' ../features.json)
           USE_CAM=$(jq -r '.camera' ../features.json)
@@ -71,13 +81,13 @@ jobs:
           USE_NETWORK=$(jq -r '.network' ../features.json)
           USE_ORIENT=$(jq -r '.orientation' ../features.json)
           
-          # NOVOS RECURSOS V5
+          # Novos V5/V7
           USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
           USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
-          USE_TOAST=$(jq -r '.toast' ../features.json)
+          USE_MIC=$(jq -r '.microphone' ../features.json)
           USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
 
-          if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
+          if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
           if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
           if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
           if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -95,9 +105,10 @@ jobs:
              cordova plugin add cordova-plugin-flashlight
           fi
           
-          if [ "$USE_TOAST" = "true" ]; then
-             echo "🍞 Toasts Ativados"
-             cordova plugin add cordova-plugin-x-toast
+          if [ "$USE_MIC" = "true" ]; then
+             echo "🎤 Microfone/Media Ativado"
+             cordova plugin add cordova-plugin-media
+             cordova plugin add cordova-plugin-media-capture
           fi
           
           if [ "$USE_INSOMNIA" = "true" ]; then
@@ -105,6 +116,13 @@ jobs:
              cordova plugin add cordova-plugin-insomnia
           fi
         fi
+
+    - name: 🏷️ Detectando Nome do App
+      id: get_name
+      run: |
+        cd app-temp
+        APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
+        echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
     - name: 🧹 Limpando Cache
       run: |
@@ -121,32 +139,34 @@ jobs:
           echo "❌ ERRO: APK não encontrado!"
           exit 1
         else
-          mv "$APK_PATH" "$GITHUB_WORKSPACE/app-instalavel.apk"
+          # Renomeia para o nome real do app
+          SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
+          mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
+          echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
         fi
 
     - name: 📤 Upload Rápido (Transfer.sh)
       id: upload_fast
       run: |
-        echo "Subindo para servidor rápido..."
-        # Faz upload e salva o link num arquivo
-        curl --upload-file app-instalavel.apk https://transfer.sh/seu-app.apk > link_externo.txt
+        echo "Subindo ${{ env.APK_FINAL }}..."
+        curl --upload-file ${{ env.APK_FINAL }} https://transfer.sh/${{ env.APK_FINAL }} > link_externo.txt
         echo "LINK_MIRROR=$(cat link_externo.txt)" >> $GITHUB_ENV
-        echo "Link gerado: $(cat link_externo.txt)"
 
-    - name: 🚀 Criar Release (Com Link Rápido)
+    - name: 🚀 Criar Release (Link Direto)
       uses: softprops/action-gh-release@v1
       if: success()
       with:
         tag_name: v${{ github.run_number }}
-        name: "APK Pronto (Versão ${{ github.run_number }})"
-        # Colocamos o link rápido na descrição para o site ler
+        name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
         body: |
-          Seu App está pronto!
+          ✅ **Seu App está pronto!**
           
-          ⬇️ **LINK RÁPIDO (RECOMENDADO):**
-          MIRROR_LINK: ${{ env.LINK_EXTERNO }}
+          📱 **Nome:** ${{ env.APP_NAME }}
           
-          Link alternativo (GitHub): Veja abaixo em Assets.
-        files: app-instalavel.apk
+          ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
+          MIRROR_LINK: ${{ env.LINK_MIRROR }}
+          
+          _(Servidor de backup no Assets abaixo)_
+        files: ${{ env.APK_FINAL }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
