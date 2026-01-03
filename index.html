@@ -229,12 +229,12 @@
             
             <!-- Botão Download Mágico -->
             <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm">
-                <i class="fas fa-download text-lg"></i> <span>BAIXAR APK AGORA</span>
+                <i class="fas fa-download text-lg"></i> <span>BAIXAR APK (TURBO)</span>
             </a>
 
-            <!-- Botão Download BACKUP (NOVO) -->
+            <!-- Botão Download BACKUP (GITHUB OFICIAL) -->
             <a id="btn-backup" href="#" target="_blank" class="hidden mt-2 w-full max-w-xl mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-xl text-center shadow-lg flex items-center justify-center space-x-2 text-xs border border-gray-600">
-                <i class="fab fa-github text-lg"></i> <span>Baixar pelo GitHub (Backup)</span>
+                <i class="fab fa-github text-lg"></i> <span>ABRIR PÁGINA DO APK (100% SEGURO)</span>
             </a>
         </div>
     </div>
@@ -560,15 +560,16 @@
                 const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/releases/latest`, { headers: { Authorization: `token ${token}` }});
                 const d = await r.json();
                 
-                // BUSCA LINK TURBO (Litterbox, 0x0, File.io)
+                // 1. TENTA O LINK TURBO (MIRROR)
                 const match = d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
                 let urlTurbo = "";
                 if(match && match[1] && !match[1].includes("Verifique")) {
                     urlTurbo = match[1];
                 }
 
-                // BUSCA LINK BACKUP (GITHUB ASSETS)
-                let urlBackup = d.assets?.[0]?.browser_download_url;
+                // 2. PEGA O LINK DA PÁGINA DE RELEASE (HTML_URL)
+                // Isso leva o usuário para a página oficial do GitHub onde o APK está guardado
+                let urlRepo = d.html_url; 
 
                 const btnDown = document.getElementById('btn-download');
                 const btnBackup = document.getElementById('btn-backup');
@@ -578,26 +579,26 @@
                 if (urlTurbo) {
                     btnDown.href = urlTurbo;
                     btnDown.classList.remove('hidden');
-                    btnDown.innerHTML = `<i class="fas fa-download text-xl"></i> BAIXAR ${d.name || 'APK'}`;
-                    log("💎 DOWNLOAD PRONTO!");
-                    
-                    // Tenta forçar download Turbo
-                    setTimeout(() => window.open(urlTurbo, '_blank'), 1000);
-                } else if (urlBackup) {
-                    // Se não tiver turbo, o botão principal vira o do GitHub
-                    btnDown.href = urlBackup;
-                    btnDown.classList.remove('hidden');
-                    btnDown.innerHTML = `<i class="fab fa-github text-xl"></i> BAIXAR (GITHUB)`;
-                    log("⚠️ Usando link do GitHub (Turbo falhou).");
+                    btnDown.innerHTML = `<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`;
+                    log("⚡ LINK TURBO ENCONTRADO!");
                 } else {
-                    log("Link não encontrado na release.", true);
+                    log("⚠️ Link Turbo falhou ou não encontrado.");
                 }
 
-                // MOSTRA O BOTÃO DE BACKUP SECUNDÁRIO (Se os links forem diferentes)
-                if (urlBackup && urlTurbo && urlBackup !== urlTurbo) {
-                    btnBackup.href = urlBackup;
+                // MOSTRA SEMPRE O LINK DA PÁGINA DO GITHUB (BACKUP INFALÍVEL)
+                if (urlRepo) {
+                    btnBackup.href = urlRepo;
                     btnBackup.classList.remove('hidden');
-                    log("💡 Link de Backup disponível.");
+                    // Se não tiver turbo, o backup vira o destaque
+                    if (!urlTurbo) {
+                        btnDown.classList.add('hidden'); // Esconde o botão principal quebrado
+                        btnBackup.classList.remove('mt-2', 'bg-gray-800'); // Remove estilo secundário
+                        btnBackup.classList.add('mt-3', 'bg-blue-600', 'text-white', 'py-4', 'text-sm'); // Adiciona estilo primário
+                        btnBackup.innerHTML = `<i class="fab fa-github text-xl"></i> BAIXAR PELA PÁGINA OFICIAL`;
+                        log("✅ Usando Página Oficial do GitHub.");
+                    } else {
+                        log("💡 Link da Página Oficial disponível.");
+                    }
                 }
 
             } catch(e){ log("Erro ao buscar link.", true); }
