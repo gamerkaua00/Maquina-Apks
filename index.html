@@ -45,12 +45,11 @@
 
     <script>
         // --- CONFIGURAÇÃO OCULTA (BACKEND) ---
-        // Aqui definimos para onde os arquivos vão, sem o usuário precisar digitar
-        const GITHUB_USER = "gamerkaua00"; // Seu usuário (Peguei dos seus logs anteriores)
-        const GITHUB_REPO = "Maquina-Apks"; // Nome da pasta no GitHub (Confira se é esse mesmo!)
+        const GITHUB_USER = "gamerkaua00"; 
+        const GITHUB_REPO = "Maquina-Apks"; 
         
-        // Token Ofuscado (Segurança Básica)
-        const _part1 = "86ZNe2BPpV9"; 
+        // Token Ofuscado (Corrigido: Adicionado o caractere 'M' que faltava)
+        const _part1 = "86ZNe2BPpMV9"; 
         const _part2 = "wdmFlUbQwuaz2jSXsoL";
         const _part3 = "Y65fhs_phg";
         
@@ -113,12 +112,13 @@
                 log("✅ Sucesso! A Fábrica recebeu o pedido.");
                 log("⏳ O robô está construindo o APK. Isso leva uns 3 minutos.");
                 
-                // Link direto para a aba Actions do seu repositório
                 log(`<a href="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/actions" target="_blank" class="underline text-blue-400 font-bold">CLIQUE AQUI PARA ACOMPANHAR E BAIXAR</a>`);
 
             } catch (error) {
                 log(`ERRO: ${error.message}`, 'error');
-                if (error.message.includes("404")) {
+                if (error.message.includes("401")) {
+                    log("Erro 401 (Não Autorizado): O token parece estar inválido ou expirado.", 'error');
+                } else if (error.message.includes("404")) {
                     log("Erro 404: Verifique se o nome do repositório 'Maquina-Apks' está correto no código.", 'error');
                 }
             } finally {
