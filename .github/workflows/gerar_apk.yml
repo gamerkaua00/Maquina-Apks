@@ -1,4 +1,4 @@
-name: Fábrica TURBO V8 (Plugins + Ícone) 🚀
+name: Fábrica TURBO V9 (Corrigida) 🚀
 
 on:
   push:
@@ -25,25 +25,19 @@ jobs:
 
     - name: 🏗️ Criando a Base do App
       run: |
-        # Cria o projeto
         cordova create app-temp com.kaua.app "Seu App Turbo"
         
-        # Limpa o exemplo padrão e copia SEU site
+        # Limpa e copia seu site
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
 
     - name: 🎨 Configurando Ícone Automático
       run: |
         cd app-temp
-        # Verifica se existe um icon.png na pasta do site
         if [ -f "www/icon.png" ]; then
-          echo "🔥 Ícone personalizado encontrado! Aplicando..."
-          # Copia para a raiz
+          echo "🔥 Ícone personalizado encontrado!"
           cp www/icon.png .
-          # Adiciona a tag de ícone no config.xml usando um comando de substituição (sed)
           sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
-        else
-          echo "⚠️ Nenhum icon.png encontrado. Usando padrão."
         fi
 
     - name: 🔌 Instalando Superpoderes (Plugins)
@@ -51,22 +45,21 @@ jobs:
         cd app-temp
         cordova platform add android
         
-        # 1. Resolve tela branca e login (Essencial)
+        # 1. Resolve tela branca e login
         cordova plugin add cordova-plugin-ionic-webview
         
-        # 2. Permite Vibração do celular
+        # 2. Informações do Dispositivo (Essencial e substitui a peça quebrada)
+        cordova plugin add cordova-plugin-device
+
+        # 3. Vibração
         cordova plugin add cordova-plugin-vibration
         
-        # 3. Notificações Locais (Avisos agendados)
-        cordova plugin add cordova-plugin-local-notifications
-        
-        # 4. Caixas de Diálogo Nativas (Popups bonitos)
+        # 4. Caixas de Diálogo (Popups)
         cordova plugin add cordova-plugin-dialogs
 
-    - name: 📱 Compilando APK (Modo Instalação Fácil)
+    - name: 📱 Compilando APK (Modo Debug)
       run: |
         cd app-temp
-        # Gera o APK Debug (que seu celular aceita instalar)
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
 
     - name: 📤 Entregando o APK
