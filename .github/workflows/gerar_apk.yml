@@ -1,4 +1,4 @@
-name: Fábrica Turbo V11 (Fix Name + Whitelist Removal) 🚀
+name: Fábrica Turbo V13 (File System Fix + ID Único) 🚀
 
 on:
   push:
@@ -40,27 +40,34 @@ jobs:
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
           
-          # Limpa o exemplo padrão e copia o site do usuário
+          # Limpa e copia o site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
-          # IMPORTANTE: Copia o config.xml da raiz para aplicar o NOME correto
+          # IMPORTANTE: Copia o config.xml da raiz
           if [ -f config.xml ]; then 
-            echo "📄 Config.xml encontrado! Aplicando nome e configurações..."
+            echo "📄 Config.xml encontrado! Aplicando..."
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone
+      - name: 🎨 Configurando Ícone e Permissões
         run: |
           cd app-temp
+          # Configura Ícone
           if [ -f "www/icon.png" ]; then
-            echo "🔥 Ícone encontrado! Aplicando..."
+            echo "🔥 Ícone encontrado!"
             cp www/icon.png .
-            # Se o config.xml já tem ícone, não duplica. Se não tem, adiciona.
             if ! grep -q "<icon" config.xml; then
-               sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
+               sed -i '/<content src="index.html"/a <icon src="icon.png" />' config.xml
             fi
           fi
+          
+          # --- TURBO: LIBERAÇÃO DE ARQUIVOS ---
+          # Injeta permissões extras no config.xml para ler pastas locais
+          sed -i '/<platform name="android">/a <preference name="AllowFileAccess" value="true" />' config.xml
+          sed -i '/<platform name="android">/a <preference name="AllowFileAccessFromFileURLs" value="true" />' config.xml
+          sed -i '/<platform name="android">/a <preference name="AllowUniversalAccessFromFileURLs" value="true" />' config.xml
+          sed -i '/<platform name="android">/a <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
 
       - name: 🔌 Instalando Plugins
         run: |
@@ -68,8 +75,6 @@ jobs:
           cordova platform add android@12.0.0
           
           # --- VACINA ANTI-ERRO ---
-          # Remove o plugin Whitelist explicitamente caso ele tenha entrado via config.xml
-          echo "💉 Removendo plugin Whitelist (incompatível)..."
           cordova plugin remove cordova-plugin-whitelist || true
           
           # --- PLUGINS BASE ---
@@ -78,6 +83,9 @@ jobs:
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-android-permissions
           cordova plugin add cordova-plugin-inappbrowser
+          
+          # Plugin para compatibilidade Android X (Evita crashes)
+          cordova plugin add cordova-plugin-androidx-adapter
 
           # --- PLUGINS OPCIONAIS ---
           if [ -f "../features.json" ]; then
@@ -112,7 +120,12 @@ jobs:
             if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
             if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
+            
+            if [ "$USE_FILE" = "true" ]; then 
+               echo "📂 Instalando gerenciadores de arquivo..."
+               cordova plugin add cordova-plugin-file
+               cordova plugin add cordova-plugin-filepath # Ajuda a resolver caminhos de arquivos
+            fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
@@ -120,13 +133,20 @@ jobs:
             fi
           fi
 
-      - name: 🏷️ Detectando Nome do App
+      - name: 🏷️ Configurando ID e Nome Único
         id: get_name
         run: |
           cd app-temp
-          # Pega o nome de dentro do config.xml (Agora vai funcionar pois copiamos o arquivo!)
+          # 1. Pega o NOME do app
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          
+          # 2. Gera um ID ÚNICO baseado no nome (para Play Store Style)
+          SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g' | sed 's/\.\././g')
+          NEW_ID="com.kaua.app.$SAFE_ID"
+          
+          echo "🆔 Gerando ID Exclusivo: $NEW_ID"
+          sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
 
       - name: 🧹 Limpando Cache
         run: |
@@ -144,7 +164,6 @@ jobs:
             echo "❌ ERRO: APK não encontrado!"
             exit 1
           else
-            # Renomeia com o nome real
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
@@ -191,6 +210,7 @@ jobs:
             ✅ **Seu App está pronto!**
             
             📱 **Nome:** ${{ env.APP_NAME }}
+            🆔 **ID:** com.kaua.app... (Instalação Separada)
             
             ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
             MIRROR_LINK: ${{ env.LINK_MIRROR }}
