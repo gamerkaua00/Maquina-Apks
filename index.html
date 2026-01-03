@@ -108,7 +108,7 @@
                     await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/icon.png", iconContent, "Update Icon");
                 }
 
-                // 3. Atualizar Nome do App
+                // 3. Atualizar Nome do App (Cria config.xml se não existir)
                 log(`Configurando nome: ${appName}...`);
                 await updateConfigXml(GITHUB_USER, GITHUB_REPO, token, appName);
 
@@ -122,7 +122,7 @@
                 if (error.message.includes("401")) {
                     log("Erro 401 (Não Autorizado): O token digitado está incorreto.", 'error');
                 } else if (error.message.includes("404")) {
-                    log("Erro 404: Verifique se o nome do repositório 'Maquina-Apks' está correto no código.", 'error');
+                    log("Erro 404: Repositório não encontrado. Verifique se o nome 'Maquina-Apks' está correto.", 'error');
                 }
             } finally {
                 btn.disabled = false;
@@ -160,14 +160,48 @@
             const path = "config.xml";
             const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
             
+            // Tenta buscar o arquivo existente
             const getReq = await fetch(url, { headers: { Authorization: `token ${token}` } });
-            if (!getReq.ok) throw new Error("Config.xml não encontrado! Você criou o projeto no GitHub?");
             
-            const data = await getReq.json();
-            const currentContent = atob(data.content);
+            let currentContent = "";
+            let sha = null;
+
+            if (getReq.status === 404) {
+                // SE NÃO EXISTE (404), CRIA UM NOVO PADRÃO
+                log("Config.xml não existe. Criando um novo...");
+                currentContent = `<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.kaua.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>NomePadrao</name>
+    <description>App criado pela Fabrica</description>
+    <author email="dev@example.com" href="http://example.com">Dev</author>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <preference name="AndroidInsecureFileModeEnabled" value="true" />
+</widget>`;
+            } else if (getReq.ok) {
+                // SE EXISTE, PEGA O CONTEÚDO
+                const data = await getReq.json();
+                currentContent = atob(data.content); // Decodifica Base64
+                sha = data.sha;
+            } else {
+                throw new Error(`Erro ao buscar config.xml (${getReq.status})`);
+            }
+            
+            // Substitui o nome no XML
             const newContent = currentContent.replace(/<name>.*?<\/name>/, `<name>${newName}</name>`);
             
-            const body = { message: "Update App Name", content: btoa(newContent), sha: data.sha, branch: "main" };
+            // Envia de volta para o GitHub
+            const body = { 
+                message: "Update App Name", 
+                content: btoa(newContent), // Codifica Base64
+                branch: "main" 
+            };
+            
+            // Se o arquivo já existia, precisa mandar o SHA para atualizar. 
+            // Se é novo, não manda SHA.
+            if (sha) body.sha = sha;
 
             const putReq = await fetch(url, {
                 method: 'PUT',
@@ -175,7 +209,7 @@
                 body: JSON.stringify(body)
             });
             
-            if (!putReq.ok) throw new Error("Falha ao atualizar config.xml");
+            if (!putReq.ok) throw new Error("Falha ao salvar config.xml");
         }
     </script>
 </body>
