@@ -17,9 +17,16 @@
 
         <div id="config-section" class="space-y-4">
             
+            <!-- Configurações de Acesso -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-600">
+                <h3 class="text-gray-300 font-bold mb-3 text-sm uppercase">1. Acesso (Token)</h3>
+                <label class="block text-xs text-gray-400 mb-1">Seu Token do GitHub (ghp_...)</label>
+                <input type="password" id="github-token" placeholder="Cole seu token aqui" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-green-500 outline-none text-sm">
+            </div>
+
             <!-- Dados do App -->
             <div class="bg-gray-900 p-4 rounded-lg border border-gray-600">
-                <h3 class="text-gray-300 font-bold mb-3 text-sm uppercase">Configuração do App</h3>
+                <h3 class="text-gray-300 font-bold mb-3 text-sm uppercase">2. Configuração do App</h3>
                 
                 <label class="block text-xs text-gray-400 mb-1">Nome do Aplicativo</label>
                 <input type="text" id="app-name" placeholder="Ex: Meu App Incrível" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 mb-4 focus:border-blue-500 outline-none">
@@ -44,22 +51,11 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO OCULTA (BACKEND) ---
+        // --- CONFIGURAÇÃO (BACKEND) ---
         const GITHUB_USER = "gamerkaua00"; 
         const GITHUB_REPO = "Maquina-Apks"; 
         
-        // Token Ofuscado (Atualizado para o novo token ghp_JNU...)
-        // O token foi invertido e dividido para dificultar a leitura direta
-        const _part1 = "HvQL27zrcJn"; 
-        const _part2 = "tAY0VxvG5Nr0jLVI8u7UN";
-        const _part3 = "J_phg";
-        
-        function getSecretKey() {
-            const reversed = _part1 + _part2 + _part3;
-            return reversed.split("").reverse().join("");
-        }
-        // -------------------------------------
-
+        // Funções de Ajuda
         const log = (msg, type = 'info') => {
             const logBox = document.getElementById('status-log');
             logBox.classList.remove('hidden');
@@ -78,10 +74,16 @@
         }
 
         async function iniciarFabrica() {
-            const token = getSecretKey();
+            // Pega o token direto do campo de texto
+            const token = document.getElementById('github-token').value.trim();
             const appName = document.getElementById('app-name').value;
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
+
+            if (!token) {
+                alert("Por favor, cole seu Token do GitHub!");
+                return;
+            }
 
             if (!appName || !indexFile) {
                 alert("Por favor, preencha o Nome do App e selecione o arquivo index.html!");
@@ -118,7 +120,7 @@
             } catch (error) {
                 log(`ERRO: ${error.message}`, 'error');
                 if (error.message.includes("401")) {
-                    log("Erro 401 (Não Autorizado): O token parece estar inválido ou expirado.", 'error');
+                    log("Erro 401 (Não Autorizado): O token digitado está incorreto.", 'error');
                 } else if (error.message.includes("404")) {
                     log("Erro 404: Verifique se o nome do repositório 'Maquina-Apks' está correto no código.", 'error');
                 }
