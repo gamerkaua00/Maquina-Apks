@@ -1,1 +1,1 @@
-{"notification":false,"vibration":false,"camera":false,"geolocation":false,"orientation":false,"battery":false,"fullscreen":true,"flashlight":false,"microphone":false,"insomnia":false,"browser":true,"toast":false,"statusbar":false,"clipboard":true,"network":true,"splashscreen":false,"file":true}
+{"notification":true,"vibration":true,"camera":true,"geolocation":true,"orientation":true,"battery":true,"fullscreen":true,"flashlight":true,"microphone":true,"insomnia":true,"browser":true,"toast":true,"statusbar":true,"clipboard":true,"network":true,"splashscreen":true,"file":true}
