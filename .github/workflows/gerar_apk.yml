@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16.6 (Fix Compile SDK & Gradle) 🚀
+name: Fábrica Turbo V16.7 (Fix Gradle Deprecations) 🚀
 
 on:
   push:
@@ -71,7 +71,7 @@ jobs:
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone
+      - name: 🎨 Configurando Ícone e SDK
         run: |
           cd app-temp
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
@@ -87,7 +87,9 @@ jobs:
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
-          # Injeção de Permissões
+          # FIX: Forçando versões do SDK e Permissões no config.xml
+          sed -i '/<widget/a \    <preference name="android-compileSdkVersion" value="33" />' config.xml
+          sed -i '/<widget/a \    <preference name="android-targetSdkVersion" value="33" />' config.xml
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
@@ -154,7 +156,7 @@ jobs:
         run: |
           cd app-temp
           echo "🔧 Buscando e corrigindo plugins desatualizados..."
-          # Substitui dependências antigas por novas usando -exec (mais seguro que xargs)
+          # Substitui 'compile' por 'implementation' em todos os .gradle para corrigir erro do ShortcutBadger
           find . -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
           find . -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
           find . -name "*.gradle" -type f -exec sed -i 's/debugCompile/debugImplementation/g' {} +
@@ -180,7 +182,7 @@ jobs:
       - name: 📱 Compilando APK
         run: |
           cd app-temp
-          # Adicionado -PcdvCompileSdkVersion=33 para corrigir erro de versão
+          # Adicionado -PcdvCompileSdkVersion=33 explicitamente
           cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --gradleArg=-PcdvCompileSdkVersion=33 --packageType=apk
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
