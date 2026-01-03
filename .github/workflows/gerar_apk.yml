@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.5 (Fix Build Tools 33.0.2) 🛡️
+name: Fábrica Inteligente v4.0 (Super Turbo + Permissões) 🚀
 
 on:
   push:
@@ -22,16 +22,14 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 🛠️ Instalando Gradle 8.7 (Compatível com Cordova)
+    - name: 🛠️ Instalando Gradle 8.7 (Estável)
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: '8.7'
 
-    - name: 🛠️ Configurando Android SDK
+    - name: 🛠️ Configurando Android SDK (Blindado)
       run: |
-        # Aceita licenças pendentes
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        # Instala EXATAMENTE a versão que o erro pediu (33.0.2)
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
 
     - name: 📦 Instalando Cordova
@@ -40,7 +38,10 @@ jobs:
 
     - name: 🏗️ Criando a Base do App
       run: |
-        cordova create app-temp com.kaua.app "Seu App"
+        # Cria projeto limpo
+        cordova create app-temp com.kaua.app "Seu App Turbo"
+        
+        # Limpa o padrão e copia o site do usuário
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
 
@@ -53,19 +54,24 @@ jobs:
           sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
         fi
 
-    - name: 🔌 Instalando Plugins
+    - name: 🔌 Instalando Super Poderes (Plugins Dinâmicos)
       run: |
         cd app-temp
-        # FIX: Usando a versão 12.0.0 que é ultra estável e compatível
+        # Android 12.0.0 (O mais compatível atualmente)
         cordova platform add android@12.0.0
         
-        # Plugins Base
-        cordova plugin add cordova-plugin-ionic-webview
-        cordova plugin add cordova-plugin-device
-        cordova plugin add cordova-plugin-dialogs
+        # --- KITS DE SOBREVIVÊNCIA (Sempre instalados) ---
+        echo "🔧 Instalando Kit Básico..."
+        cordova plugin add cordova-plugin-ionic-webview  # Corrige tela branca
+        cordova plugin add cordova-plugin-device         # Identifica o celular
+        cordova plugin add cordova-plugin-dialogs        # Popups nativos
+        cordova plugin add cordova-plugin-android-permissions # VITAL para Android 13+ (Pedir pra notificar)
 
-        # Leitura do features.json
+        # --- LEITURA DO MENU DE OPÇÕES (features.json) ---
         if [ -f "../features.json" ]; then
+          echo "📄 Lendo lista de desejos do usuário..."
+          
+          # Lê cada opção do arquivo JSON
           USE_NOTIF=$(jq -r '.notification' ../features.json)
           USE_VIBRA=$(jq -r '.vibration' ../features.json)
           USE_CAM=$(jq -r '.camera' ../features.json)
@@ -74,8 +80,19 @@ jobs:
           USE_NETWORK=$(jq -r '.network' ../features.json)
           USE_ORIENT=$(jq -r '.orientation' ../features.json)
           USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
+          
+          # Novos Poderes V4.0
+          USE_BROWSER=$(jq -r '.browser' ../features.json)
+          USE_FILE=$(jq -r '.file' ../features.json)
+          USE_SHARING=$(jq -r '.sharing' ../features.json)
+          USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
 
-          if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
+          # Instalação Condicional
+          if [ "$USE_NOTIF" = "true" ]; then 
+            echo "🔔 Adicionando Notificações Agendadas..."
+            cordova plugin add cordova-plugin-local-notification
+          fi
+
           if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
           if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
           if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -83,40 +100,62 @@ jobs:
           if [ "$USE_NETWORK" = "true" ]; then cordova plugin add cordova-plugin-network-information; fi
           if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
           if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
+          
+          if [ "$USE_BROWSER" = "true" ]; then 
+            echo "🌐 Adicionando Navegador Interno..."
+            cordova plugin add cordova-plugin-inappbrowser
+          fi
+          
+          if [ "$USE_FILE" = "true" ]; then 
+            echo "📂 Adicionando Gerenciador de Arquivos..."
+            cordova plugin add cordova-plugin-file
+          fi
+          
+          if [ "$USE_SHARING" = "true" ]; then 
+            echo "🔗 Adicionando Compartilhamento Social..."
+            cordova plugin add cordova-plugin-x-socialsharing
+          fi
+          
+          if [ "$USE_INSOMNIA" = "true" ]; then 
+            echo "☕ Adicionando Insomnia (Tela sempre ligada)..."
+            cordova plugin add cordova-plugin-insomnia
+          fi
+
+        else
+          echo "ℹ️ features.json não encontrado. Instalando apenas o básico."
         fi
 
-    - name: 🧹 Limpando Cache do Gradle
+    - name: 🧹 Limpeza Preventiva
       run: |
         cd app-temp
-        # Limpeza preventiva
         rm -rf ~/.gradle/caches/
 
     - name: 📱 Compilando e Rastreando APK
       run: |
         cd app-temp
-        # Compila usando a versão estável
+        # Compilação Debug (Aceita em qualquer celular)
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
         
-        echo "🔍 Procurando o APK gerado em todo o workspace..."
+        echo "🔍 Rastreando APK no sistema..."
         APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
         
         if [ -z "$APK_PATH" ]; then
-          echo "❌ ERRO CRÍTICO: O arquivo app-debug.apk não foi encontrado!"
+          echo "❌ ERRO CRÍTICO: APK não encontrado após compilação!"
+          # Lista arquivos para debug em caso de erro
           find "$GITHUB_WORKSPACE" -name "*.apk"
           exit 1
         else
-          echo "✅ APK encontrado em: $APK_PATH"
+          echo "✅ APK CAPTURADO: $APK_PATH"
           mv "$APK_PATH" "$GITHUB_WORKSPACE/app-instalavel.apk"
-          echo "📦 APK movido para a raiz com sucesso."
         fi
 
-    - name: 🚀 Criar Download Direto (Release)
+    - name: 🚀 Criar Link de Download (Release)
       uses: softprops/action-gh-release@v1
       if: success()
       with:
         tag_name: v${{ github.run_number }}
         name: "APK Pronto (Versão ${{ github.run_number }})"
-        body: "Seu aplicativo foi fabricado com sucesso! Clique no arquivo abaixo para baixar e instalar."
+        body: "Seu aplicativo Turbo V4.0 está pronto! Baixe o arquivo abaixo."
         files: app-instalavel.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
