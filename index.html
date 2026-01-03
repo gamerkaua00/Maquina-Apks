@@ -12,21 +12,21 @@
     <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700">
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-green-400 mb-2"><i class="fas fa-robot"></i> Fábrica de Apps</h1>
-            <p class="text-gray-400 text-sm">Crie seu aplicativo Android em minutos.</p>
+            <p class="text-gray-400 text-sm">Painel de Controle Completo v2.0</p>
         </div>
 
         <div id="config-section" class="space-y-4">
             
-            <!-- Configurações de Acesso -->
+            <!-- 1. Configurações de Acesso -->
             <div class="bg-gray-900 p-4 rounded-lg border border-gray-600">
-                <h3 class="text-gray-300 font-bold mb-3 text-sm uppercase">1. Acesso (Token)</h3>
-                <label class="block text-xs text-gray-400 mb-1">Seu Token do GitHub (ghp_...)</label>
+                <h3 class="text-gray-300 font-bold mb-3 text-xs uppercase tracking-wider text-blue-400">1. Acesso ao GitHub</h3>
+                <label class="block text-xs text-gray-400 mb-1">Seu Token (ghp_...)</label>
                 <input type="password" id="github-token" placeholder="Cole seu token aqui" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-green-500 outline-none text-sm">
             </div>
 
-            <!-- Dados do App -->
+            <!-- 2. Dados do App -->
             <div class="bg-gray-900 p-4 rounded-lg border border-gray-600">
-                <h3 class="text-gray-300 font-bold mb-3 text-sm uppercase">2. Configuração do App</h3>
+                <h3 class="text-gray-300 font-bold mb-3 text-xs uppercase tracking-wider text-blue-400">2. Identidade do App</h3>
                 
                 <label class="block text-xs text-gray-400 mb-1">Nome do Aplicativo</label>
                 <input type="text" id="app-name" placeholder="Ex: Meu App Incrível" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 mb-4 focus:border-blue-500 outline-none">
@@ -38,29 +38,53 @@
                 <input type="file" id="app-index" accept=".html" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700"/>
             </div>
 
+            <!-- 3. Recursos (O que o app precisa?) -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-600">
+                <h3 class="text-gray-300 font-bold mb-3 text-xs uppercase tracking-wider text-blue-400">3. Poderes do App</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="feat-notification" class="form-checkbox h-5 w-5 text-green-500 rounded border-gray-600 bg-gray-800 focus:ring-offset-gray-900">
+                        <span class="text-sm text-gray-300"><i class="fas fa-bell w-5"></i> Notificações Locais</span>
+                    </label>
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="feat-vibration" class="form-checkbox h-5 w-5 text-green-500 rounded border-gray-600 bg-gray-800 focus:ring-offset-gray-900">
+                        <span class="text-sm text-gray-300"><i class="fas fa-mobile-alt w-5"></i> Vibração</span>
+                    </label>
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="feat-camera" class="form-checkbox h-5 w-5 text-green-500 rounded border-gray-600 bg-gray-800 focus:ring-offset-gray-900">
+                        <span class="text-sm text-gray-300"><i class="fas fa-camera w-5"></i> Câmera</span>
+                    </label>
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="feat-geolocation" class="form-checkbox h-5 w-5 text-green-500 rounded border-gray-600 bg-gray-800 focus:ring-offset-gray-900">
+                        <span class="text-sm text-gray-300"><i class="fas fa-map-marker-alt w-5"></i> Geolocalização (GPS)</span>
+                    </label>
+                </div>
+            </div>
+
             <!-- Botão de Ação -->
-            <button onclick="iniciarFabrica()" id="btn-build" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 rounded-lg shadow-lg transform transition hover:scale-105">
-                <i class="fas fa-hammer"></i> GERAR APK AGORA
+            <button onclick="iniciarFabrica()" id="btn-build" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg transform transition hover:scale-105 uppercase tracking-wide">
+                <i class="fas fa-cogs"></i> Construir Aplicativo
             </button>
         </div>
 
         <!-- Log de Status -->
-        <div id="status-log" class="mt-6 p-3 bg-black rounded text-xs font-mono text-green-400 h-32 overflow-y-auto hidden border border-gray-700">
+        <div id="status-log" class="mt-6 p-3 bg-black rounded text-xs font-mono text-green-400 h-40 overflow-y-auto hidden border border-gray-700 shadow-inner">
             > Aguardando ordens...
         </div>
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO (BACKEND) ---
+        // --- CONFIGURAÇÃO PADRÃO ---
         const GITHUB_USER = "gamerkaua00"; 
         const GITHUB_REPO = "Maquina-Apks"; 
         
-        // Funções de Ajuda
+        // --- FUNÇÕES AUXILIARES ---
         const log = (msg, type = 'info') => {
             const logBox = document.getElementById('status-log');
             logBox.classList.remove('hidden');
-            const color = type === 'error' ? 'text-red-400' : 'text-green-400';
-            logBox.innerHTML += `<div class="${color}">> ${msg}</div>`;
+            const color = type === 'error' ? 'text-red-400' : (type === 'warn' ? 'text-yellow-400' : 'text-green-400');
+            const icon = type === 'error' ? '❌' : (type === 'warn' ? '⚠️' : '✅');
+            logBox.innerHTML += `<div class="${color} border-b border-gray-800 pb-1 mb-1">${icon} ${msg}</div>`;
             logBox.scrollTop = logBox.scrollHeight;
         }
 
@@ -73,66 +97,80 @@
             });
         }
 
+        // --- FUNÇÃO PRINCIPAL ---
         async function iniciarFabrica() {
-            // Pega o token direto do campo de texto
             const token = document.getElementById('github-token').value.trim();
             const appName = document.getElementById('app-name').value;
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
 
-            if (!token) {
-                alert("Por favor, cole seu Token do GitHub!");
-                return;
-            }
+            // Coletar Recursos Marcados
+            const features = {
+                notification: document.getElementById('feat-notification').checked,
+                vibration: document.getElementById('feat-vibration').checked,
+                camera: document.getElementById('feat-camera').checked,
+                geolocation: document.getElementById('feat-geolocation').checked
+            };
 
-            if (!appName || !indexFile) {
-                alert("Por favor, preencha o Nome do App e selecione o arquivo index.html!");
-                return;
-            }
+            if (!token) { alert("ERRO: Cole seu Token do GitHub!"); return; }
+            if (!appName || !indexFile) { alert("ERRO: Preencha o Nome e selecione o index.html!"); return; }
 
             const btn = document.getElementById('btn-build');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando para a Fábrica...';
-            document.getElementById('status-log').innerHTML = '';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando à Fábrica...';
+            document.getElementById('status-log').innerHTML = ''; // Limpa log
 
             try {
-                // 1. Upload do Index.html
+                log("Iniciando processo de fabricação...");
+
+                // 1. Enviar Index.html
                 log("Enviando código do site...");
                 const indexContent = await readFileAsBase64(indexFile);
                 await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/index.html", indexContent, `Update Site: ${appName}`);
 
-                // 2. Upload do Ícone (se tiver)
+                // 2. Enviar Ícone (se houver)
                 if (iconFile) {
                     log("Enviando ícone personalizado...");
                     const iconContent = await readFileAsBase64(iconFile);
                     await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/icon.png", iconContent, "Update Icon");
                 }
 
-                // 3. Atualizar Nome do App (Cria config.xml se não existir)
+                // 3. Enviar Configurações de Recursos (features.json)
+                // Isso servirá para o bot saber quais plugins instalar no futuro
+                log("Salvando preferências de plugins...");
+                const featuresContent = btoa(JSON.stringify(features, null, 2));
+                await uploadFile(GITHUB_USER, GITHUB_REPO, token, "features.json", featuresContent, "Update Features Config");
+
+                // 4. Atualizar/Criar Config.xml (Nome do App)
                 log(`Configurando nome: ${appName}...`);
                 await updateConfigXml(GITHUB_USER, GITHUB_REPO, token, appName);
 
-                log("✅ Sucesso! A Fábrica recebeu o pedido.");
-                log("⏳ O robô está construindo o APK. Isso leva uns 3 minutos.");
+                log("🎉 SUCESSO TOTAL!");
+                log("O robô recebeu seus arquivos e está trabalhando.");
+                log("⏳ Tempo estimado: 3 a 5 minutos.");
                 
-                log(`<a href="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/actions" target="_blank" class="underline text-blue-400 font-bold">CLIQUE AQUI PARA ACOMPANHAR E BAIXAR</a>`);
+                log(`<a href="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/actions" target="_blank" class="block mt-2 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded font-bold no-underline">ACOMPANHAR E BAIXAR APK ⬇️</a>`);
 
             } catch (error) {
-                log(`ERRO: ${error.message}`, 'error');
+                log(`FALHA: ${error.message}`, 'error');
                 if (error.message.includes("401")) {
-                    log("Erro 401 (Não Autorizado): O token digitado está incorreto.", 'error');
+                    log("Dica: Seu Token parece inválido. Verifique se copiou certo.", 'warn');
                 } else if (error.message.includes("404")) {
-                    log("Erro 404: Repositório não encontrado. Verifique se o nome 'Maquina-Apks' está correto.", 'error');
+                    log("Dica: Repositório não encontrado. Verifique o nome 'Maquina-Apks'.", 'warn');
                 }
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-hammer"></i> GERAR APK AGORA';
+                btn.innerHTML = '<i class="fas fa-cogs"></i> CONSTRUIR NOVO APP';
             }
         }
+
+        // --- FUNÇÕES DE API GITHUB ---
 
         async function uploadFile(user, repo, token, path, content, message) {
             const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
             let sha = null;
+            
+            // Verifica se arquivo existe para pegar o SHA (Necessário para atualizar)
             try {
                 const checkReq = await fetch(url, { headers: { Authorization: `token ${token}` } });
                 if (checkReq.ok) {
@@ -153,7 +191,7 @@
                 body: JSON.stringify(body)
             });
 
-            if (!response.ok) throw new Error(`Falha ao enviar ${path} (${response.status})`);
+            if (!response.ok) throw new Error(`Erro no arquivo ${path} (${response.status})`);
         }
 
         async function updateConfigXml(user, repo, token, newName) {
@@ -168,7 +206,7 @@
 
             if (getReq.status === 404) {
                 // SE NÃO EXISTE (404), CRIA UM NOVO PADRÃO
-                log("Config.xml não existe. Criando um novo...");
+                log("Config.xml não existia. Criando um novo...", 'warn');
                 currentContent = `<?xml version='1.0' encoding='utf-8'?>
 <widget id="com.kaua.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>NomePadrao</name>
@@ -178,29 +216,32 @@
     <access origin="*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+    <!-- Correção de Tela Branca -->
     <preference name="AndroidInsecureFileModeEnabled" value="true" />
+    <preference name="scheme" value="http" />
+    <preference name="hostname" value="localhost" />
 </widget>`;
             } else if (getReq.ok) {
                 // SE EXISTE, PEGA O CONTEÚDO
                 const data = await getReq.json();
-                currentContent = atob(data.content); // Decodifica Base64
+                // Corrige problemas de quebra de linha na decodificação
+                currentContent = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
                 sha = data.sha;
             } else {
                 throw new Error(`Erro ao buscar config.xml (${getReq.status})`);
             }
             
-            // Substitui o nome no XML
+            // Substitui o nome no XML (Regex robusto)
             const newContent = currentContent.replace(/<name>.*?<\/name>/, `<name>${newName}</name>`);
             
             // Envia de volta para o GitHub
             const body = { 
                 message: "Update App Name", 
-                content: btoa(newContent), // Codifica Base64
+                // Codifica corretamente para Base64 (suporta acentos)
+                content: btoa(unescape(encodeURIComponent(newContent))),
                 branch: "main" 
             };
             
-            // Se o arquivo já existia, precisa mandar o SHA para atualizar. 
-            // Se é novo, não manda SHA.
             if (sha) body.sha = sha;
 
             const putReq = await fetch(url, {
