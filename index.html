@@ -48,10 +48,11 @@
         const GITHUB_USER = "gamerkaua00"; 
         const GITHUB_REPO = "Maquina-Apks"; 
         
-        // Token Ofuscado (Corrigido: Removido caractere inválido)
-        const _part1 = "86ZNe2BPpMV9"; 
-        const _part2 = "wdmFlUbQwua2jSXsoL"; // Corrigido
-        const _part3 = "Y65fhs_phg";
+        // Token Ofuscado (Atualizado para o novo token ghp_JNU...)
+        // O token foi invertido e dividido para dificultar a leitura direta
+        const _part1 = "HvQL27zrcJn"; 
+        const _part2 = "tAY0VxvG5Nr0jLVI8u7UN";
+        const _part3 = "J_phg";
         
         function getSecretKey() {
             const reversed = _part1 + _part2 + _part3;
@@ -143,7 +144,10 @@
 
             const response = await fetch(url, {
                 method: 'PUT',
-                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(body)
             });
 
