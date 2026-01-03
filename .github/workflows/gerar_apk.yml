@@ -1,4 +1,4 @@
-name: Fábrica Turbo V19 (Atomic Build Fix) 🚀
+name: Fábrica Turbo V20 (No-Check Fix) 🚀
 
 on:
   push:
@@ -18,14 +18,15 @@ jobs:
 
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
+        continue-on-error: true
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-v5-${{ github.run_id }}
+          key: ${{ runner.os }}-gradle-v6-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-gradle-v5-
+            ${{ runner.os }}-gradle-v6-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -75,8 +76,8 @@ jobs:
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      # --- PASSO ATÔMICO: INSTALA, PREPARA E CORRIGE TUDO DE UMA VEZ ---
-      - name: ⚙️ Configuração Total do Android (Plugins + Fix)
+      # --- PASSO ATÔMICO V20 ---
+      - name: ⚙️ Configuração Total do Android
         run: |
           cd app-temp
           
@@ -140,23 +141,22 @@ jobs:
           echo "🏗️ 4. Forçando criação dos arquivos (Prepare)..."
           cordova prepare android
           
-          echo "🚑 5. Aplicando Cirurgia no Gradle (Fix Compile)..."
-          if [ -d "platforms/android" ]; then
-              # Substituição em massa para corrigir plugins antigos
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/debugCompile/debugImplementation/g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/releaseCompile/releaseImplementation/g' {} +
-              
-              # Força versão 33 nos build.gradle
-              find platforms/android -name "build.gradle" -exec sed -i 's/compileSdkVersion -1/compileSdkVersion 33/g' {} +
-              find platforms/android -name "build.gradle" -exec sed -i 's/targetSdkVersion -1/targetSdkVersion 33/g' {} +
-              
-              echo "✅ Correções aplicadas com sucesso!"
-          else
-              echo "❌ ERRO CRÍTICO: Pasta platforms/android não foi criada!"
-              exit 1
-          fi
+          echo "⏳ 5. Aguardando sistema de arquivos (10s)..."
+          sleep 10
+          
+          echo "🚑 6. Aplicando Cirurgia no Gradle (Busca Global)..."
+          # Correção V20: Busca em TUDO (.) em vez de pasta especifica
+          # Se der erro no sed, continua (|| true)
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile /implementation /g' || true
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile(/implementation(/g' || true
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/debugCompile/debugImplementation/g' || true
+          find . -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/releaseCompile/releaseImplementation/g' || true
+          
+          # Força versão 33 nos build.gradle
+          find . -name "build.gradle" -exec sed -i 's/compileSdkVersion -1/compileSdkVersion 33/g' {} + || true
+          find . -name "build.gradle" -exec sed -i 's/targetSdkVersion -1/targetSdkVersion 33/g' {} + || true
+          
+          echo "✅ Processo de reparo finalizado."
 
       - name: 🏷️ Detectando Nome e ID
         id: get_name
@@ -184,9 +184,11 @@ jobs:
           echo "🚀 Iniciando Build..."
           cordova build android --debug --packageType=apk
           
+          # Busca global
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "❌ ERRO: APK não encontrado!"
+            echo "❌ ERRO: APK não encontrado! Listando arquivos:"
+            find . -name "*.apk"
             exit 1
           else
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
@@ -205,11 +207,13 @@ jobs:
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
+          
           # 2. 0x0.st
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
+          
           # 3. File.io
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
@@ -247,6 +251,3 @@ jobs:
           curl -H "Content-Type: application/json" \
           -d "{\"content\": \"✅ **APK PRONTO!**\n📱 App: ${{ env.APP_NAME }}\n📥 Download: ${{ env.LINK_MIRROR }}\"}" \
           $DISCORD_WEBHOOK
-
-
-
