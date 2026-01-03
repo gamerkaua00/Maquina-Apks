@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="application-name" content="Fábrica Apps">
     
-    <!-- Manifesto Embutido -->
+    <!-- Manifesto Embutido (Base64) - Dispensa arquivo manifest.json externo -->
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgZGUgQXBwcyIsCiAgInNob3J0X25hbWUiOiAiRmFicmljYSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3IiOiAiIzAwMDAwMCIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vaW1nLmljb25zOC5jb20vZmx1ZW5jeS8xOTIvcm9ib3QtMi5wbmciLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuaWNvbnM4LmNvbS9mbHVlbmN5LzUxMi9yb2JvdC0yLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
     <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/robot-2.png">
 
@@ -205,7 +205,7 @@
                     <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-browser" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-globe text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Browser</span></div></label>
                     <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-toast" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-comment-alt text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Toast</span></div></label>
                     
-                    <!-- Linha 5 (Extras) -->
+                    <!-- Linha 5 (Extras e Wifi Recuperado) -->
                     <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-statusbar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Status Bar</span></div></label>
                     <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-clipboard" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-clipboard text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Copiar</span></div></label>
                     <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-network" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-wifi text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Wifi</span></div></label>
@@ -219,7 +219,7 @@
         </div>
 
         <!-- Barra Inferior Fixa -->
-        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
+        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-[0_-5px_30px_rgba(0,0,0,0.9)] backdrop-blur-lg safe-area-bottom">
             <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
                 <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-300 font-bold py-4 rounded-2xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
                 <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-4 rounded-2xl text-xs hover:scale-[1.02] transition shadow-lg shadow-blue-500/20 uppercase tracking-wide flex items-center justify-center space-x-2 active:scale-95">
@@ -233,7 +233,7 @@
             </a>
 
             <!-- Botão Download BACKUP (GITHUB OFICIAL) -->
-            <a id="btn-backup" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-2xl text-center shadow-lg flex items-center justify-center space-x-2 text-xs border border-gray-600">
+            <a id="btn-backup" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-2xl text-center shadow-lg flex items-center justify-center space-x-2 text-xs border border-gray-600 active:scale-95 transition">
                 <i class="fab fa-github text-lg"></i> <span>ABRIR PÁGINA DO APK (100% SEGURO)</span>
             </a>
         </div>
@@ -337,14 +337,14 @@
                 let downloadBtn = '';
                 if (app.lastDownloadUrl) {
                     downloadBtn = `
-                        <a href="${app.lastDownloadUrl}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-3 left-3 bg-green-600 hover:bg-green-500 text-white text-[10px] px-3 py-1.5 rounded-full shadow-lg font-bold z-10 flex items-center active:scale-95 transition">
+                        <a href="${app.lastDownloadUrl}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-3 left-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1.5 rounded-full shadow-lg font-bold z-10 flex items-center active:scale-95 transition border border-white/10">
                             <i class="fas fa-download mr-1"></i> BAIXAR
                         </a>
                     `;
                 }
 
                 list.innerHTML += `
-                    <div onclick="abrirApp(${app.id})" class="app-card bg-gray-900 rounded-2xl p-4 cursor-pointer relative overflow-hidden group shadow-lg min-h-[150px] hover:border-blue-500/50">
+                    <div onclick="abrirApp(${app.id})" class="app-card bg-gray-900 rounded-2xl p-4 cursor-pointer relative overflow-hidden group shadow-lg min-h-[150px]">
                         <div class="flex flex-col items-center">
                             <div class="w-14 h-14 bg-black rounded-xl mb-3 shadow-inner flex items-center justify-center p-1 border border-gray-800">
                                 <img src="${icon}" class="w-full h-full object-contain rounded-lg">
@@ -364,15 +364,18 @@
             document.getElementById('app-name').value = '';
             document.getElementById('editor-title').innerText = "Novo Projeto";
             
-            // LIMPEZA CRÍTICA DOS INPUTS DE ARQUIVO
+            // LIMPEZA TOTAL DOS INPUTS (CORREÇÃO DE ERRO DE ARQUIVO ANTIGO)
             document.getElementById('app-icon').value = '';
             document.getElementById('app-index').value = '';
             
-            // Reseta status visual (bolinhas verdes)
+            // Reseta status visual
             document.getElementById('icon-dot').classList.add('hidden');
             document.getElementById('index-dot').classList.add('hidden');
             
+            // Reseta checkboxes
             document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+            
+            // Esconde botões de download antigos
             document.getElementById('status-log').classList.add('hidden');
             document.getElementById('btn-download').classList.add('hidden');
             document.getElementById('btn-backup').classList.add('hidden');
@@ -388,7 +391,7 @@
             document.getElementById('app-name').value = app.name;
             document.getElementById('editor-title').innerText = app.name;
             
-            // Limpa inputs para garantir que não use arquivos antigos se o usuário não selecionar novos
+            // Limpa inputs de arquivo para garantir que não use arquivos antigos se o usuário não selecionar novos
             document.getElementById('app-icon').value = '';
             document.getElementById('app-index').value = '';
 
@@ -421,7 +424,7 @@
             r.onload = () => res(r.result.split(',')[1]); r.onerror = e => rej(e);
         });
 
-        // --- SALVAR LOCALMENTE (AGORA SALVA LINK DE DOWNLOAD TAMBÉM) ---
+        // --- SALVAR LOCALMENTE ---
         async function salvarRascunho(downloadUrl = null) {
             const name = document.getElementById('app-name').value;
             if(!name) return alert("Dê um nome!");
@@ -430,14 +433,8 @@
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
 
-            // Se for novo, cria. Se tiver ID, atualiza o existente.
-            let app = idInput.value ? MEUS_APPS.find(a => a.id == idInput.value) : null;
-            
-            if(!app) {
-                app = {id: Date.now()};
-                // Se for novo, adiciona na lista
-                MEUS_APPS.push(app);
-            }
+            let app = idInput.value ? MEUS_APPS.find(a => a.id == idInput.value) : {id: Date.now()};
+            if(!app) app = {id: Date.now()};
 
             app.name = name;
             app.date = Date.now();
@@ -446,10 +443,12 @@
             app.features = {};
             document.querySelectorAll('input[type=checkbox]').forEach(c => app.features[c.id.replace('feat-','')] = c.checked);
 
-            // Só atualiza os arquivos se o usuário selecionou novos
             if(iconFile) app.iconData = await toBase64(iconFile);
             if(indexFile) app.indexData = await toBase64(indexFile);
 
+            const idx = MEUS_APPS.findIndex(a => a.id === app.id);
+            if(idx >= 0) MEUS_APPS[idx] = app; else MEUS_APPS.push(app);
+            
             localStorage.setItem('meus_apps', JSON.stringify(MEUS_APPS));
             
             // Só avisa se não for um save automático
@@ -472,14 +471,11 @@
             const token = localStorage.getItem('github_token');
             const name = document.getElementById('app-name').value;
             const id = document.getElementById('edit-id').value;
-            
-            // Pega o app salvo ou cria objeto temporário
             let app = id ? MEUS_APPS.find(a => a.id == id) : {};
 
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
             
-            // Usa arquivo novo ou o que está salvo na memória
             let iconData = iconFile ? await toBase64(iconFile) : app.iconData;
             let indexData = indexFile ? await toBase64(indexFile) : app.indexData;
 
@@ -503,21 +499,23 @@
 
             try {
                 log("🚀 Iniciando envio...");
-                await upload(token, "www/index.html", indexData);
-                if(iconData) await upload(token, "www/icon.png", iconData);
-                await upload(token, "features.json", btoa(JSON.stringify(features)));
-                await updateConfig(token, name);
-
-                log("✅ ENVIO CONCLUÍDO! Iniciando fábrica...");
                 
-                // Salva automatico o estado antes de começar a monitorar
+                // [SKIP CI] - Envia arquivos sem acordar o robô
+                await upload(token, "www/index.html", indexData, `Site: ${name} [skip ci]`);
+                if(iconData) await upload(token, "www/icon.png", iconData, "Icon [skip ci]");
+                await upload(token, "features.json", btoa(JSON.stringify(features)), "Features [skip ci]");
+                
+                // DISPARO REAL - Atualiza config.xml (acorda o robô)
+                log("⚡ Ativando Fábrica...");
+                await updateConfig(token, name);
+                
+                log("✅ INICIADO! Aguarde...");
+                
                 if(!id) {
                     const newId = Date.now();
                     document.getElementById('edit-id').value = newId;
-                    // Cria o app na lista
                     await salvarRascunho(); 
                 } else {
-                    // Apenas atualiza o existente
                     await salvarRascunho();
                 }
                 
@@ -533,14 +531,14 @@
         }
 
         // --- API GITHUB ---
-        async function upload(token, path, content) {
+        async function upload(token, path, content, msg) {
             const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
             let sha = null;
             try { const c = await fetch(url, { headers: { Authorization: `token ${token}` }}); if(c.ok) sha = (await c.json()).sha; } catch(e){}
             const res = await fetch(url, {
                 method: 'PUT',
                 headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Update", content, sha, branch: "main" })
+                body: JSON.stringify({ message: msg, content, sha, branch: "main" })
             });
             if(!res.ok) throw new Error("Erro upload "+path);
         }
@@ -557,10 +555,11 @@
                 sha = data.sha;
             }
             const newContent = content.replace(/<name>.*?<\/name>/, `<name>${name}</name>`);
+            // Mensagem normal para disparar o build
             await fetch(url, {
                 method: 'PUT',
                 headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Config", content: btoa(unescape(encodeURIComponent(newContent))), sha, branch: "main" })
+                body: JSON.stringify({ message: "TRIGGER BUILD: " + name, content: btoa(unescape(encodeURIComponent(newContent))), sha, branch: "main" })
             });
         }
 
@@ -604,52 +603,44 @@
                 const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/releases/latest`, { headers: { Authorization: `token ${token}` }});
                 const d = await r.json();
                 
-                // BUSCA LINK TURBO (Litterbox, 0x0, File.io)
+                // 1. TENTA O LINK TURBO (MIRROR)
                 const match = d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
                 let urlTurbo = "";
                 if(match && match[1] && !match[1].includes("Verifique")) {
                     urlTurbo = match[1];
                 }
 
-                // BUSCA LINK BACKUP (GITHUB ASSETS)
-                let urlRepo = d.html_url; // Link da página da release (Garantido)
-                let urlDirect = d.assets?.[0]?.browser_download_url; // Link direto do arquivo (Backup)
+                // 2. LINK PÁGINA GITHUB (Para segurança máxima)
+                let urlRepo = d.html_url; 
 
                 const btnDown = document.getElementById('btn-download');
                 const btnBackup = document.getElementById('btn-backup');
                 const btnBuild = document.getElementById('btn-build');
                 btnBuild.classList.add('hidden');
 
-                if (urlTurbo) {
-                    btnDown.href = urlTurbo;
-                    btnDown.classList.remove('hidden');
-                    btnDown.innerHTML = `<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`;
-                    log("⚡ LINK TURBO ENCONTRADO!");
-                    salvarRascunho(urlTurbo);
-                } else if (urlDirect) {
-                    // Backup 1: Link direto do GitHub
-                    btnDown.href = urlDirect;
-                    btnDown.classList.remove('hidden');
-                    btnDown.innerHTML = `<i class="fab fa-github text-lg"></i> BAIXAR (GITHUB)`;
-                    log("⚠️ Usando link direto do GitHub.");
-                    salvarRascunho(urlDirect);
-                } else {
-                    log("Links diretos não encontrados.", true);
-                }
-
-                // MOSTRA SEMPRE O LINK DA PÁGINA DO GITHUB (BACKUP INFALÍVEL)
+                // PRIORIDADE PARA A PÁGINA DE DOWNLOAD DO GITHUB (Mais seguro, não trava)
                 if (urlRepo) {
                     btnBackup.href = urlRepo;
                     btnBackup.classList.remove('hidden');
-                    if (!urlTurbo && !urlDirect) {
-                        // Se não tiver nenhum direto, o backup vira o destaque
+                    
+                    // Se tiver turbo, mostra ele como opção rápida
+                    if (urlTurbo) {
+                        btnDown.href = urlTurbo;
+                        btnDown.classList.remove('hidden');
+                        btnDown.innerHTML = `<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`;
+                        log("⚡ Link Turbo disponível.");
+                        salvarRascunho(urlTurbo);
+                    } else {
+                        // Se não, destaca o botão da página oficial
                         btnDown.classList.add('hidden');
                         btnBackup.classList.remove('hidden', 'mt-2', 'bg-gray-800');
                         btnBackup.classList.add('mt-3', 'bg-blue-600', 'text-white', 'py-4', 'text-sm');
-                        btnBackup.innerHTML = `<i class="fab fa-github text-xl"></i> BAIXAR PELA PÁGINA OFICIAL`;
-                        log("✅ Link da Página Oficial disponível.");
-                        salvarRascunho(urlRepo); 
+                        btnBackup.innerHTML = `<i class="fab fa-github text-xl"></i> ABRIR PÁGINA DE DOWNLOAD`;
+                        log("✅ Link Oficial Gerado.");
+                        salvarRascunho(urlRepo);
                     }
+                } else {
+                    log("Erro: Release não encontrada.", true);
                 }
 
             } catch(e){ log("Erro ao buscar link.", true); }
