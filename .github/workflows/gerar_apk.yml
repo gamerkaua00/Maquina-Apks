@@ -78,17 +78,19 @@ jobs:
         # Compila
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
         
-        echo "🔍 Procurando o APK gerado..."
-        # O comando find procura o arquivo em qualquer subpasta
-        APK_PATH=$(find . -name "app-debug.apk" | head -n 1)
+        echo "🔍 Procurando o APK gerado em todo o workspace..."
+        # O comando find procura o arquivo em todo o diretorio do github workspace
+        APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
         
         if [ -z "$APK_PATH" ]; then
           echo "❌ ERRO CRÍTICO: O arquivo app-debug.apk não foi encontrado!"
+          # Debug: Lista todos os apks encontrados para ajudar no diagnóstico
+          find "$GITHUB_WORKSPACE" -name "*.apk"
           exit 1
         else
           echo "✅ APK encontrado em: $APK_PATH"
           # Move para a raiz do workspace para facilitar o upload
-          mv "$APK_PATH" $GITHUB_WORKSPACE/app-instalavel.apk
+          mv "$APK_PATH" "$GITHUB_WORKSPACE/app-instalavel.apk"
           echo "📦 APK movido para a raiz com sucesso."
         fi
 
