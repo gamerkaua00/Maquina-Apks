@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16.1 (Fix Cache Error) 🚀
+name: Fábrica Turbo V16.2 (Fix Java Cache Error) 🚀
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle' # Ativa cache nativo do Java também
+          # cache: 'gradle' removido para evitar erro de arquivo inexistente
 
       - name: 🛠️ Instalando Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
@@ -134,7 +134,7 @@ jobs:
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
+            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
