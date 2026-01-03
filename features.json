@@ -2,5 +2,9 @@
   "notification": false,
   "vibration": false,
   "camera": false,
-  "geolocation": false
+  "geolocation": false,
+  "battery": false,
+  "network": true,
+  "orientation": false,
+  "fullscreen": true
 }
