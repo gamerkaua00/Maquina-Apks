@@ -1,4 +1,4 @@
-name: Fábrica Turbo V13 (File System Fix + ID Único) 🚀
+name: Fábrica Turbo V15 (Auto-Icon + Fixes) 🚀
 
 on:
   push:
@@ -50,24 +50,34 @@ jobs:
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone e Permissões
+      - name: 🎨 Configurando Ícone Automático
         run: |
           cd app-temp
-          # Configura Ícone
-          if [ -f "www/icon.png" ]; then
-            echo "🔥 Ícone encontrado!"
-            cp www/icon.png .
-            if ! grep -q "<icon" config.xml; then
-               sed -i '/<content src="index.html"/a <icon src="icon.png" />' config.xml
-            fi
+          
+          # 1. Procura se o usuário mandou ícone (vários nomes possíveis)
+          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
+          
+          if [ -n "$ICON_FILE" ]; then
+            echo "🔥 Ícone personalizado encontrado: $ICON_FILE"
+            cp "$ICON_FILE" ./res_icon.png
+          else
+            echo "⚠️ Nenhum ícone encontrado. Criando ícone padrão..."
+            # Baixa um ícone de Robô 3D para não ficar o padrão feio
+            curl -L -o ./res_icon.png "https://img.icons8.com/fluency/512/robot-2.png"
           fi
           
-          # --- TURBO: LIBERAÇÃO DE ARQUIVOS ---
-          # Injeta permissões extras no config.xml para ler pastas locais
-          sed -i '/<platform name="android">/a <preference name="AllowFileAccess" value="true" />' config.xml
-          sed -i '/<platform name="android">/a <preference name="AllowFileAccessFromFileURLs" value="true" />' config.xml
-          sed -i '/<platform name="android">/a <preference name="AllowUniversalAccessFromFileURLs" value="true" />' config.xml
-          sed -i '/<platform name="android">/a <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
+          # 2. Injeta o ícone no config.xml (Substituição Forçada)
+          # Remove tags de ícone antigas para não duplicar
+          sed -i '/<icon/d' config.xml
+          # Adiciona a nova tag logo no começo do arquivo
+          sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
+          
+          # --- LIBERAÇÃO DE ARQUIVOS ---
+          sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
+          sed -i '/<widget/a \    <preference name="AllowUniversalAccessFromFileURLs" value="true" />' config.xml
+          sed -i '/<widget/a \    <preference name="AllowFileAccessFromFileURLs" value="true" />' config.xml
+          sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
+          sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
       - name: 🔌 Instalando Plugins
         run: |
@@ -83,8 +93,8 @@ jobs:
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-android-permissions
           cordova plugin add cordova-plugin-inappbrowser
-          
-          # Plugin para compatibilidade Android X (Evita crashes)
+          cordova plugin add cordova-plugin-file
+          cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
           # --- PLUGINS OPCIONAIS ---
@@ -120,12 +130,7 @@ jobs:
             if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
             if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            
-            if [ "$USE_FILE" = "true" ]; then 
-               echo "📂 Instalando gerenciadores de arquivo..."
-               cordova plugin add cordova-plugin-file
-               cordova plugin add cordova-plugin-filepath # Ajuda a resolver caminhos de arquivos
-            fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
@@ -141,11 +146,10 @@ jobs:
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
           
-          # 2. Gera um ID ÚNICO baseado no nome (para Play Store Style)
+          # 2. Gera um ID ÚNICO baseado no nome
           SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g' | sed 's/\.\././g')
           NEW_ID="com.kaua.app.$SAFE_ID"
-          
-          echo "🆔 Gerando ID Exclusivo: $NEW_ID"
+          echo "🆔 ID Gerado: $NEW_ID"
           sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
 
       - name: 🧹 Limpando Cache
