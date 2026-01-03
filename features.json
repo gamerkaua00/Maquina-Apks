@@ -4,7 +4,7 @@
   "camera": false,
   "geolocation": false,
   "battery": false,
-  "network": true,
-  "orientation": false,
-  "fullscreen": true
+  "network": false,
+  "browser": false,
+  "sharing": false
 }
