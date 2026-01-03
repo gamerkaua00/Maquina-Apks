@@ -1,4 +1,4 @@
-name: Fábrica Turbo V8 (Catbox Mirror + Full Plugins) 🚀
+name: Fábrica Ultra V9 (4x Mirrors + Max Plugins) 🚀
 
 on:
   push:
@@ -51,21 +51,21 @@ jobs:
             sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
           fi
 
-      - name: 🔌 Instalando Plugins
+      - name: 🔌 Instalando Plugins (Pacote Completo)
         run: |
           cd app-temp
-          # Android 12.0.0 é o mais estável para plugins atuais
           cordova platform add android@12.0.0
           
-          # --- PLUGINS BASE (Essenciais) ---
+          # --- PLUGINS OBRIGATÓRIOS ---
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-android-permissions
           cordova plugin add cordova-plugin-inappbrowser
 
-          # --- PLUGINS OPCIONAIS (Lê do features.json) ---
+          # --- PLUGINS OPCIONAIS (features.json) ---
           if [ -f "../features.json" ]; then
+            # Leitura do JSON
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
@@ -73,14 +73,18 @@ jobs:
             USE_BATTERY=$(jq -r '.battery' ../features.json)
             USE_NETWORK=$(jq -r '.network' ../features.json)
             USE_ORIENT=$(jq -r '.orientation' ../features.json)
-            
-            # Novos V5/V8
             USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
             USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
             USE_MIC=$(jq -r '.microphone' ../features.json)
             USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
             USE_TOAST=$(jq -r '.toast' ../features.json)
+            
+            # Novos V9
+            USE_STATUSBAR=$(jq -r '.statusbar' ../features.json)
+            USE_CLIPBOARD=$(jq -r '.clipboard' ../features.json)
+            USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
 
+            # Instalação
             if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
@@ -98,9 +102,13 @@ jobs:
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
+
+            if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
+            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
+            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
           fi
 
-      - name: 🏷️ Detectando Nome do App
+      - name: 🏷️ Detectando Nome
         id: get_name
         run: |
           cd app-temp
@@ -129,23 +137,55 @@ jobs:
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
           fi
 
-      - name: 📤 Upload Turbo (Litterbox)
+      - name: 📤 Upload Supremo (4 Servidores)
         id: upload_fast
         run: |
-          echo "Subindo ${{ env.APK_FINAL }} para Litterbox..."
-          # Upload para Catbox/Litterbox (Retenção temporária, muito rápido)
-          # Se falhar, tenta o 0x0.st como backup
-          LINK=$(curl -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@${{ env.APK_FINAL }}" https://litterbox.catbox.moe/resources/internals/api.php) || LINK=""
+          APK="${{ env.APK_FINAL }}"
+          echo "Iniciando upload redundante de $APK..."
+          LINK=""
           
-          if [[ $LINK != http* ]]; then
-             echo "⚠️ Litterbox falhou, tentando 0x0.st..."
-             LINK=$(curl -F "file=@${{ env.APK_FINAL }}" https://0x0.st)
+          # 1. Litterbox (Catbox) - O melhor
+          if [ -z "$LINK" ]; then
+             echo "Tntando Litterbox..."
+             RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php)
+             if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
-          echo "Link gerado: $LINK"
-          echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
+          # 2. 0x0.st - O clássico
+          if [ -z "$LINK" ]; then
+             echo "Tentando 0x0.st..."
+             RESP=$(curl -s -F "file=@$APK" https://0x0.st)
+             if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
+          fi
+          
+          # 3. File.io - Rápido (link único)
+          if [ -z "$LINK" ]; then
+             echo "Tentando File.io..."
+             RESP=$(curl -s -F "file=@$APK" https://file.io)
+             # Extrai o link do JSON usando grep/sed porque não temos jq garantido na saida do curl simples
+             LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
+          fi
 
-      - name: 🚀 Criar Release (Link Direto)
+          # 4. TmpFiles - Backup final
+          if [ -z "$LINK" ]; then
+             echo "Tentando TmpFiles..."
+             RESP=$(curl -s -F "file=@$APK" https://tmpfiles.org/api/v1/upload)
+             # Extrai url e ajusta para download direto
+             RAW_LINK=$(echo $RESP | grep -o '"url":"[^"]*' | cut -d'"' -f4)
+             if [[ "$RAW_LINK" == http* ]]; then
+                LINK=${RAW_LINK/tmpfiles.org/tmpfiles.org\/dl}
+             fi
+          fi
+          
+          if [[ "$LINK" == http* ]]; then
+             echo "✅ LINK GERADO: $LINK"
+             echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
+          else
+             echo "❌ Todos falharam. Usando GitHub Release."
+             echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
+          fi
+
+      - name: 🚀 Criar Release
         uses: softprops/action-gh-release@v1
         if: success()
         with:
@@ -156,10 +196,10 @@ jobs:
             
             📱 **Nome:** ${{ env.APP_NAME }}
             
-            ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
+            ⬇️ **BAIXAR AGORA (LINK RÁPIDO):**
             MIRROR_LINK: ${{ env.LINK_MIRROR }}
             
-            _(Link alternativo do GitHub abaixo em Assets)_
+            _(Backup: Assets do GitHub)_
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
