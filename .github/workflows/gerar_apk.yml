@@ -1,9 +1,12 @@
-name: Fábrica Inteligente v2.0 (Com Plugins Dinâmicos) 🧠
+name: Fábrica Inteligente v3.0 (Download Direto + Full Power) 🚀
 
 on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch:
+
+permissions:
+  contents: write # Permissão necessária para criar Releases e Uploads
 
 jobs:
   build:
@@ -46,7 +49,7 @@ jobs:
         cd app-temp
         cordova platform add android
         
-        # --- PLUGINS OBRIGATÓRIOS ---
+        # --- PLUGINS OBRIGATÓRIOS (Base do sistema) ---
         echo "🔧 Instalando plugins base..."
         cordova plugin add cordova-plugin-ionic-webview
         cordova plugin add cordova-plugin-device
@@ -61,11 +64,16 @@ jobs:
           USE_VIBRA=$(jq -r '.vibration' ../features.json)
           USE_CAM=$(jq -r '.camera' ../features.json)
           USE_GPS=$(jq -r '.geolocation' ../features.json)
+          
+          # NOVOS RECURSOS V3.0
+          USE_BATTERY=$(jq -r '.battery' ../features.json)
+          USE_NETWORK=$(jq -r '.network' ../features.json)
+          USE_ORIENT=$(jq -r '.orientation' ../features.json)
+          USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
 
           if [ "$USE_NOTIF" = "true" ]; then
             echo "🔔 Adicionando Notificações..."
-            # Instalamos device antes para evitar aquele erro antigo
-            cordova plugin add cordova-plugin-local-notification || echo "⚠️ Aviso: Falha na notificação, continuando..."
+            cordova plugin add cordova-plugin-local-notification || echo "⚠️ Aviso: Falha na notificação"
           fi
 
           if [ "$USE_VIBRA" = "true" ]; then
@@ -82,6 +90,27 @@ jobs:
             echo "📍 Adicionando Geolocalização..."
             cordova plugin add cordova-plugin-geolocation
           fi
+
+          if [ "$USE_BATTERY" = "true" ]; then
+            echo "🔋 Adicionando Status da Bateria..."
+            cordova plugin add cordova-plugin-battery-status
+          fi
+
+          if [ "$USE_NETWORK" = "true" ]; then
+            echo "📡 Adicionando Informações de Rede..."
+            cordova plugin add cordova-plugin-network-information
+          fi
+
+          if [ "$USE_ORIENT" = "true" ]; then
+            echo "🔄 Adicionando Controle de Orientação..."
+            cordova plugin add cordova-plugin-screen-orientation
+          fi
+          
+          if [ "$USE_FULLSCREEN" = "true" ]; then
+            echo "📺 Adicionando Tela Cheia..."
+            cordova plugin add cordova-plugin-fullscreen
+          fi
+
         else
           echo "ℹ️ features.json não encontrado. Usando apenas o básico."
         fi
@@ -91,9 +120,17 @@ jobs:
         cd app-temp
         # O argumento --gradleArg=-PcdvMinSdkVersion=24 ajuda a evitar erros com plugins modernos
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
+        
+        # Renomeia para ficar bonito no download
+        mv platforms/android/app/build/outputs/apk/debug/app-debug.apk app-instalavel.apk
 
-    - name: 📤 Entregando o APK
-      uses: actions/upload-artifact@v4
+    - name: 🚀 Criar Link de Download Direto (Release)
+      uses: softprops/action-gh-release@v1
+      if: success()
       with:
-        name: app-final-debug
-        path: app-temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        tag_name: v${{ github.run_number }} # Cria uma versão única (v1, v2, v3...)
+        name: "APK Pronto (Versão ${{ github.run_number }})"
+        body: "Seu aplicativo foi fabricado com sucesso! Clique no arquivo apk abaixo para instalar."
+        files: app-temp/app-instalavel.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
