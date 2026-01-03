@@ -1,4 +1,4 @@
-name: Fábrica TURBO V9 (Corrigida) 🚀
+name: Fábrica Inteligente v2.0 (Com Plugins Dinâmicos) 🧠
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Baixando Código
+    - name: 📥 Baixando Código (Checkout)
       uses: actions/checkout@v3
 
     - name: ☕ Configurando Java 17
@@ -25,9 +25,10 @@ jobs:
 
     - name: 🏗️ Criando a Base do App
       run: |
-        cordova create app-temp com.kaua.app "Seu App Turbo"
+        # Cria projeto temporário
+        cordova create app-temp com.kaua.app "Seu App"
         
-        # Limpa e copia seu site
+        # Limpa o padrão e copia o site do usuário
         rm -rf app-temp/www/*
         cp -r www/* app-temp/www/
 
@@ -40,30 +41,59 @@ jobs:
           sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
         fi
 
-    - name: 🔌 Instalando Superpoderes (Plugins)
+    - name: 🔌 Instalando Plugins (Leitura do features.json)
       run: |
         cd app-temp
         cordova platform add android
         
-        # 1. Resolve tela branca e login
+        # --- PLUGINS OBRIGATÓRIOS ---
+        echo "🔧 Instalando plugins base..."
         cordova plugin add cordova-plugin-ionic-webview
-        
-        # 2. Informações do Dispositivo (Essencial e substitui a peça quebrada)
         cordova plugin add cordova-plugin-device
-
-        # 3. Vibração
-        cordova plugin add cordova-plugin-vibration
-        
-        # 4. Caixas de Diálogo (Popups)
         cordova plugin add cordova-plugin-dialogs
+
+        # --- PLUGINS OPCIONAIS (Lê do features.json) ---
+        if [ -f "../features.json" ]; then
+          echo "📄 Lendo preferências do usuário..."
+          
+          # Usa ferramenta 'jq' do Linux para ler o JSON
+          USE_NOTIF=$(jq -r '.notification' ../features.json)
+          USE_VIBRA=$(jq -r '.vibration' ../features.json)
+          USE_CAM=$(jq -r '.camera' ../features.json)
+          USE_GPS=$(jq -r '.geolocation' ../features.json)
+
+          if [ "$USE_NOTIF" = "true" ]; then
+            echo "🔔 Adicionando Notificações..."
+            # Instalamos device antes para evitar aquele erro antigo
+            cordova plugin add cordova-plugin-local-notification || echo "⚠️ Aviso: Falha na notificação, continuando..."
+          fi
+
+          if [ "$USE_VIBRA" = "true" ]; then
+            echo "📳 Adicionando Vibração..."
+            cordova plugin add cordova-plugin-vibration
+          fi
+
+          if [ "$USE_CAM" = "true" ]; then
+            echo "📸 Adicionando Câmera..."
+            cordova plugin add cordova-plugin-camera
+          fi
+
+          if [ "$USE_GPS" = "true" ]; then
+            echo "📍 Adicionando Geolocalização..."
+            cordova plugin add cordova-plugin-geolocation
+          fi
+        else
+          echo "ℹ️ features.json não encontrado. Usando apenas o básico."
+        fi
 
     - name: 📱 Compilando APK (Modo Debug)
       run: |
         cd app-temp
+        # O argumento --gradleArg=-PcdvMinSdkVersion=24 ajuda a evitar erros com plugins modernos
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
 
     - name: 📤 Entregando o APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-turbo-debug
+        name: app-final-debug
         path: app-temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
