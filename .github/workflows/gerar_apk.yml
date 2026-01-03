@@ -1,4 +1,4 @@
-name: Fábrica Turbo V15 (Auto-Icon + Fixes) 🚀
+name: Fábrica Turbo V16 (Ultimate + Cache + Notify) 🚀
 
 on:
   push:
@@ -16,11 +16,24 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
+      # --- MELHORIA 1: CACHE INTELIGENTE (ACELERADOR) ---
+      - name: ⚡ Cache Gradle & NPM
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.npm
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle' # Ativa cache nativo do Java também
 
       - name: 🛠️ Instalando Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
@@ -36,46 +49,51 @@ jobs:
         run: |
           npm install -g cordova
 
+      # --- MELHORIA 2: VALIDAÇÃO DE CÓDIGO (O MÉDICO) ---
+      - name: 🩺 Verificando Saúde do Código
+        run: |
+          # Verifica se o index.html existe e tem conteúdo básico
+          if [ ! -s "www/index.html" ]; then
+            echo "❌ ERRO FATAL: O arquivo index.html está vazio ou não existe!"
+            exit 1
+          fi
+          # Verifica se tem tags essenciais
+          if ! grep -q "<html" "www/index.html"; then
+             echo "⚠️ AVISO: Seu index.html parece incompleto (faltando <html>)."
+          fi
+          echo "✅ Código parece saudável. Prosseguindo..."
+
       - name: 🏗️ Criando a Base do App
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
-          
-          # Limpa e copia o site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
-          # IMPORTANTE: Copia o config.xml da raiz
           if [ -f config.xml ]; then 
             echo "📄 Config.xml encontrado! Aplicando..."
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone Automático
+      - name: 🎨 Configurando Ícone
         run: |
           cd app-temp
-          
-          # 1. Procura se o usuário mandou ícone (vários nomes possíveis)
+          # Procura ícone com qualquer nome comum
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
           
           if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone personalizado encontrado: $ICON_FILE"
+            echo "🔥 Ícone encontrado: $ICON_FILE"
             cp "$ICON_FILE" ./res_icon.png
+            sed -i '/<icon/d' config.xml
+            sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           else
-            echo "⚠️ Nenhum ícone encontrado. Criando ícone padrão..."
-            # Baixa um ícone de Robô 3D para não ficar o padrão feio
+            # Ícone Padrão Bonito se não tiver nenhum
+            echo "⚠️ Usando ícone padrão."
             curl -L -o ./res_icon.png "https://img.icons8.com/fluency/512/robot-2.png"
+            sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
-          # 2. Injeta o ícone no config.xml (Substituição Forçada)
-          # Remove tags de ícone antigas para não duplicar
-          sed -i '/<icon/d' config.xml
-          # Adiciona a nova tag logo no começo do arquivo
-          sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
-          
-          # --- LIBERAÇÃO DE ARQUIVOS ---
+          # Permissões de Arquivo
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
-          sed -i '/<widget/a \    <preference name="AllowUniversalAccessFromFileURLs" value="true" />' config.xml
-          sed -i '/<widget/a \    <preference name="AllowFileAccessFromFileURLs" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
@@ -84,10 +102,9 @@ jobs:
           cd app-temp
           cordova platform add android@12.0.0
           
-          # --- VACINA ANTI-ERRO ---
           cordova plugin remove cordova-plugin-whitelist || true
           
-          # --- PLUGINS BASE ---
+          # Plugins Base
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -97,7 +114,7 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # --- PLUGINS OPCIONAIS ---
+          # Leitura do features.json
           if [ -f "../features.json" ]; then
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
@@ -116,7 +133,7 @@ jobs:
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
+            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -128,34 +145,26 @@ jobs:
             if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
             if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
             if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
-            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
+            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
             if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
-            
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
           fi
 
-      - name: 🏷️ Configurando ID e Nome Único
+      - name: 🏷️ Detectando Nome e ID
         id: get_name
         run: |
           cd app-temp
-          # 1. Pega o NOME do app
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
           
-          # 2. Gera um ID ÚNICO baseado no nome
-          SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g' | sed 's/\.\././g')
+          # ID Único baseado no nome (para não substituir apps diferentes)
+          SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g')
           NEW_ID="com.kaua.app.$SAFE_ID"
-          echo "🆔 ID Gerado: $NEW_ID"
           sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
-
-      - name: 🧹 Limpando Cache
-        run: |
-          cd app-temp
-          rm -rf ~/.gradle/caches/
 
       - name: 📱 Compilando APK
         run: |
@@ -163,7 +172,6 @@ jobs:
           cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
-          
           if [ -z "$APK_PATH" ]; then
             echo "❌ ERRO: APK não encontrado!"
             exit 1
@@ -177,21 +185,17 @@ jobs:
         id: upload_fast
         run: |
           APK="${{ env.APK_FINAL }}"
-          echo "Iniciando upload de $APK..."
           LINK=""
-          
           # 1. Litterbox
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
-          
           # 2. 0x0.st
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
-          
           # 3. File.io
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
@@ -204,7 +208,7 @@ jobs:
              echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
           fi
 
-      - name: 🚀 Criar Release (Link Direto)
+      - name: 🚀 Criar Release
         uses: softprops/action-gh-release@v1
         if: success()
         with:
@@ -212,21 +216,22 @@ jobs:
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
           body: |
             ✅ **Seu App está pronto!**
-            
             📱 **Nome:** ${{ env.APP_NAME }}
-            🆔 **ID:** com.kaua.app... (Instalação Separada)
             
-            ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
-            MIRROR_LINK: ${{ env.LINK_MIRROR }}
+            ⬇️ **LINK TURBO:** ${{ env.LINK_MIRROR }}
             
             _(Backup: Assets do GitHub abaixo)_
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 📤 Backup no Actions
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: APK-Debug-Backup
-          path: ${{ env.APK_FINAL }}
+
+      # --- MELHORIA 3: NOTIFICAÇÃO (OPCIONAL) ---
+      # Se você configurar um 'DISCORD_WEBHOOK' nos Secrets do GitHub, ele avisa lá.
+      - name: 🔔 Notificar Discord
+        if: success() && env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"✅ **APK PRONTO!**\n📱 App: ${{ env.APP_NAME }}\n📥 Download: ${{ env.LINK_MIRROR }}\"}" \
+          $DISCORD_WEBHOOK
