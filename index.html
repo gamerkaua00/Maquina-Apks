@@ -105,9 +105,9 @@
             <h1 class="text-3xl font-bold mb-2">Fábrica Neon</h1>
             <p class="text-gray-400 text-sm mb-6">Acesso Seguro</p>
             
-            <input type="password" id="input-token" placeholder="Cole seu ghp_..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 tracking-widest">
+            <input type="password" id="input-token" placeholder="Cole seu ghp_..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 tracking-widest text-sm">
             
-            <button onclick="salvarToken()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95">
+            <button onclick="salvarToken()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 uppercase tracking-wider text-sm">
                 ENTRAR
             </button>
         </div>
@@ -134,7 +134,7 @@
         </div>
 
         <!-- Botão Flutuante (Novo App) -->
-        <button onclick="novoApp()" class="fixed bottom-8 right-8 w-16 h-16 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white text-3xl z-50 hover:scale-110 transition active:scale-90 border border-white/20">
+        <button onclick="novoApp()" class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full shadow-lg flex items-center justify-center text-white text-3xl z-50 hover:scale-110 transition active:scale-90 border border-white/20">
             <i class="fas fa-plus"></i>
         </button>
     </div>
@@ -220,7 +220,7 @@
 
         <!-- 3. Barra Inferior Fixa (Painel de Controle) -->
         <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
-            <div class="grid grid-cols-3 gap-3">
+            <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
                 <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-400 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95">SALVAR</button>
                 <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg shadow-blue-500/20 uppercase tracking-wide flex items-center justify-center space-x-2 active:scale-95">
                     <i class="fas fa-hammer"></i> <span>Fabricar APK</span>
@@ -228,14 +228,20 @@
             </div>
             
             <!-- Botão Download Mágico -->
-            <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm">
+            <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm">
                 <i class="fas fa-download text-lg"></i> <span>BAIXAR APK AGORA</span>
+            </a>
+
+            <!-- Botão Download BACKUP (NOVO) -->
+            <a id="btn-backup" href="#" target="_blank" class="hidden mt-2 w-full max-w-xl mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-xl text-center shadow-lg flex items-center justify-center space-x-2 text-xs border border-gray-600">
+                <i class="fab fa-github text-lg"></i> <span>Baixar pelo GitHub (Backup)</span>
             </a>
         </div>
     </div>
 
     <!-- Scripts do Sistema -->
     <script>
+        // CONFIGURAÇÕES GLOBAIS
         const GITHUB_USER = "gamerkaua00";
         const GITHUB_REPO = "Maquina-Apks";
         let MEUS_APPS = JSON.parse(localStorage.getItem('meus_apps') || '[]');
@@ -245,7 +251,6 @@
         }
 
         // --- SISTEMA PWA ---
-        // Registra Service Worker para funcionar offline e instalação
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
             navigator.serviceWorker.register('sw.js').catch(console.error);
         }
@@ -349,6 +354,7 @@
             document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
             document.getElementById('status-log').classList.add('hidden');
             document.getElementById('btn-download').classList.add('hidden');
+            document.getElementById('btn-backup').classList.add('hidden');
             document.getElementById('btn-build').classList.remove('hidden');
             document.getElementById('icon-dot').classList.add('hidden');
             document.getElementById('index-dot').classList.add('hidden');
@@ -387,11 +393,13 @@
             showView('view-dashboard'); renderAppsList(); 
         }
 
+        // --- CONVERSÃO ARQUIVOS ---
         const toBase64 = file => new Promise((res, rej) => {
             const r = new FileReader(); r.readAsDataURL(file);
             r.onload = () => res(r.result.split(',')[1]); r.onerror = e => rej(e);
         });
 
+        // --- SALVAR LOCALMENTE ---
         async function salvarRascunho() {
             const name = document.getElementById('app-name').value;
             if(!name) return alert("Dê um nome!");
@@ -554,31 +562,44 @@
                 
                 // BUSCA LINK TURBO (Litterbox, 0x0, File.io)
                 const match = d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
-                let url = "";
-                
+                let urlTurbo = "";
                 if(match && match[1] && !match[1].includes("Verifique")) {
-                    url = match[1];
-                    log("⚡ LINK TURBO ENCONTRADO!");
-                } else if(d.assets?.[0]) {
-                    url = d.assets[0].browser_download_url;
-                    log("⚠️ Usando link do GitHub (pode ser lento)...");
+                    urlTurbo = match[1];
                 }
 
-                if(url) {
-                    const btnDown = document.getElementById('btn-download');
-                    const btnBuild = document.getElementById('btn-build');
-                    btnBuild.classList.add('hidden');
-                    btnDown.href = url;
+                // BUSCA LINK BACKUP (GITHUB ASSETS)
+                let urlBackup = d.assets?.[0]?.browser_download_url;
+
+                const btnDown = document.getElementById('btn-download');
+                const btnBackup = document.getElementById('btn-backup');
+                const btnBuild = document.getElementById('btn-build');
+                btnBuild.classList.add('hidden');
+
+                if (urlTurbo) {
+                    btnDown.href = urlTurbo;
                     btnDown.classList.remove('hidden');
                     btnDown.innerHTML = `<i class="fas fa-download text-xl"></i> BAIXAR ${d.name || 'APK'}`;
                     log("💎 DOWNLOAD PRONTO!");
                     
-                    // Tenta forçar download
-                    setTimeout(() => window.open(url, '_blank'), 1000);
-                    
+                    // Tenta forçar download Turbo
+                    setTimeout(() => window.open(urlTurbo, '_blank'), 1000);
+                } else if (urlBackup) {
+                    // Se não tiver turbo, o botão principal vira o do GitHub
+                    btnDown.href = urlBackup;
+                    btnDown.classList.remove('hidden');
+                    btnDown.innerHTML = `<i class="fab fa-github text-xl"></i> BAIXAR (GITHUB)`;
+                    log("⚠️ Usando link do GitHub (Turbo falhou).");
                 } else {
                     log("Link não encontrado na release.", true);
                 }
+
+                // MOSTRA O BOTÃO DE BACKUP SECUNDÁRIO (Se os links forem diferentes)
+                if (urlBackup && urlTurbo && urlBackup !== urlTurbo) {
+                    btnBackup.href = urlBackup;
+                    btnBackup.classList.remove('hidden');
+                    log("💡 Link de Backup disponível.");
+                }
+
             } catch(e){ log("Erro ao buscar link.", true); }
         }
     </script>
