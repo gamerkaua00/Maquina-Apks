@@ -3,233 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Central de Apps Neon</title>
+    <title>Fábrica Turbo V5</title>
     
-    <!-- Configuração PWA (Instalar como App) -->
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/robot-2.png">
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgZGUgQXBwcyIsCiAgInNob3J0X25hbWUiOiAiRmFicmljYSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29xvciI6ICIjMDAwMDAwIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuaWNvbnM4LmNvbS9mbHVlbmN5LzE5Mi9yb2JvdC0yLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
-
+    <!-- PWA: Configurações para instalar como App -->
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/robot-2.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Estilo Cyberpunk */
-        body { background-color: #050505; background-image: radial-gradient(circle at 50% 0%, #111827 0%, #000 100%); color: white; font-family: 'Segoe UI', Roboto, sans-serif; }
-        .glass { background: rgba(20, 20, 30, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        .neon-text { text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
-        .app-card { transition: all 0.2s; border: 1px solid rgba(255,255,255,0.05); }
-        .app-card:active { transform: scale(0.96); }
+        body { background-color: #050505; background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #000 100%); color: white; font-family: 'Segoe UI', Roboto, sans-serif; }
+        /* Scrollbar invisível */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .glass { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
         .hidden-view { display: none !important; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
         /* Checkbox Customizado */
-        .check-card { transition: all 0.2s; }
-        .check-card input:checked + div { border-color: #4ade80; background: rgba(74, 222, 128, 0.15); box-shadow: 0 0 10px rgba(74,222,128,0.1); }
+        .check-card input:checked + div { border-color: #4ade80; background: rgba(74, 222, 128, 0.15); box-shadow: 0 0 15px rgba(74, 222, 128, 0.1); }
         .check-card input:checked + div i { color: #4ade80; transform: scale(1.1); }
-        
         /* Loading */
         .processing { border-color: #3b82f6; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
     </style>
 </head>
-<body class="flex flex-col min-h-screen overflow-hidden">
+<body class="flex flex-col h-[100dvh] overflow-hidden">
+
+    <!-- Header PWA (Instalar) -->
+    <div id="pwa-install-bar" class="hidden bg-gradient-to-r from-blue-600 to-cyan-500 p-3 text-center cursor-pointer shadow-lg z-50 flex justify-between items-center px-6">
+        <span class="text-xs font-bold uppercase tracking-widest"><i class="fas fa-download mr-2"></i> Instalar App da Fábrica</span>
+        <button onclick="instalarPWA()" class="bg-white text-blue-600 text-xs font-bold px-3 py-1 rounded-full">INSTALAR</button>
+    </div>
 
     <!-- TELA 1: LOGIN -->
-    <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 fade-in">
-        <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-green-500 relative">
+    <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 fade-in overflow-y-auto">
+        <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-green-500">
             <div class="mb-6 inline-block p-5 rounded-full bg-green-500/10 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
                 <i class="fas fa-fingerprint text-5xl text-green-400"></i>
             </div>
             <h1 class="text-3xl font-bold mb-2 tracking-tight">Fábrica Neon</h1>
-            <p class="text-gray-400 text-sm mb-8">Insira sua chave de acesso do GitHub.</p>
+            <p class="text-gray-400 text-xs mb-8 uppercase tracking-widest">Acesso Restrito</p>
             
-            <div class="relative">
+            <div class="relative w-full">
                 <i class="fas fa-key absolute left-4 top-4 text-gray-500"></i>
-                <input type="password" id="input-token" placeholder="Cole seu ghp_..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 pl-12 text-green-400 focus:border-green-500 outline-none transition mb-4 shadow-inner">
+                <input type="password" id="input-token" placeholder="Cole seu ghp_..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 pl-12 text-green-400 focus:border-green-500 outline-none transition mb-4 shadow-inner text-sm">
             </div>
             
-            <button onclick="salvarToken()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 uppercase tracking-wider text-sm">
+            <button onclick="salvarToken()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 uppercase tracking-wider text-xs">
                 Entrar no Sistema
             </button>
         </div>
     </div>
 
-    <!-- TELA 2: DASHBOARD (Meus Apps) -->
-    <div id="view-dashboard" class="flex-1 flex flex-col hidden-view fade-in max-w-2xl mx-auto w-full h-screen">
-        <!-- Header -->
-        <div class="p-6 pb-2 flex justify-between items-end border-b border-gray-800">
+    <!-- TELA 2: DASHBOARD -->
+    <div id="view-dashboard" class="flex-1 flex flex-col hidden-view fade-in h-full relative">
+        <div class="p-6 pb-2 flex justify-between items-end bg-black/20 backdrop-blur-sm z-10">
             <div>
-                <h1 class="text-2xl font-bold neon-text">Meus Projetos</h1>
-                <p class="text-gray-500 text-xs mt-1">Gerenciador de Aplicativos</p>
+                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">Meus Apps</h1>
+                <p class="text-gray-500 text-[10px] uppercase tracking-wider mt-1">Gerenciador V5</p>
             </div>
             <button onclick="logout()" class="text-gray-600 hover:text-red-400 p-2 transition"><i class="fas fa-power-off"></i></button>
         </div>
 
-        <!-- Lista de Apps -->
-        <div id="apps-list" class="grid grid-cols-2 gap-4 p-6 overflow-y-auto pb-24 content-start">
+        <div id="apps-list" class="grid grid-cols-2 gap-4 p-4 overflow-y-auto pb-32 content-start flex-1">
             <!-- Injetado via JS -->
         </div>
 
-        <!-- Botão Flutuante (Novo) -->
-        <button onclick="novoApp()" class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full shadow-[0_0_25px_rgba(37,99,235,0.6)] flex items-center justify-center text-white text-2xl hover:scale-110 transition active:scale-90 z-50">
+        <!-- FAB -->
+        <button onclick="novoApp()" class="fixed bottom-8 right-8 w-16 h-16 bg-blue-600 rounded-full shadow-[0_0_30px_rgba(37,99,235,0.6)] flex items-center justify-center text-white text-3xl hover:scale-110 transition active:scale-90 z-40 border border-white/10">
             <i class="fas fa-plus"></i>
         </button>
     </div>
 
-    <!-- TELA 3: EDITOR -->
-    <div id="view-editor" class="flex-1 flex flex-col hidden-view fade-in max-w-xl mx-auto w-full h-screen bg-black">
+    <!-- TELA 3: EDITOR (Com Scroll Fix) -->
+    <div id="view-editor" class="flex-1 flex flex-col hidden-view fade-in h-full bg-black">
         <!-- Header -->
-        <div class="p-4 flex items-center border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-20">
+        <div class="p-4 flex items-center border-b border-gray-800 bg-gray-900/80 backdrop-blur-md sticky top-0 z-20 shadow-lg">
             <button onclick="voltarDashboard()" class="p-2 mr-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg"><i class="fas fa-chevron-left"></i></button>
-            <h2 id="editor-title" class="text-lg font-bold truncate">Novo App</h2>
+            <h2 id="editor-title" class="text-lg font-bold truncate text-gray-200">Novo App</h2>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-5 space-y-6 pb-32">
+        <!-- CONTEÚDO COM SCROLL -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-6 pb-48 custom-scroll">
             <input type="hidden" id="edit-id">
 
             <!-- Nome -->
             <div>
-                <label class="text-[10px] text-blue-400 font-bold uppercase tracking-wider ml-1">Nome do Aplicativo</label>
-                <input type="text" id="app-name" placeholder="Ex: Minha Loja" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-white focus:border-blue-500 outline-none mt-2 text-lg font-semibold shadow-sm placeholder-gray-600">
+                <label class="text-[10px] text-blue-500 font-bold uppercase tracking-wider ml-1">Nome do Projeto</label>
+                <input type="text" id="app-name" placeholder="Ex: Minha Agenda" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-white focus:border-blue-500 outline-none mt-2 text-lg font-bold shadow-sm placeholder-gray-700">
             </div>
 
-            <!-- Arquivos (Upload) -->
+            <!-- Arquivos -->
             <div class="grid grid-cols-2 gap-4">
-                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-4 text-center relative group hover:border-blue-500 transition cursor-pointer">
-                    <i class="fas fa-image text-3xl text-gray-600 mb-2 group-hover:text-blue-500 transition"></i>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold">Ícone (PNG)</p>
+                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-4 text-center relative group hover:border-blue-500 transition cursor-pointer h-24 flex flex-col items-center justify-center">
+                    <i class="fas fa-image text-2xl text-gray-600 mb-1 group-hover:text-blue-500 transition"></i>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">Ícone</p>
                     <input type="file" id="app-icon" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" onchange="updateFileStatus(this, 'icon-dot')">
-                    <div id="icon-dot" class="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
+                    <div id="icon-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
-                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-4 text-center relative group hover:border-green-500 transition cursor-pointer">
-                    <i class="fas fa-code text-3xl text-gray-600 mb-2 group-hover:text-green-500 transition"></i>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold">Index.html</p>
+                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-4 text-center relative group hover:border-green-500 transition cursor-pointer h-24 flex flex-col items-center justify-center">
+                    <i class="fas fa-code text-2xl text-gray-600 mb-1 group-hover:text-green-500 transition"></i>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">Index.html</p>
                     <input type="file" id="app-index" accept=".html" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" onchange="updateFileStatus(this, 'index-dot')">
-                    <div id="index-dot" class="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
+                    <div id="index-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
             </div>
 
-            <!-- Recursos (Grid de Botões) -->
+            <!-- Recursos -->
             <div>
-                <label class="text-[10px] text-blue-400 font-bold uppercase tracking-wider ml-1 mb-3 block">Recursos & Hardware</label>
+                <label class="text-[10px] text-blue-500 font-bold uppercase tracking-wider ml-1 mb-3 block">Recursos & Hardware</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <!-- Funções Básicas -->
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-notification" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-bell text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Notificar</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-vibration" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-mobile-alt text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Vibrar</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-camera" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-camera text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Câmera</span>
-                        </div>
-                    </label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-notification" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-bell text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Notificar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-vibration" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-mobile-alt text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Vibrar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-camera" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-camera text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Câmera</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-geolocation" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-map-marker-alt text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">GPS</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-orientation" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-sync text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Girar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-battery" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-battery-half text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Bateria</span></div></label>
                     
-                    <!-- Sensores -->
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-geolocation" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-map-marker-alt text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">GPS</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-orientation" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-sync text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Girar</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-battery" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-battery-half text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Bateria</span>
-                        </div>
-                    </label>
-
                     <!-- Novos V7 -->
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-fullscreen" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-expand text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Tela Cheia</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-flashlight" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-lightbulb text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Lanterna</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-microphone" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-microphone text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Microfone</span>
-                        </div>
-                    </label>
-                    <label class="check-card cursor-pointer relative">
-                        <input type="checkbox" id="feat-insomnia" class="hidden">
-                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center justify-center h-20 transition hover:bg-gray-800">
-                            <i class="fas fa-eye text-gray-600 text-lg mb-1 transition"></i>
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">Acordado</span>
-                        </div>
-                    </label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-fullscreen" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-expand text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Tela Cheia</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-flashlight" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-lightbulb text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Lanterna</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-microphone" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-microphone text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Microfone</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-insomnia" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-eye text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Acordado</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-browser" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-globe text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Browser</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-toast" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 flex flex-col items-center justify-center h-16"><i class="fas fa-comment-alt text-gray-600 text-sm mb-1"></i><span class="text-[8px] text-gray-300 uppercase font-bold">Toast</span></div></label>
                 </div>
             </div>
 
             <!-- Terminal Log -->
-            <div id="status-log" class="hidden bg-black/80 rounded-lg p-3 text-[10px] font-mono text-green-400 h-24 overflow-y-auto border border-gray-800 shadow-inner custom-scrollbar"></div>
+            <div id="status-log" class="hidden bg-black/80 rounded-lg p-3 text-[10px] font-mono text-green-400 h-28 border border-gray-800 shadow-inner overflow-y-auto"></div>
         </div>
 
-        <!-- Barra Inferior Fixa -->
-        <div class="p-4 border-t border-gray-800 bg-black/95 backdrop-blur-md fixed bottom-0 left-0 w-full max-w-xl mx-auto right-0 z-30">
-            <div class="grid grid-cols-3 gap-3">
-                <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition">SALVAR</button>
+        <!-- Barra Inferior Fixa (Alta para garantir clique) -->
+        <div class="p-4 border-t border-gray-800 bg-black/95 backdrop-blur-md fixed bottom-0 left-0 w-full z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+            <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
+                <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-400 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition">SALVAR</button>
                 <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg shadow-blue-500/20 uppercase tracking-wide flex items-center justify-center space-x-2">
                     <i class="fas fa-hammer"></i> <span>Fabricar APK</span>
                 </button>
             </div>
             
-            <!-- Botão Download Mágico -->
-            <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm">
+            <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm">
                 <i class="fas fa-download text-lg"></i> <span>BAIXAR APK AGORA</span>
             </a>
         </div>
     </div>
+
+    <!-- Scripts do PWA -->
+    <script>
+        // Registrar Service Worker (Necessário para PWA)
+        // Adicionado verificação de protocolo e try/catch para evitar erros em ambientes de preview (blob/file)
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.protocol === 'http:')) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registrado:', reg))
+                .catch(err => console.warn('Falha ao registrar Service Worker (comum em previews):', err));
+        }
+
+        // Prompt de Instalação
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const bar = document.getElementById('pwa-install-bar');
+            bar.classList.remove('hidden');
+            bar.classList.add('flex');
+        });
+
+        async function instalarPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('pwa-install-bar').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            }
+        }
+    </script>
 
     <script>
         const GITHUB_USER = "gamerkaua00";
         const GITHUB_REPO = "Maquina-Apks";
         let MEUS_APPS = JSON.parse(localStorage.getItem('meus_apps') || '[]');
 
-        function updateFileStatus(input, dotId) {
-            if(input.files.length > 0) document.getElementById(dotId).classList.remove('hidden');
-        }
-
-        // --- SISTEMA DE LOGIN/TOKEN ---
+        // --- SISTEMA DE MEMÓRIA DE BUILD (RESGATE) ---
         window.onload = () => {
             const token = localStorage.getItem('github_token');
-            if (token) { showView('view-dashboard'); renderAppsList(); } 
-            else showView('view-login');
+            
+            // Verifica se estava no meio de uma fabricação
+            const buildPendente = localStorage.getItem('build_pendente');
+            
+            if (token) { 
+                showView('view-dashboard'); 
+                renderAppsList(); 
+                
+                if (buildPendente) {
+                    // SE TIVER PENDENTE, JÁ ABRE A TELA E CONTINUA MONITORANDO
+                    console.log("Resgatando build pendente...");
+                    showView('view-editor');
+                    // Tenta recuperar o nome do app pendente (opcional)
+                    const logBox = document.getElementById('status-log');
+                    logBox.classList.remove('hidden');
+                    logBox.innerHTML = '<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1">> Retomando conexão com a fábrica...</div>';
+                    monitorar(token, (msg, err) => {
+                        logBox.innerHTML += `<div class="${err?'text-red-400':'text-green-400'}">> ${msg}</div>`;
+                        logBox.scrollTop = logBox.scrollHeight;
+                    });
+                }
+            } else {
+                showView('view-login');
+            }
         };
 
+        // --- RESTO DAS FUNÇÕES (IGUAIS AO ANTERIOR, SÓ PEQUENOS AJUSTES) ---
         function salvarToken() {
             const token = document.getElementById('input-token').value.trim();
             if (token.startsWith('ghp_')) {
@@ -240,10 +227,7 @@
         }
 
         function logout() {
-            if(confirm("Tem certeza que deseja sair?")) {
-                localStorage.removeItem('github_token');
-                location.reload();
-            }
+            if(confirm("Sair?")) { localStorage.removeItem('github_token'); location.reload(); }
         }
 
         function showView(id) {
@@ -251,30 +235,17 @@
             document.getElementById(id).classList.remove('hidden-view');
         }
 
-        // --- DASHBOARD: MEUS APPS ---
+        function updateFileStatus(input, dotId) {
+            if(input.files.length > 0) document.getElementById(dotId).classList.remove('hidden');
+        }
+
         function renderAppsList() {
             const list = document.getElementById('apps-list');
             list.innerHTML = '';
-            
-            if (MEUS_APPS.length === 0) {
-                list.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-700 select-none"><i class="fas fa-ghost text-4xl mb-3 opacity-50"></i><br>Nenhum projeto ainda.</div>`;
-                return;
-            }
-
+            if (MEUS_APPS.length === 0) { list.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-700 select-none"><i class="fas fa-ghost text-4xl mb-3 opacity-50"></i><br>Nenhum projeto.</div>`; return; }
             MEUS_APPS.forEach(app => {
                 const icon = app.iconData ? `data:image/png;base64,${app.iconData}` : 'https://img.icons8.com/fluency/48/android-os.png';
-                list.innerHTML += `
-                    <div onclick="abrirApp(${app.id})" class="app-card bg-gray-900 rounded-xl p-4 cursor-pointer relative overflow-hidden group shadow-lg hover:shadow-blue-900/20">
-                        <div class="flex flex-col items-center">
-                            <div class="w-14 h-14 bg-black rounded-xl mb-3 shadow-inner flex items-center justify-center p-1">
-                                <img src="${icon}" class="w-full h-full object-contain rounded-lg">
-                            </div>
-                            <h3 class="font-bold text-sm text-center truncate w-full text-gray-200 group-hover:text-blue-400 transition">${app.name}</h3>
-                            <span class="text-[10px] text-gray-600 mt-1">${new Date(app.date).toLocaleDateString()}</span>
-                        </div>
-                        <button onclick="event.stopPropagation(); deletarApp(${app.id})" class="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 text-gray-500 hover:text-red-500 hover:bg-black flex items-center justify-center transition"><i class="fas fa-times text-[10px]"></i></button>
-                    </div>
-                `;
+                list.innerHTML += `<div onclick="abrirApp(${app.id})" class="app-card bg-gray-900 rounded-xl p-4 cursor-pointer relative overflow-hidden group shadow-lg hover:shadow-blue-900/20"><div class="flex flex-col items-center"><div class="w-14 h-14 bg-black rounded-xl mb-3 shadow-inner flex items-center justify-center p-1"><img src="${icon}" class="w-full h-full object-contain rounded-lg"></div><h3 class="font-bold text-sm text-center truncate w-full text-gray-200">${app.name}</h3><span class="text-[10px] text-gray-600 mt-1">${new Date(app.date).toLocaleDateString()}</span></div><button onclick="event.stopPropagation(); deletarApp(${app.id})" class="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 text-gray-500 hover:text-red-500 flex items-center justify-center"><i class="fas fa-times text-[10px]"></i></button></div>`;
             });
         }
 
@@ -297,51 +268,34 @@
             document.getElementById('edit-id').value = app.id;
             document.getElementById('app-name').value = app.name;
             document.getElementById('editor-title').innerText = app.name;
-            
-            if(app.features) {
-                for (let k in app.features) {
-                    const el = document.getElementById('feat-'+k);
-                    if(el) el.checked = app.features[k];
-                }
-            }
-            // Indicadores visuais de que há arquivos salvos (sem carregar no input file por segurança)
+            if(app.features) { for (let k in app.features) { const el = document.getElementById('feat-'+k); if(el) el.checked = app.features[k]; } }
             if(app.iconData) document.getElementById('icon-dot').classList.remove('hidden');
             if(app.indexData) document.getElementById('index-dot').classList.remove('hidden');
-            
             showView('view-editor');
         }
 
         function deletarApp(id) {
-            if(confirm("Apagar este projeto permanentemente?")) {
-                MEUS_APPS = MEUS_APPS.filter(a => a.id !== id);
-                localStorage.setItem('meus_apps', JSON.stringify(MEUS_APPS));
-                renderAppsList();
-            }
+            if(confirm("Apagar?")) { MEUS_APPS = MEUS_APPS.filter(a => a.id !== id); localStorage.setItem('meus_apps', JSON.stringify(MEUS_APPS)); renderAppsList(); }
         }
 
-        function voltarDashboard() { showView('view-dashboard'); renderAppsList(); }
+        function voltarDashboard() { 
+            // Limpa estado de build se sair
+            localStorage.removeItem('build_pendente');
+            showView('view-dashboard'); renderAppsList(); 
+        }
 
-        // --- CONVERSÃO ARQUIVOS ---
-        const toBase64 = file => new Promise((res, rej) => {
-            const r = new FileReader(); r.readAsDataURL(file);
-            r.onload = () => res(r.result.split(',')[1]); r.onerror = e => rej(e);
-        });
+        const toBase64 = file => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result.split(',')[1]); r.onerror = e => rej(e); });
 
-        // --- SALVAR LOCALMENTE ---
         async function salvarRascunho() {
             const name = document.getElementById('app-name').value;
             if(!name) return alert("Dê um nome ao app!");
-            
             const idInput = document.getElementById('edit-id');
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
 
             let app = idInput.value ? MEUS_APPS.find(a => a.id == idInput.value) : {id: Date.now()};
             if(!app) app = {id: Date.now()};
-
-            app.name = name;
-            app.date = Date.now();
-            app.features = {};
+            app.name = name; app.date = Date.now(); app.features = {};
             document.querySelectorAll('input[type=checkbox]').forEach(c => app.features[c.id.replace('feat-','')] = c.checked);
 
             if(iconFile) app.iconData = await toBase64(iconFile);
@@ -351,111 +305,74 @@
             if(idx >= 0) MEUS_APPS[idx] = app; else MEUS_APPS.push(app);
             
             localStorage.setItem('meus_apps', JSON.stringify(MEUS_APPS));
-            alert("✅ Projeto salvo na memória!");
+            alert("Salvo!");
             voltarDashboard();
         }
 
-        // --- PROCESSO DE FABRICAÇÃO ---
         async function fabricarApp() {
             const token = localStorage.getItem('github_token');
             const name = document.getElementById('app-name').value;
             const id = document.getElementById('edit-id').value;
             let app = id ? MEUS_APPS.find(a => a.id == id) : {};
-
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
-            
-            // Prioriza arquivo novo, senão usa o salvo
             let iconData = iconFile ? await toBase64(iconFile) : app.iconData;
             let indexData = indexFile ? await toBase64(indexFile) : app.indexData;
-
-            if(!indexData) return alert("Faltou o arquivo Index.html!");
-
+            if(!indexData) return alert("Faltou o Index.html!");
             const features = {};
             document.querySelectorAll('input[type=checkbox]').forEach(c => features[c.id.replace('feat-','')] = c.checked);
 
-            // UI
             const btn = document.getElementById('btn-build');
             const logBox = document.getElementById('status-log');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ENVIANDO DADOS...';
-            logBox.classList.remove('hidden');
-            logBox.innerHTML = '';
-            
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ENVIANDO...';
+            logBox.classList.remove('hidden'); logBox.innerHTML = '';
             const log = (m, e) => { 
-                const time = new Date().toLocaleTimeString('pt-BR',{hour12:false});
-                logBox.innerHTML += `<div class="${e?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1"><span class="text-gray-600">[${time}]</span> ${m}</div>`; 
+                const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
+                logBox.innerHTML += `<div class="${e?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1"><span class="text-gray-600">[${t}]</span> ${m}</div>`; 
                 logBox.scrollTop=logBox.scrollHeight; 
             };
 
             try {
-                log("🚀 Iniciando upload...");
+                log("🚀 Iniciando envio...");
                 await upload(token, "www/index.html", indexData);
-                
-                if(iconData) {
-                    log("🎨 Enviando ícone...");
-                    await upload(token, "www/icon.png", iconData);
-                }
-
-                log("⚙️ Salvando configurações...");
+                if(iconData) await upload(token, "www/icon.png", iconData);
                 await upload(token, "features.json", btoa(JSON.stringify(features)));
-                
-                log("📝 Atualizando nome...");
                 await updateConfig(token, name);
-
-                log("✅ ENVIO CONCLUÍDO! Iniciando robô...");
                 
-                // Salva automatico
+                log("✅ ENVIOU! Iniciando fábrica...");
+                
                 if(!id) document.getElementById('edit-id').value = Date.now();
-                await salvarRascunho();
+                await salvarRascunho(); // Salva estado atual
+                
+                // MARCA QUE ESTÁ CONSTRUINDO PARA RESGATE
+                localStorage.setItem('build_pendente', 'true');
 
                 monitorar(token, log);
-
-            } catch(e) {
-                log(e.message, true);
-                btn.disabled = false;
-                btn.innerHTML = "ERRO - TENTAR DE NOVO";
-            }
+            } catch(e) { log(e.message, true); btn.disabled = false; btn.innerHTML = "ERRO - TENTAR DE NOVO"; }
         }
 
-        // --- API GITHUB ---
         async function upload(token, path, content) {
             const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
             let sha = null;
             try { const c = await fetch(url, { headers: { Authorization: `token ${token}` }}); if(c.ok) sha = (await c.json()).sha; } catch(e){}
-            const res = await fetch(url, {
-                method: 'PUT',
-                headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Update", content, sha, branch: "main" })
-            });
+            const res = await fetch(url, { method: 'PUT', headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: "Up", content, sha, branch: "main" }) });
             if(!res.ok) throw new Error("Erro upload "+path);
         }
 
         async function updateConfig(token, name) {
             const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/config.xml`;
             const check = await fetch(url, { headers: { Authorization: `token ${token}` }});
-            // Config XML Blindado V7
+            // Config XML Blindado V7 (Com Whitelist e Intents liberados)
             let content = `<?xml version='1.0'?><widget id="com.kaua.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><name>App</name><content src="index.html"/><access origin="*"/><allow-navigation href="*"/><allow-intent href="*"/><preference name="AndroidInsecureFileModeEnabled" value="true"/><preference name="scheme" value="http"/><preference name="hostname" value="localhost"/></widget>`;
             let sha = null;
-            if(check.ok) {
-                const data = await check.json();
-                content = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
-                sha = data.sha;
-            }
+            if(check.ok) { const d = await check.json(); content = decodeURIComponent(escape(atob(d.content.replace(/\s/g, '')))); sha = d.sha; }
             const newContent = content.replace(/<name>.*?<\/name>/, `<name>${name}</name>`);
-            await fetch(url, {
-                method: 'PUT',
-                headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Config", content: btoa(unescape(encodeURIComponent(newContent))), sha, branch: "main" })
-            });
+            await fetch(url, { method: 'PUT', headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: "Cfg", content: btoa(unescape(encodeURIComponent(newContent))), sha, branch: "main" }) });
         }
 
-        // --- MONITORAMENTO ---
         async function monitorar(token, log) {
             const btn = document.getElementById('btn-build');
-            btn.innerHTML = "FABRICANDO... (3 min)";
-            btn.classList.add('processing');
-            
+            btn.innerHTML = "FABRICANDO... (3 min)"; btn.classList.add('processing');
             let attempts = 0;
             const i = setInterval(async () => {
                 attempts++;
@@ -465,22 +382,14 @@
                     if(d.workflow_runs?.[0]) {
                         const run = d.workflow_runs[0];
                         if(run.status === "completed") {
-                            clearInterval(i);
-                            btn.classList.remove('processing');
-                            if(run.conclusion === "success") {
-                                log("✨ SUCESSO! Buscando link...");
-                                await getLink(token, log);
-                            } else {
-                                log("❌ Falha na produção.", true);
-                                btn.disabled = false;
-                                btn.innerHTML = "FALHOU";
-                            }
-                        } else {
-                            if(attempts%3===0) log(`🔨 Trabalhando... [${run.status}]`);
-                        }
+                            clearInterval(i); btn.classList.remove('processing');
+                            localStorage.removeItem('build_pendente'); // Limpa flag
+                            if(run.conclusion === "success") { log("✨ SUCESSO! Pegando link..."); await getLink(token, log); }
+                            else { log("❌ Falha no Build.", true); btn.disabled = false; btn.innerHTML = "FALHOU"; }
+                        } else { if(attempts%3===0) log(`🔨 Trabalhando... [${run.status}]`); }
                     }
                 } catch(e){}
-                if(attempts > 60) { clearInterval(i); log("Timeout.", true); btn.disabled=false; btn.innerHTML="TIMEOUT"; btn.classList.remove('processing'); }
+                if(attempts > 60) { clearInterval(i); log("Tempo esgotado.", true); btn.disabled=false; btn.innerHTML="TIMEOUT"; btn.classList.remove('processing'); }
             }, 10000);
         }
 
@@ -500,12 +409,8 @@
                     btnDown.href = url;
                     btnDown.classList.remove('hidden');
                     btnDown.innerHTML = `<i class="fas fa-download text-xl"></i> BAIXAR ${d.name || 'APK'}`;
-                    log("💎 LINK GERADO COM SUCESSO!");
-                    // Tenta abrir direto
-                    window.open(url, '_blank');
-                } else {
-                    log("Sem link disponível.", true);
-                }
+                    log("💎 LINK GERADO!"); window.open(url, '_blank');
+                } else log("Sem link.", true);
             } catch(e){ log("Erro link.", true); }
         }
     </script>
