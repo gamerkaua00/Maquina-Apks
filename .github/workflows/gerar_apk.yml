@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16.8 (Fix Plugin Surgery) 🚀
+name: Fábrica Turbo V16.9 (Fix Final Build Error) 🚀
 
 on:
   push:
@@ -23,9 +23,9 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/*.gradle*') }}
+          key: ${{ runner.os }}-gradle-v3-${{ hashFiles('**/*.gradle*') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-v2-
+            ${{ runner.os }}-gradle-v3-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -75,15 +75,17 @@ jobs:
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      - name: 🔌 Instalando Plugins e Preparando Android
+      - name: 🔌 Instalando Plugins, Preparando e Corrigindo
         run: |
           cd app-temp
-          # Adiciona a plataforma (Isso gera os arquivos gradle que precisamos corrigir)
+          
+          # 1. Adiciona Plataforma
+          echo "📱 Adicionando Android..."
           cordova platform add android@12.0.0
           
+          # 2. Plugins Base
+          echo "🔌 Instalando Plugins Base..."
           cordova plugin remove cordova-plugin-whitelist || true
-          
-          # Plugins Base
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -93,8 +95,9 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Plugins Opcionais (Features)
+          # 3. Plugins Opcionais (Features)
           if [ -f "../features.json" ]; then
+            echo "📄 Lendo features.json..."
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
@@ -132,28 +135,25 @@ jobs:
                cordova plugin add cordova-plugin-media-capture
             fi
           fi
-      
-      # --- CIRURGIA DE CÓDIGO (FIX CRÍTICO) ---
-      - name: 🚑 Reparando Scripts do Gradle (Fix Compile Error)
-        run: |
-          cd app-temp
-          echo "🔧 Iniciando reparo nos plugins antigos..."
           
-          # 1. Correção Geral: Troca 'compile' por 'implementation' em TODOS os arquivos .gradle encontrados
-          find platforms/android -name "*.gradle" -print0 | xargs -0 sed -i 's/compile /implementation /g'
-          find platforms/android -name "*.gradle" -print0 | xargs -0 sed -i 's/compile(/implementation(/g'
+          # 4. PREPARAR (Gera os arquivos gradle para podermos editar)
+          echo "⚙️ Preparando plataforma..."
+          cordova prepare android
           
-          # 2. Correção Específica para Local Notification (O culpado do erro)
-          TARGET_FILE="platforms/android/cordova-plugin-local-notification/app-localnotification.gradle"
-          if [ -f "$TARGET_FILE" ]; then
-             echo "🎯 Encontrado arquivo problemático do Local Notification. Corrigindo..."
-             sed -i 's/compile /implementation /g' "$TARGET_FILE"
-             sed -i 's/debugCompile /debugImplementation /g' "$TARGET_FILE"
+          # 5. CIRURGIA (Correção de erros antigos do Gradle)
+          echo "🚑 Aplicando correções nos plugins..."
+          
+          if [ -d "platforms/android" ]; then
+              # Usa xargs -r para não falhar se não achar arquivos
+              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile /implementation /g'
+              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/compile(/implementation(/g'
+              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/debugCompile/debugImplementation/g'
+              find platforms/android -name "*.gradle" -type f -print0 | xargs -0 -r sed -i 's/releaseCompile/releaseImplementation/g'
+              echo "✅ Correções aplicadas com sucesso."
           else
-             echo "ℹ️ Plugin de notificação não instalado ou caminho diferente. Pulando específico."
+              echo "⚠️ AVISO: Pasta platforms/android não encontrada. O build pode falhar."
+              ls -la
           fi
-          
-          echo "✅ Reparos concluídos."
 
       - name: 🏷️ Detectando Nome e ID
         id: get_name
@@ -173,7 +173,7 @@ jobs:
 
       - name: 📱 Compilando APK
         env:
-          # Força as versões via Variável de Ambiente (Mais forte que argumento)
+          # Força versões via Variável de Ambiente
           ORG_GRADLE_PROJECT_cdvCompileSdkVersion: 33
           ORG_GRADLE_PROJECT_cdvTargetSdkVersion: 33
           ORG_GRADLE_PROJECT_cdvMinSdkVersion: 24
@@ -198,16 +198,19 @@ jobs:
           APK="${{ env.APK_FINAL }}"
           LINK=""
           
+          # Tenta Litterbox
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
+          # Tenta 0x0.st
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
+          # Tenta File.io
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
              LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
