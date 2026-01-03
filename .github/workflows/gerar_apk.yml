@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16 (Ultimate + Cache + Notify) 🚀
+name: Fábrica Turbo V16.1 (Fix Cache Error) 🚀
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- MELHORIA 1: CACHE INTELIGENTE (ACELERADOR) ---
+      # --- MELHORIA 1: CACHE INTELIGENTE (CORRIGIDO) ---
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
         with:
@@ -24,7 +24,8 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          # FIX: Usamos run_id para evitar erro de "arquivo não encontrado"
+          key: ${{ runner.os }}-gradle-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
