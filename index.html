@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica Turbo V6</title>
+    <title>Fábrica Turbo V6.2</title>
     
     <!-- ==========================================
          CONFIGURAÇÃO PWA (APP INSTALÁVEL)
@@ -25,7 +25,7 @@
         /* --- ESTILOS VISUAIS (NEON & GLASS) --- */
         body { 
             background-color: #000; 
-            background-image: radial-gradient(circle at 50% 0%, #0f172a 0%, #000 100%); 
+            background-image: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #000 100%); 
             color: white; 
             font-family: 'Segoe UI', Roboto, sans-serif; 
             overflow: hidden; 
@@ -33,59 +33,53 @@
         }
         
         .glass { 
-            background: rgba(15, 23, 42, 0.85); 
-            backdrop-filter: blur(20px); 
+            background: rgba(20, 20, 30, 0.9); 
+            backdrop-filter: blur(16px); 
             border: 1px solid rgba(255,255,255,0.08); 
         }
         
         .neon-text { 
-            text-shadow: 0 0 15px rgba(59, 130, 246, 0.5); 
-        }
-
-        .neon-border:focus-within {
-            box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
-            border-color: #22c55e;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); 
         }
         
         /* Utilitários de Visualização */
         .hidden-view { display: none !important; }
         
         /* Animação de Entrada Suave */
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px) scale(0.98); } 
-            to { opacity: 1; transform: translateY(0) scale(1); } 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
         }
         
-        /* Checkbox Customizado Mobile-Friendly */
-        .check-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* Checkbox Customizado */
+        .check-card { transition: all 0.2s; }
         .check-card input:checked + div { 
-            border-color: #3b82f6; 
-            background: rgba(59, 130, 246, 0.15); 
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
-            transform: translateY(-1px);
+            border-color: #4ade80; 
+            background: rgba(74, 222, 128, 0.15); 
+            box-shadow: 0 0 10px rgba(74,222,128,0.1); 
         }
         .check-card input:checked + div i { 
-            color: #60a5fa; 
+            color: #4ade80; 
             transform: scale(1.1); 
         }
         
         /* Animação de Processamento (Loading) */
         .processing { 
-            border-color: #22c55e; 
+            border-color: #3b82f6; 
             animation: pulse 1.5s infinite; 
         }
         @keyframes pulse { 
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 
-            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } 
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } 
         }
 
         /* Scrollbar Fina e Estilosa */
         .custom-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #0f0f0f; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #111; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
     </style>
 </head>
 
@@ -103,30 +97,18 @@
     </div>
 
     <!-- ==========================================
-         VIEW 1: TELA DE LOGIN / CADASTRO
+         VIEW 1: TELA DE LOGIN (TOKEN)
          ========================================== -->
     <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 hidden-view overflow-y-auto custom-scroll">
-        <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-blue-500">
-            <div class="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                <i class="fas fa-user-astronaut text-4xl text-blue-400"></i>
-            </div>
-            <h1 class="text-3xl font-bold mb-2 tracking-tight text-white">Bem-vindo</h1>
-            <p class="text-gray-400 text-sm mb-8 font-medium">Conecte sua conta GitHub para começar.</p>
+        <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-green-500">
+            <i class="fas fa-fingerprint text-5xl text-green-400 mb-4 block"></i>
+            <h1 class="text-3xl font-bold mb-2">Fábrica Neon</h1>
+            <p class="text-gray-400 text-sm mb-6">Acesso Seguro</p>
             
-            <div class="space-y-4">
-                <div class="relative w-full group neon-border rounded-xl transition-all">
-                    <i class="fas fa-user absolute left-4 top-4 text-gray-500 transition-colors"></i>
-                    <input type="text" id="input-user" placeholder="Seu Usuário GitHub" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3.5 pl-12 text-blue-400 focus:border-blue-500 outline-none font-mono text-sm placeholder-gray-600">
-                </div>
-
-                <div class="relative w-full group neon-border rounded-xl transition-all">
-                    <i class="fas fa-key absolute left-4 top-4 text-gray-500 transition-colors"></i>
-                    <input type="password" id="input-token" placeholder="Token (ghp_...)" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3.5 pl-12 text-green-400 focus:border-green-500 outline-none font-mono text-sm placeholder-gray-600">
-                </div>
-            </div>
+            <input type="password" id="input-token" placeholder="Cole seu ghp_..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 tracking-widest text-sm">
             
-            <button onclick="fazerLogin()" class="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-[0.98] uppercase tracking-wider text-sm flex items-center justify-center gap-2">
-                <span>Acessar Painel</span> <i class="fas fa-arrow-right"></i>
+            <button onclick="salvarToken()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 uppercase tracking-wider text-sm">
+                ENTRAR
             </button>
         </div>
     </div>
@@ -135,27 +117,24 @@
          VIEW 2: DASHBOARD (LISTA DE APPS)
          ========================================== -->
     <div id="view-dashboard" class="flex-1 flex flex-col hidden-view h-full">
-        <!-- Cabeçalho Perfil -->
-        <div class="p-6 shrink-0 flex justify-between items-center border-b border-gray-800 bg-black/60 backdrop-blur-md z-10 pt-8">
-            <div class="flex items-center gap-3">
-                <img id="user-avatar" src="" class="w-10 h-10 rounded-full border-2 border-blue-500 shadow-lg bg-gray-800">
-                <div>
-                    <h1 class="text-lg font-bold text-white leading-tight" id="user-name">Olá!</h1>
-                    <p class="text-gray-500 text-[10px] uppercase tracking-wide font-bold">Gerenciador V6</p>
-                </div>
+        <!-- Cabeçalho -->
+        <div class="p-6 shrink-0 flex justify-between items-end border-b border-gray-800 bg-black/30 backdrop-blur-sm z-10">
+            <div>
+                <h1 class="text-2xl font-bold neon-text">Meus Projetos</h1>
+                <p class="text-gray-500 text-xs mt-1">Gerenciador V6.2</p>
             </div>
-            <button onclick="showView('view-profile')" class="bg-gray-800 hover:bg-gray-700 p-2.5 rounded-xl transition active:scale-95 border border-gray-700">
-                <i class="fas fa-cog text-gray-400"></i>
+            <button onclick="logout()" class="text-gray-600 hover:text-red-400 p-2 transition rounded-full hover:bg-white/5">
+                <i class="fas fa-power-off"></i>
             </button>
         </div>
 
         <!-- Lista de Apps (Com Scroll) -->
-        <div id="apps-list" class="grid grid-cols-2 gap-4 p-5 overflow-y-auto custom-scroll flex-1 pb-32 content-start">
+        <div id="apps-list" class="grid grid-cols-2 gap-4 p-6 overflow-y-auto custom-scroll flex-1 pb-24 content-start">
             <!-- Os cards serão injetados aqui pelo JavaScript -->
         </div>
 
         <!-- Botão Flutuante (Novo App) -->
-        <button onclick="novoApp()" class="fixed bottom-8 right-6 w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl shadow-[0_10px_30px_-10px_rgba(37,99,235,0.6)] flex items-center justify-center text-white text-3xl z-50 hover:scale-105 transition active:scale-95 border border-white/20">
+        <button onclick="novoApp()" class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full shadow-lg flex items-center justify-center text-white text-3xl z-50 hover:scale-110 transition active:scale-90 border border-white/20">
             <i class="fas fa-plus"></i>
         </button>
     </div>
@@ -166,80 +145,81 @@
     <div id="view-editor" class="flex-1 flex flex-col hidden-view h-full bg-black relative">
         
         <!-- 1. Topo Fixo -->
-        <div class="p-4 shrink-0 flex items-center border-b border-gray-800 bg-gray-900/90 backdrop-blur-md z-20 shadow-lg pt-6">
-            <button onclick="voltarDashboard()" class="p-2.5 mr-4 text-gray-400 hover:text-white bg-gray-800/80 rounded-xl transition active:scale-90 border border-gray-700">
+        <div class="p-4 shrink-0 flex items-center border-b border-gray-800 bg-gray-900/90 z-20 shadow-lg">
+            <button onclick="voltarDashboard()" class="p-2 mr-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg transition active:scale-90">
                 <i class="fas fa-chevron-left"></i>
             </button>
-            <h2 id="editor-title" class="text-lg font-bold truncate text-white tracking-wide">Novo App</h2>
+            <h2 id="editor-title" class="text-lg font-bold truncate text-gray-200">Novo App</h2>
         </div>
 
         <!-- 2. Conteúdo com Scroll (Meio) -->
-        <div class="flex-1 overflow-y-auto p-5 space-y-8 custom-scroll" style="padding-bottom: 240px;">
+        <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scroll" style="padding-bottom: 280px;">
             <input type="hidden" id="edit-id">
 
             <!-- Nome do App -->
-            <div class="bg-gray-900/50 p-4 rounded-2xl border border-gray-800">
-                <label class="text-[10px] text-blue-400 font-bold uppercase tracking-wider ml-1 flex items-center gap-2 mb-2">
-                    <i class="fas fa-tag"></i> Nome do Projeto
-                </label>
-                <input type="text" id="app-name" placeholder="Ex: Minha Loja" class="w-full bg-black/60 border border-gray-700 rounded-xl p-3.5 text-white focus:border-blue-500 outline-none font-bold shadow-inner placeholder-gray-700 transition">
+            <div>
+                <label class="text-[10px] text-blue-500 font-bold uppercase ml-1">Nome do Projeto</label>
+                <input type="text" id="app-name" placeholder="Ex: Minha Loja" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none mt-1 font-bold shadow-inner placeholder-gray-700">
             </div>
 
             <!-- Uploads -->
             <div class="grid grid-cols-2 gap-4">
                 <!-- Ícone -->
-                <div class="bg-gray-900/50 border border-gray-700 border-dashed rounded-2xl p-4 text-center relative group hover:border-blue-500 transition cursor-pointer h-32 flex flex-col items-center justify-center active:bg-gray-800">
-                    <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2 group-hover:bg-blue-500/20 transition">
-                        <i class="fas fa-image text-2xl text-blue-400"></i>
-                    </div>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider group-hover:text-white">Ícone (PNG)</p>
+                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-4 text-center relative group hover:border-blue-500 transition cursor-pointer h-28 flex flex-col items-center justify-center">
+                    <i class="fas fa-image text-2xl text-gray-600 mb-2 group-hover:text-blue-500 transition"></i>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase">Ícone (PNG)</p>
                     <input type="file" id="app-icon" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'icon-dot')">
-                    <div id="icon-dot" class="absolute top-3 right-3 w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden ring-2 ring-black"></div>
+                    <div id="icon-dot" class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
                 <!-- Site -->
-                <div class="bg-gray-900/50 border border-gray-700 border-dashed rounded-2xl p-4 text-center relative group hover:border-green-500 transition cursor-pointer h-32 flex flex-col items-center justify-center active:bg-gray-800">
-                    <div class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2 group-hover:bg-green-500/20 transition">
-                        <i class="fas fa-code text-2xl text-green-400"></i>
-                    </div>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider group-hover:text-white">Index.html</p>
+                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-4 text-center relative group hover:border-green-500 transition cursor-pointer h-28 flex flex-col items-center justify-center">
+                    <i class="fas fa-code text-2xl text-gray-600 mb-2 group-hover:text-green-500 transition"></i>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase">Index.html</p>
                     <input type="file" id="app-index" accept=".html" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'index-dot')">
-                    <div id="index-dot" class="absolute top-3 right-3 w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden ring-2 ring-black"></div>
+                    <div id="index-dot" class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
             </div>
 
             <!-- Grade de Recursos (Plugins) -->
             <div>
-                <label class="text-[10px] text-blue-400 font-bold uppercase tracking-wider ml-1 mb-4 block flex items-center gap-2">
-                    <i class="fas fa-microchip"></i> Recursos & Permissões
-                </label>
-                <div class="grid grid-cols-3 gap-3">
-                    <!-- Funções -->
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-notification" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-bell text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">Notificar</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-vibration" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-mobile-alt text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">Vibrar</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-camera" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-camera text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">Câmera</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-file" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-folder-open text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">Arquivos</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-geolocation" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-map-marker-alt text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">GPS</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-orientation" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-sync text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">Girar</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-fullscreen" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-expand text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] text-gray-400 uppercase font-bold text-center leading-tight">Tela Cheia</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-flashlight" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-lightbulb text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Lanterna</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-microphone" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-microphone text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Mic</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-insomnia" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-eye text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Acordado</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-browser" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-globe text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Browser</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-toast" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-comment-alt text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Toast</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-statusbar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-window-maximize text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Status Bar</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-clipboard" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-clipboard text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Copiar</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-network" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-wifi text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Wifi</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-splashscreen" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-image text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Splash</span></div></label>
-                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-battery" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-xl p-2 h-20 flex flex-col items-center justify-center hover:bg-gray-800"><i class="fas fa-battery-half text-gray-500 text-lg mb-1.5 transition"></i><span class="text-[9px] font-bold">Bateria</span></div></label>
+                <label class="text-[10px] text-blue-500 font-bold uppercase ml-1 mb-3 block">Recursos & Hardware</label>
+                <div class="grid grid-cols-3 gap-2">
+                    
+                    <!-- Linha 1 -->
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-notification" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-bell text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Notificar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-vibration" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-mobile-alt text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Vibrar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-camera" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-camera text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Câmera</span></div></label>
+                    
+                    <!-- Linha 2 -->
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-geolocation" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-map-marker-alt text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">GPS</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-orientation" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-sync text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Girar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-battery" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-battery-half text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Bateria</span></div></label>
+                    
+                    <!-- Linha 3 (V7) -->
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-fullscreen" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-expand text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Tela Cheia</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-flashlight" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-lightbulb text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Lanterna</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-microphone" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-microphone text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Mic</span></div></label>
+                    
+                    <!-- Linha 4 (Novos) -->
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-insomnia" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-eye text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Acordado</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-browser" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-globe text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Browser</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-toast" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-comment-alt text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Toast</span></div></label>
+                    
+                    <!-- Linha 5 (Extras) -->
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-statusbar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Status Bar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-clipboard" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-clipboard text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Copiar</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-network" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-wifi text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Wifi</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-splashscreen" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-image text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Splash</span></div></label>
+                    <label class="check-card cursor-pointer relative"><input type="checkbox" id="feat-file" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg p-2 h-14 flex flex-col items-center justify-center"><i class="fas fa-folder-open text-gray-600 text-xs mb-1"></i><span class="text-[8px] font-bold">Arquivos</span></div></label>
                 </div>
             </div>
 
             <!-- Terminal Log -->
-            <div id="status-log" class="hidden bg-black/80 rounded-xl p-4 text-[10px] font-mono text-green-400 h-28 border border-gray-800 shadow-inner overflow-y-auto custom-scroll"></div>
+            <div id="status-log" class="hidden bg-black/80 rounded-lg p-3 text-[10px] font-mono text-green-400 h-28 border border-gray-800 shadow-inner overflow-y-auto custom-scroll"></div>
         </div>
 
         <!-- Barra Inferior Fixa -->
-        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-[0_-5px_30px_rgba(0,0,0,0.9)] backdrop-blur-lg safe-area-bottom">
+        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
             <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
                 <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-300 font-bold py-4 rounded-2xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
                 <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-4 rounded-2xl text-xs hover:scale-[1.02] transition shadow-lg shadow-blue-500/20 uppercase tracking-wide flex items-center justify-center space-x-2 active:scale-95">
@@ -247,44 +227,23 @@
                 </button>
             </div>
             
-            <!-- BOTÃO DE DOWNLOAD OFICIAL (RELEASE GITHUB) -->
-            <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-2xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm active:scale-95 transition">
-                <i class="fab fa-github text-lg"></i> <span>BAIXAR NO GITHUB (OFICIAL)</span>
+            <!-- Botão Download Mágico -->
+            <a id="btn-download" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-2xl text-center shadow-lg shadow-green-500/40 animate-bounce flex items-center justify-center space-x-2 text-sm">
+                <i class="fas fa-download text-lg"></i> <span>BAIXAR APK (TURBO)</span>
             </a>
-        </div>
-    </div>
 
-    <!-- VIEW 4: PERFIL -->
-    <div id="view-profile" class="flex-1 flex flex-col hidden-view fade-in bg-black">
-        <div class="p-6 flex items-center gap-4 border-b border-gray-800">
-            <button onclick="voltarDashboard()" class="text-gray-400 hover:text-white"><i class="fas fa-arrow-left"></i></button>
-            <h2 class="text-xl font-bold">Meu Perfil</h2>
-        </div>
-        <div class="p-6 flex flex-col items-center">
-            <img id="profile-avatar" src="" class="w-24 h-24 rounded-full border-4 border-blue-500 shadow-xl mb-4">
-            <h2 id="profile-name" class="text-2xl font-bold text-white">Usuário</h2>
-            <p id="profile-login" class="text-gray-500 text-sm mb-8">@usuario</p>
-            
-            <div class="w-full bg-gray-900 rounded-xl p-4 border border-gray-800 mb-6">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-gray-400 text-xs uppercase font-bold">Status do Token</span>
-                    <span class="text-green-500 text-xs font-bold flex items-center"><div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div> ATIVO</span>
-                </div>
-                <div class="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
-                    <div class="h-full bg-green-500 w-full shadow-[0_0_10px_#22c55e]"></div>
-                </div>
-            </div>
-
-            <button onclick="logout()" class="w-full bg-red-600/20 text-red-500 hover:bg-red-600/30 font-bold py-4 rounded-xl border border-red-600/30 transition">
-                DESCONECTAR CONTA
-            </button>
+            <!-- Botão Download BACKUP (GITHUB OFICIAL) -->
+            <a id="btn-backup" href="#" target="_blank" class="hidden mt-3 w-full max-w-xl mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-2xl text-center shadow-lg flex items-center justify-center space-x-2 text-xs border border-gray-600">
+                <i class="fab fa-github text-lg"></i> <span>ABRIR PÁGINA DO APK (100% SEGURO)</span>
+            </a>
         </div>
     </div>
 
     <!-- Scripts do Sistema -->
     <script>
+        // CONFIGURAÇÕES GLOBAIS
+        const GITHUB_USER = "gamerkaua00";
         const GITHUB_REPO = "Maquina-Apks";
-        let GITHUB_USER = localStorage.getItem('github_user_login') || "gamerkaua00";
         let MEUS_APPS = JSON.parse(localStorage.getItem('meus_apps') || '[]');
 
         function updateFileStatus(input, dotId) { 
@@ -316,18 +275,15 @@
         }
 
         // --- AUTH & INIT ---
-        window.onload = async () => {
+        window.onload = () => {
             const token = localStorage.getItem('github_token');
-            const savedUser = localStorage.getItem('github_user_login');
-            if(savedUser) GITHUB_USER = savedUser;
-
             const buildPendente = localStorage.getItem('build_pendente');
             
             if (token) { 
-                await carregarPerfil(token); // Atualiza dados do perfil
                 showView('view-dashboard'); 
                 renderAppsList(); 
                 
+                // Sistema de Resgate de Build
                 if (buildPendente) {
                     showView('view-editor');
                     const logBox = document.getElementById('status-log');
@@ -343,79 +299,28 @@
             }
         };
 
-        // --- LÓGICA DE PERFIL E LOGIN ---
-        async function carregarPerfil(token) {
-            try {
-                const res = await fetch('https://api.github.com/user', { headers: { Authorization: `token ${token}` } });
-                if(res.ok) {
-                    const data = await res.json();
-                    GITHUB_USER = data.login;
-                    localStorage.setItem('github_user_login', data.login);
-                    localStorage.setItem('github_user_avatar', data.avatar_url);
-                    localStorage.setItem('github_user_name', data.name || data.login);
-                    
-                    // Atualiza UI
-                    document.getElementById('user-avatar').src = data.avatar_url;
-                    document.getElementById('profile-avatar').src = data.avatar_url;
-                    document.getElementById('user-name').innerText = (data.name || data.login).split(' ')[0];
-                    document.getElementById('profile-name').innerText = data.name || data.login;
-                    document.getElementById('profile-login').innerText = "@" + data.login;
-                }
-            } catch(e) { console.error("Erro perfil", e); }
-        }
-
-        async function fazerLogin() {
+        function salvarToken() {
             const token = document.getElementById('input-token').value.trim();
-            const user = document.getElementById('input-user').value.trim(); // Opcional, o sistema busca sozinho
-            
-            if (!token.startsWith('ghp_')) return alert("Token inválido! Deve começar com ghp_");
-            
-            const btn = document.querySelector('#view-login button');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
-            btn.disabled = true;
-
-            try {
-                // Valida o Token buscando o usuário
-                const res = await fetch('https://api.github.com/user', { headers: { Authorization: `token ${token}` } });
-                if(!res.ok) throw new Error("Token não autorizado ou inválido.");
-                
-                const data = await res.json();
-                
-                // Salva tudo
+            if (token.startsWith('ghp_')) {
                 localStorage.setItem('github_token', token);
-                localStorage.setItem('github_user_login', data.login);
-                GITHUB_USER = data.login;
-                
-                await carregarPerfil(token);
                 showView('view-dashboard');
                 renderAppsList();
-
-            } catch(e) {
-                alert("Erro no Login: " + e.message);
-                btn.innerHTML = 'ENTRAR';
-                btn.disabled = false;
-            }
+            } else alert("Token inválido! Deve começar com ghp_");
         }
 
-        function salvarToken() { fazerLogin(); } // Alias para compatibilidade
-
         function logout() {
-            if(confirm("Deseja realmente desconectar?")) {
+            if(confirm("Tem certeza que deseja sair?")) {
                 localStorage.removeItem('github_token');
-                localStorage.removeItem('github_user_login');
                 location.reload();
             }
         }
 
         function showView(id) {
-            ['view-login', 'view-dashboard', 'view-editor', 'view-profile'].forEach(v => {
-                const el = document.getElementById(v);
-                if(el) el.classList.add('hidden-view');
-            });
+            ['view-login', 'view-dashboard', 'view-editor'].forEach(v => document.getElementById(v).classList.add('hidden-view'));
             document.getElementById(id).classList.remove('hidden-view');
         }
 
-        // --- DASHBOARD ---
+        // --- DASHBOARD LOGIC (LOJA DE APPS) ---
         function renderAppsList() {
             const list = document.getElementById('apps-list');
             list.innerHTML = '';
@@ -428,11 +333,11 @@
             MEUS_APPS.forEach(app => {
                 const icon = app.iconData ? `data:image/png;base64,${app.iconData}` : 'https://img.icons8.com/fluency/48/android-os.png';
                 
-                // Botão de Download Linkado
+                // Botão de Download na lista (Se tiver link salvo)
                 let downloadBtn = '';
                 if (app.lastDownloadUrl) {
                     downloadBtn = `
-                        <a href="${app.lastDownloadUrl}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-3 left-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1.5 rounded-full shadow-lg font-bold z-10 flex items-center active:scale-95 transition border border-white/10">
+                        <a href="${app.lastDownloadUrl}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-3 left-3 bg-green-600 hover:bg-green-500 text-white text-[10px] px-3 py-1.5 rounded-full shadow-lg font-bold z-10 flex items-center active:scale-95 transition">
                             <i class="fas fa-download mr-1"></i> BAIXAR
                         </a>
                     `;
@@ -458,12 +363,21 @@
             document.getElementById('edit-id').value = '';
             document.getElementById('app-name').value = '';
             document.getElementById('editor-title').innerText = "Novo Projeto";
+            
+            // LIMPEZA CRÍTICA DOS INPUTS DE ARQUIVO
+            document.getElementById('app-icon').value = '';
+            document.getElementById('app-index').value = '';
+            
+            // Reseta status visual (bolinhas verdes)
+            document.getElementById('icon-dot').classList.add('hidden');
+            document.getElementById('index-dot').classList.add('hidden');
+            
             document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
             document.getElementById('status-log').classList.add('hidden');
             document.getElementById('btn-download').classList.add('hidden');
+            document.getElementById('btn-backup').classList.add('hidden');
             document.getElementById('btn-build').classList.remove('hidden');
-            document.getElementById('icon-dot').classList.add('hidden');
-            document.getElementById('index-dot').classList.add('hidden');
+            
             showView('view-editor');
         }
 
@@ -474,15 +388,18 @@
             document.getElementById('app-name').value = app.name;
             document.getElementById('editor-title').innerText = app.name;
             
+            // Limpa inputs para garantir que não use arquivos antigos se o usuário não selecionar novos
+            document.getElementById('app-icon').value = '';
+            document.getElementById('app-index').value = '';
+
             if(app.features) {
                 for (let k in app.features) {
                     const el = document.getElementById('feat-'+k);
                     if(el) el.checked = app.features[k];
                 }
             }
-            if(app.iconData) document.getElementById('icon-dot').classList.remove('hidden');
-            if(app.indexData) document.getElementById('index-dot').classList.remove('hidden');
-            
+            if(app.iconData) document.getElementById('icon-dot').classList.remove('hidden'); else document.getElementById('icon-dot').classList.add('hidden');
+            if(app.indexData) document.getElementById('index-dot').classList.remove('hidden'); else document.getElementById('index-dot').classList.add('hidden');
             showView('view-editor');
         }
 
@@ -504,7 +421,7 @@
             r.onload = () => res(r.result.split(',')[1]); r.onerror = e => rej(e);
         });
 
-        // --- SALVAR LOCALMENTE (COM LINK) ---
+        // --- SALVAR LOCALMENTE (AGORA SALVA LINK DE DOWNLOAD TAMBÉM) ---
         async function salvarRascunho(downloadUrl = null) {
             const name = document.getElementById('app-name').value;
             if(!name) return alert("Dê um nome!");
@@ -513,25 +430,33 @@
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
 
-            let app = idInput.value ? MEUS_APPS.find(a => a.id == idInput.value) : {id: Date.now()};
-            if(!app) app = {id: Date.now()};
+            // Se for novo, cria. Se tiver ID, atualiza o existente.
+            let app = idInput.value ? MEUS_APPS.find(a => a.id == idInput.value) : null;
+            
+            if(!app) {
+                app = {id: Date.now()};
+                // Se for novo, adiciona na lista
+                MEUS_APPS.push(app);
+            }
 
             app.name = name;
             app.date = Date.now();
-            if(downloadUrl) app.lastDownloadUrl = downloadUrl; // Salva o link da release do GitHub
+            if(downloadUrl) app.lastDownloadUrl = downloadUrl; // Salva o link
             
             app.features = {};
             document.querySelectorAll('input[type=checkbox]').forEach(c => app.features[c.id.replace('feat-','')] = c.checked);
 
+            // Só atualiza os arquivos se o usuário selecionou novos
             if(iconFile) app.iconData = await toBase64(iconFile);
             if(indexFile) app.indexData = await toBase64(indexFile);
 
-            const idx = MEUS_APPS.findIndex(a => a.id === app.id);
-            if(idx >= 0) MEUS_APPS[idx] = app; else MEUS_APPS.push(app);
-            
             localStorage.setItem('meus_apps', JSON.stringify(MEUS_APPS));
             
-            if(!downloadUrl) { alert("✅ Projeto salvo na memória!"); voltarDashboard(); }
+            // Só avisa se não for um save automático
+            if(!downloadUrl) alert("✅ Projeto salvo na memória!");
+            
+            // Se veio de um download, não sai da tela
+            if(!downloadUrl) voltarDashboard();
         }
 
         // --- UI LOG ---
@@ -547,11 +472,14 @@
             const token = localStorage.getItem('github_token');
             const name = document.getElementById('app-name').value;
             const id = document.getElementById('edit-id').value;
+            
+            // Pega o app salvo ou cria objeto temporário
             let app = id ? MEUS_APPS.find(a => a.id == id) : {};
 
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
             
+            // Usa arquivo novo ou o que está salvo na memória
             let iconData = iconFile ? await toBase64(iconFile) : app.iconData;
             let indexData = indexFile ? await toBase64(indexFile) : app.indexData;
 
@@ -582,8 +510,17 @@
 
                 log("✅ ENVIO CONCLUÍDO! Iniciando fábrica...");
                 
-                if(!id) document.getElementById('edit-id').value = Date.now();
-                await salvarRascunho(); 
+                // Salva automatico o estado antes de começar a monitorar
+                if(!id) {
+                    const newId = Date.now();
+                    document.getElementById('edit-id').value = newId;
+                    // Cria o app na lista
+                    await salvarRascunho(); 
+                } else {
+                    // Apenas atualiza o existente
+                    await salvarRascunho();
+                }
+                
                 localStorage.setItem('build_pendente', 'true');
 
                 monitorar(token, log);
@@ -611,6 +548,7 @@
         async function updateConfig(token, name) {
             const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/config.xml`;
             const check = await fetch(url, { headers: { Authorization: `token ${token}` }});
+            // Config XML Blindado V7 (Destravado)
             let content = `<?xml version='1.0'?><widget id="com.kaua.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><name>App</name><content src="index.html"/><access origin="*"/><allow-navigation href="*"/><allow-intent href="*"/><preference name="AndroidInsecureFileModeEnabled" value="true"/><preference name="scheme" value="http"/><preference name="hostname" value="localhost"/></widget>`;
             let sha = null;
             if(check.ok) {
@@ -666,24 +604,52 @@
                 const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/releases/latest`, { headers: { Authorization: `token ${token}` }});
                 const d = await r.json();
                 
-                // PEGA SEMPRE O LINK DA PÁGINA DO GITHUB (Segurança Total)
-                let urlRepo = d.html_url; 
+                // BUSCA LINK TURBO (Litterbox, 0x0, File.io)
+                const match = d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
+                let urlTurbo = "";
+                if(match && match[1] && !match[1].includes("Verifique")) {
+                    urlTurbo = match[1];
+                }
+
+                // BUSCA LINK BACKUP (GITHUB ASSETS)
+                let urlRepo = d.html_url; // Link da página da release (Garantido)
+                let urlDirect = d.assets?.[0]?.browser_download_url; // Link direto do arquivo (Backup)
 
                 const btnDown = document.getElementById('btn-download');
+                const btnBackup = document.getElementById('btn-backup');
                 const btnBuild = document.getElementById('btn-build');
                 btnBuild.classList.add('hidden');
 
-                // MOSTRA LINK DA PÁGINA OFICIAL
-                if (urlRepo) {
-                    btnDown.href = urlRepo;
+                if (urlTurbo) {
+                    btnDown.href = urlTurbo;
                     btnDown.classList.remove('hidden');
-                    btnDown.innerHTML = `<i class="fab fa-github text-xl"></i> ABRIR PÁGINA DO DOWNLOAD`;
-                    log("✅ Link Seguro Gerado!");
-                    
-                    // Salva o link da página no card do app
-                    salvarRascunho(urlRepo);
+                    btnDown.innerHTML = `<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`;
+                    log("⚡ LINK TURBO ENCONTRADO!");
+                    salvarRascunho(urlTurbo);
+                } else if (urlDirect) {
+                    // Backup 1: Link direto do GitHub
+                    btnDown.href = urlDirect;
+                    btnDown.classList.remove('hidden');
+                    btnDown.innerHTML = `<i class="fab fa-github text-lg"></i> BAIXAR (GITHUB)`;
+                    log("⚠️ Usando link direto do GitHub.");
+                    salvarRascunho(urlDirect);
                 } else {
-                    log("Link não encontrado.", true);
+                    log("Links diretos não encontrados.", true);
+                }
+
+                // MOSTRA SEMPRE O LINK DA PÁGINA DO GITHUB (BACKUP INFALÍVEL)
+                if (urlRepo) {
+                    btnBackup.href = urlRepo;
+                    btnBackup.classList.remove('hidden');
+                    if (!urlTurbo && !urlDirect) {
+                        // Se não tiver nenhum direto, o backup vira o destaque
+                        btnDown.classList.add('hidden');
+                        btnBackup.classList.remove('hidden', 'mt-2', 'bg-gray-800');
+                        btnBackup.classList.add('mt-3', 'bg-blue-600', 'text-white', 'py-4', 'text-sm');
+                        btnBackup.innerHTML = `<i class="fab fa-github text-xl"></i> BAIXAR PELA PÁGINA OFICIAL`;
+                        log("✅ Link da Página Oficial disponível.");
+                        salvarRascunho(urlRepo); 
+                    }
                 }
 
             } catch(e){ log("Erro ao buscar link.", true); }
