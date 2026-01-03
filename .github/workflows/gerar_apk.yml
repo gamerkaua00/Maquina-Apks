@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.9 (Syntax Fix Final) 🛡️
+name: Fábrica Inteligente v4.0 (Fix Upload Mirror) 🛡️
 
 on:
   push:
@@ -130,12 +130,20 @@ jobs:
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
           fi
 
-      - name: 📤 Upload Rápido (Transfer.sh)
+      - name: 📤 Upload Rápido (Mirror 0x0.st)
         id: upload_fast
         run: |
           echo "Subindo ${{ env.APK_FINAL }}..."
-          curl --upload-file "${{ env.APK_FINAL }}" "https://transfer.sh/${{ env.APK_FINAL }}" > link_externo.txt
-          echo "LINK_MIRROR=$(cat link_externo.txt)" >> $GITHUB_ENV
+          # Tenta subir para o 0x0.st (Servidor mais estável)
+          curl -F "file=@${{ env.APK_FINAL }}" https://0x0.st > link_externo.txt || echo "" > link_externo.txt
+          
+          LINK=$(cat link_externo.txt)
+          if [ -z "$LINK" ]; then
+             echo "⚠️ Upload falhou, usando link padrão do GitHub."
+             echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
+          else
+             echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
+          fi
 
       - name: 🚀 Criar Release (Link Direto)
         uses: softprops/action-gh-release@v1
