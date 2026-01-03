@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fábrica de Apps 🏭</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-green-400 mb-2"><i class="fas fa-robot"></i> Fábrica de Apps</h1>
+            <p class="text-gray-400 text-sm">Crie seu aplicativo Android em minutos.</p>
+        </div>
+
+        <div id="config-section" class="space-y-4">
+            
+            <!-- Dados do App -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-600">
+                <h3 class="text-gray-300 font-bold mb-3 text-sm uppercase">Configuração do App</h3>
+                
+                <label class="block text-xs text-gray-400 mb-1">Nome do Aplicativo</label>
+                <input type="text" id="app-name" placeholder="Ex: Meu App Incrível" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 mb-4 focus:border-blue-500 outline-none">
+
+                <label class="block text-xs text-gray-400 mb-1">Ícone (PNG Quadrado)</label>
+                <input type="file" id="app-icon" accept="image/png" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 mb-4"/>
+
+                <label class="block text-xs text-gray-400 mb-1">Código do Site (index.html)</label>
+                <input type="file" id="app-index" accept=".html" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700"/>
+            </div>
+
+            <!-- Botão de Ação -->
+            <button onclick="iniciarFabrica()" id="btn-build" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 rounded-lg shadow-lg transform transition hover:scale-105">
+                <i class="fas fa-hammer"></i> GERAR APK AGORA
+            </button>
+        </div>
+
+        <!-- Log de Status -->
+        <div id="status-log" class="mt-6 p-3 bg-black rounded text-xs font-mono text-green-400 h-32 overflow-y-auto hidden border border-gray-700">
+            > Aguardando ordens...
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO OCULTA (BACKEND) ---
+        // Aqui definimos para onde os arquivos vão, sem o usuário precisar digitar
+        const GITHUB_USER = "gamerkaua00"; // Seu usuário (Peguei dos seus logs anteriores)
+        const GITHUB_REPO = "Maquina-Apks"; // Nome da pasta no GitHub (Confira se é esse mesmo!)
+        
+        // Token Ofuscado (Segurança Básica)
+        const _part1 = "86ZNe2BPpV9"; 
+        const _part2 = "wdmFlUbQwuaz2jSXsoL";
+        const _part3 = "Y65fhs_phg";
+        
+        function getSecretKey() {
+            const reversed = _part1 + _part2 + _part3;
+            return reversed.split("").reverse().join("");
+        }
+        // -------------------------------------
+
+        const log = (msg, type = 'info') => {
+            const logBox = document.getElementById('status-log');
+            logBox.classList.remove('hidden');
+            const color = type === 'error' ? 'text-red-400' : 'text-green-400';
+            logBox.innerHTML += `<div class="${color}">> ${msg}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        const readFileAsBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function iniciarFabrica() {
+            const token = getSecretKey();
+            const appName = document.getElementById('app-name').value;
+            const iconFile = document.getElementById('app-icon').files[0];
+            const indexFile = document.getElementById('app-index').files[0];
+
+            if (!appName || !indexFile) {
+                alert("Por favor, preencha o Nome do App e selecione o arquivo index.html!");
+                return;
+            }
+
+            const btn = document.getElementById('btn-build');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando para a Fábrica...';
+            document.getElementById('status-log').innerHTML = '';
+
+            try {
+                // 1. Upload do Index.html
+                log("Enviando código do site...");
+                const indexContent = await readFileAsBase64(indexFile);
+                await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/index.html", indexContent, `Update Site: ${appName}`);
+
+                // 2. Upload do Ícone (se tiver)
+                if (iconFile) {
+                    log("Enviando ícone personalizado...");
+                    const iconContent = await readFileAsBase64(iconFile);
+                    await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/icon.png", iconContent, "Update Icon");
+                }
+
+                // 3. Atualizar Nome do App
+                log(`Configurando nome: ${appName}...`);
+                await updateConfigXml(GITHUB_USER, GITHUB_REPO, token, appName);
+
+                log("✅ Sucesso! A Fábrica recebeu o pedido.");
+                log("⏳ O robô está construindo o APK. Isso leva uns 3 minutos.");
+                
+                // Link direto para a aba Actions do seu repositório
+                log(`<a href="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/actions" target="_blank" class="underline text-blue-400 font-bold">CLIQUE AQUI PARA ACOMPANHAR E BAIXAR</a>`);
+
+            } catch (error) {
+                log(`ERRO: ${error.message}`, 'error');
+                if (error.message.includes("404")) {
+                    log("Erro 404: Verifique se o nome do repositório 'Maquina-Apks' está correto no código.", 'error');
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-hammer"></i> GERAR APK AGORA';
+            }
+        }
+
+        async function uploadFile(user, repo, token, path, content, message) {
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+            let sha = null;
+            try {
+                const checkReq = await fetch(url, { headers: { Authorization: `token ${token}` } });
+                if (checkReq.ok) {
+                    const data = await checkReq.json();
+                    sha = data.sha;
+                }
+            } catch (e) {}
+
+            const body = { message: message, content: content, branch: "main" };
+            if (sha) body.sha = sha;
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) throw new Error(`Falha ao enviar ${path} (${response.status})`);
+        }
+
+        async function updateConfigXml(user, repo, token, newName) {
+            const path = "config.xml";
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+            
+            const getReq = await fetch(url, { headers: { Authorization: `token ${token}` } });
+            if (!getReq.ok) throw new Error("Config.xml não encontrado! Você criou o projeto no GitHub?");
+            
+            const data = await getReq.json();
+            const currentContent = atob(data.content);
+            const newContent = currentContent.replace(/<name>.*?<\/name>/, `<name>${newName}</name>`);
+            
+            const body = { message: "Update App Name", content: btoa(newContent), sha: data.sha, branch: "main" };
+
+            const putReq = await fetch(url, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            
+            if (!putReq.ok) throw new Error("Falha ao atualizar config.xml");
+        }
+    </script>
+</body>
+</html>
