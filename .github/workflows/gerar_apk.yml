@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16.2 (Fix Java Cache Error) 🚀
+name: Fábrica Turbo V16.3 (Fix Gradle Compile Error) 🚀
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- MELHORIA 1: CACHE INTELIGENTE (CORRIGIDO) ---
+      # --- MELHORIA 1: CACHE INTELIGENTE ---
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
         with:
@@ -24,7 +24,6 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          # FIX: Usamos run_id para evitar erro de "arquivo não encontrado"
           key: ${{ runner.os }}-gradle-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -34,7 +33,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          # cache: 'gradle' removido para evitar erro de arquivo inexistente
 
       - name: 🛠️ Instalando Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
@@ -50,15 +48,13 @@ jobs:
         run: |
           npm install -g cordova
 
-      # --- MELHORIA 2: VALIDAÇÃO DE CÓDIGO (O MÉDICO) ---
+      # --- MELHORIA 2: VALIDAÇÃO DE CÓDIGO ---
       - name: 🩺 Verificando Saúde do Código
         run: |
-          # Verifica se o index.html existe e tem conteúdo básico
           if [ ! -s "www/index.html" ]; then
             echo "❌ ERRO FATAL: O arquivo index.html está vazio ou não existe!"
             exit 1
           fi
-          # Verifica se tem tags essenciais
           if ! grep -q "<html" "www/index.html"; then
              echo "⚠️ AVISO: Seu index.html parece incompleto (faltando <html>)."
           fi
@@ -78,7 +74,6 @@ jobs:
       - name: 🎨 Configurando Ícone
         run: |
           cd app-temp
-          # Procura ícone com qualquer nome comum
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
           
           if [ -n "$ICON_FILE" ]; then
@@ -87,13 +82,11 @@ jobs:
             sed -i '/<icon/d' config.xml
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           else
-            # Ícone Padrão Bonito se não tiver nenhum
             echo "⚠️ Usando ícone padrão."
             curl -L -o ./res_icon.png "https://img.icons8.com/fluency/512/robot-2.png"
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
-          # Permissões de Arquivo
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
@@ -154,6 +147,16 @@ jobs:
                cordova plugin add cordova-plugin-media-capture
             fi
           fi
+      
+      # --- FIX: CORREÇÃO DE PLUGINS ANTIGOS ---
+      - name: 🚑 Aplicando Correções (Fix Gradle Errors)
+        run: |
+          cd app-temp
+          echo "🔧 Buscando e corrigindo plugins desatualizados..."
+          # Substitui 'compile' por 'implementation' em todos os arquivos gradle dos plugins
+          # Isso conserta o erro "Could not find method compile()"
+          find . -name "*.gradle" -exec sed -i 's/compile /implementation /g' {} + || true
+          echo "✅ Correção aplicada."
 
       - name: 🏷️ Detectando Nome e ID
         id: get_name
@@ -162,15 +165,20 @@ jobs:
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
           
-          # ID Único baseado no nome (para não substituir apps diferentes)
           SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g')
           NEW_ID="com.kaua.app.$SAFE_ID"
           sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
 
+      - name: 🧹 Limpando Cache
+        run: |
+          cd app-temp
+          rm -rf ~/.gradle/caches/
+
       - name: 📱 Compilando APK
         run: |
           cd app-temp
-          cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
+          # Adicionado -PcdvCompileSdkVersion=33 para corrigir o erro de versão
+          cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --gradleArg=-PcdvCompileSdkVersion=33 --packageType=apk
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
@@ -187,6 +195,7 @@ jobs:
         run: |
           APK="${{ env.APK_FINAL }}"
           LINK=""
+          
           # 1. Litterbox
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
@@ -227,7 +236,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- MELHORIA 3: NOTIFICAÇÃO (OPCIONAL) ---
-      # Se você configurar um 'DISCORD_WEBHOOK' nos Secrets do GitHub, ele avisa lá.
       - name: 🔔 Notificar Discord
         if: success() && env.DISCORD_WEBHOOK != ''
         env:
