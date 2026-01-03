@@ -1,4 +1,4 @@
-name: Fábrica Turbo V10 (Fix Whitelist Error) 🚀
+name: Fábrica Turbo V11 (Fix Name + Whitelist Removal) 🚀
 
 on:
   push:
@@ -39,34 +39,47 @@ jobs:
       - name: 🏗️ Criando a Base do App
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
+          
+          # Limpa o exemplo padrão e copia o site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
+
+          # IMPORTANTE: Copia o config.xml da raiz para aplicar o NOME correto
+          if [ -f config.xml ]; then 
+            echo "📄 Config.xml encontrado! Aplicando nome e configurações..."
+            cp config.xml app-temp/
+          fi
 
       - name: 🎨 Configurando Ícone
         run: |
           cd app-temp
           if [ -f "www/icon.png" ]; then
-            echo "🔥 Ícone encontrado!"
+            echo "🔥 Ícone encontrado! Aplicando..."
             cp www/icon.png .
-            sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
+            # Se o config.xml já tem ícone, não duplica. Se não tem, adiciona.
+            if ! grep -q "<icon" config.xml; then
+               sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
+            fi
           fi
 
       - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
-          # Android 12.0.0 é o mais estável
           cordova platform add android@12.0.0
           
-          # --- PLUGINS BASE (Essenciais) ---
+          # --- VACINA ANTI-ERRO ---
+          # Remove o plugin Whitelist explicitamente caso ele tenha entrado via config.xml
+          echo "💉 Removendo plugin Whitelist (incompatível)..."
+          cordova plugin remove cordova-plugin-whitelist || true
+          
+          # --- PLUGINS BASE ---
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-android-permissions
           cordova plugin add cordova-plugin-inappbrowser
-          
-          # REMOVIDO: cordova-plugin-whitelist (Causa erro no Android 12+)
 
-          # --- PLUGINS OPCIONAIS (Lê do features.json) ---
+          # --- PLUGINS OPCIONAIS ---
           if [ -f "../features.json" ]; then
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
@@ -75,46 +88,43 @@ jobs:
             USE_BATTERY=$(jq -r '.battery' ../features.json)
             USE_NETWORK=$(jq -r '.network' ../features.json)
             USE_ORIENT=$(jq -r '.orientation' ../features.json)
-            
             USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
             USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
             USE_MIC=$(jq -r '.microphone' ../features.json)
             USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
             USE_TOAST=$(jq -r '.toast' ../features.json)
-            
             USE_STATUSBAR=$(jq -r '.statusbar' ../features.json)
             USE_CLIPBOARD=$(jq -r '.clipboard' ../features.json)
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
+            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
             if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
             if [ "$USE_NETWORK" = "true" ]; then cordova plugin add cordova-plugin-network-information; fi
             if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
-            
             if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
             if [ "$USE_FLASHLIGHT" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
             if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
             if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
+            if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
+            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
+            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
-
-            if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
-            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
-            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
           fi
 
       - name: 🏷️ Detectando Nome do App
         id: get_name
         run: |
           cd app-temp
+          # Pega o nome de dentro do config.xml (Agora vai funcionar pois copiamos o arquivo!)
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
@@ -132,9 +142,9 @@ jobs:
           
           if [ -z "$APK_PATH" ]; then
             echo "❌ ERRO: APK não encontrado!"
-            find "$GITHUB_WORKSPACE" -name "*.apk"
             exit 1
           else
+            # Renomeia com o nome real
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
