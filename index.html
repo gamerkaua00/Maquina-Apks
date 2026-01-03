@@ -2,94 +2,220 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fábrica de Apps 3.0 🏭</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fábrica de Apps 4.0</title>
+    
+    <!-- PWA Meta Tags (Para instalar como App) -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/robot-2.png">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgZGUgQXBwcyIsCiAgInNob3J0X25hbWUiOiAiRmFicmljYSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYxNzJhIiwKICAidGhlbWVfY29xvciI6ICIjMGYxNzJhIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuaWNvbnM4LmNvbS9mbHVlbmN5LzE5Mi9yb2JvdC0yLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
+
+    <!-- Estilos e Ícones -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Animação para quando estiver processando */
-        .processing { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        /* Efeitos Neon e Glassmorphism */
+        body {
+            background-color: #050505;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(74, 222, 128, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-neon:focus {
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+            border-color: #4ade80;
+        }
+
+        .btn-neon {
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-neon:hover {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn-neon:active { transform: scale(0.98); }
+
+        .checkbox-wrapper input:checked + div {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        
+        /* Animações */
+        @keyframes pulse-border {
+            0% { border-color: rgba(74, 222, 128, 0.2); }
+            50% { border-color: rgba(74, 222, 128, 0.8); }
+            100% { border-color: rgba(74, 222, 128, 0.2); }
+        }
+        .processing-border { animation: pulse-border 1.5s infinite; }
     </style>
 </head>
-<body class="bg-gray-900 text-white font-sans min-h-screen flex items-center justify-center p-4">
+<body class="text-gray-100 font-sans min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700">
-        <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold text-green-400 mb-1"><i class="fas fa-robot"></i> Fábrica de Apps 3.0</h1>
-            <p class="text-gray-400 text-xs">Painel de Controle & Download Direto</p>
+    <!-- Card Principal -->
+    <div class="glass-panel w-full max-w-xl rounded-2xl overflow-hidden relative">
+        
+        <!-- Cabeçalho -->
+        <div class="p-6 text-center border-b border-gray-700 bg-black/20">
+            <div class="inline-block p-3 rounded-full bg-gradient-to-br from-green-500/20 to-blue-500/20 mb-3 border border-white/5">
+                <i class="fas fa-robot text-3xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Fábrica de Apps <span class="text-green-400">4.0</span></h1>
+            <p class="text-gray-400 text-xs mt-1">Transforme sites em aplicativos nativos</p>
         </div>
 
-        <div id="config-section" class="space-y-4">
+        <div class="p-6 space-y-6">
             
-            <!-- 1. Acesso -->
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-600">
-                <h3 class="text-gray-300 font-bold mb-2 text-xs uppercase tracking-wider text-blue-400">1. Acesso (Token)</h3>
-                <input type="password" id="github-token" placeholder="Cole seu ghp_... aqui" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-green-500 outline-none text-xs">
+            <!-- 1. Token (Com Memória) -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-blue-400 uppercase tracking-wider ml-1">Chave de Acesso</label>
+                <div class="relative">
+                    <i class="fas fa-key absolute left-3 top-3 text-gray-500"></i>
+                    <input type="password" id="github-token" placeholder="Cole seu Token do GitHub aqui..." 
+                        class="input-neon w-full bg-gray-900/50 text-white border border-gray-700 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none transition-all placeholder-gray-600">
+                </div>
+                <label class="flex items-center space-x-2 cursor-pointer mt-1 ml-1 group">
+                    <input type="checkbox" id="save-token" class="form-checkbox h-3 w-3 text-green-500 rounded bg-gray-800 border-gray-600 focus:ring-0 transition">
+                    <span class="text-[10px] text-gray-400 group-hover:text-green-400 transition">Lembrar minha chave neste dispositivo</span>
+                </label>
             </div>
 
-            <!-- 2. Dados -->
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-600">
-                <h3 class="text-gray-300 font-bold mb-2 text-xs uppercase tracking-wider text-blue-400">2. Identidade</h3>
-                <input type="text" id="app-name" placeholder="Nome do App" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 mb-2 focus:border-blue-500 outline-none text-sm">
-                
-                <div class="flex gap-2">
-                    <div class="w-1/2">
-                        <label class="block text-[10px] text-gray-400 mb-1">Ícone (PNG)</label>
-                        <input type="file" id="app-icon" accept="image/png" class="w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:bg-blue-600 file:text-white"/>
+            <!-- 2. Dados do App -->
+            <div class="space-y-4 pt-4 border-t border-gray-700/50">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-blue-400 uppercase tracking-wider ml-1">Identidade</label>
+                    <input type="text" id="app-name" placeholder="Nome do Aplicativo" 
+                        class="input-neon w-full bg-gray-900/50 text-white border border-gray-700 rounded-xl py-2.5 px-4 text-sm focus:outline-none transition-all placeholder-gray-600">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Upload Ícone -->
+                    <div class="relative group cursor-pointer">
+                        <input type="file" id="app-icon" accept="image/png" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="updateFileName(this, 'icon-label')">
+                        <div class="bg-gray-900/50 border border-gray-700 border-dashed rounded-xl p-4 text-center group-hover:border-blue-500 group-hover:bg-blue-500/10 transition-all h-full flex flex-col items-center justify-center">
+                            <i class="fas fa-image text-xl text-gray-500 group-hover:text-blue-400 mb-2 transition"></i>
+                            <span id="icon-label" class="text-[10px] text-gray-400 font-medium group-hover:text-blue-300">Ícone (PNG)</span>
+                        </div>
                     </div>
-                    <div class="w-1/2">
-                        <label class="block text-[10px] text-gray-400 mb-1">Site (index.html)</label>
-                        <input type="file" id="app-index" accept=".html" class="w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:bg-green-600 file:text-white"/>
+                    <!-- Upload Site -->
+                    <div class="relative group cursor-pointer">
+                        <input type="file" id="app-index" accept=".html" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="updateFileName(this, 'index-label')">
+                        <div class="bg-gray-900/50 border border-gray-700 border-dashed rounded-xl p-4 text-center group-hover:border-green-500 group-hover:bg-green-500/10 transition-all h-full flex flex-col items-center justify-center">
+                            <i class="fas fa-code text-xl text-gray-500 group-hover:text-green-400 mb-2 transition"></i>
+                            <span id="index-label" class="text-[10px] text-gray-400 font-medium group-hover:text-green-300">index.html</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. Recursos Expandidos (Conversam com o Robô v3.0) -->
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-600">
-                <h3 class="text-gray-300 font-bold mb-2 text-xs uppercase tracking-wider text-blue-400">3. Funções do App</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- Básicos -->
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-notification" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-bell"></i> Notificações</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-vibration" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-mobile-alt"></i> Vibração</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-camera" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-camera"></i> Câmera</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-geolocation" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-map-marker-alt"></i> GPS</span></label>
-                    
+            <!-- 3. Recursos (Grid Neon) -->
+            <div class="pt-4 border-t border-gray-700/50">
+                <label class="text-xs font-bold text-blue-400 uppercase tracking-wider ml-1 mb-3 block">Recursos & Permissões</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-notification" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-bell mr-1 text-yellow-400"></i> Notificações</span>
+                    </label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-vibration" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-mobile-alt mr-1 text-purple-400"></i> Vibração</span>
+                    </label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-camera" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-camera mr-1 text-blue-400"></i> Câmera</span>
+                    </label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-geolocation" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-map-marker-alt mr-1 text-red-400"></i> GPS</span>
+                    </label>
                     <!-- Novos -->
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-battery" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-battery-half"></i> Bateria</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-network" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-wifi"></i> Rede/Wifi</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-orientation" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-sync"></i> Girar Tela</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="feat-fullscreen" class="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-800"><span class="text-xs text-gray-300"><i class="fas fa-expand"></i> Tela Cheia</span></label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-battery" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-battery-half mr-1 text-green-400"></i> Bateria</span>
+                    </label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-network" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-wifi mr-1 text-cyan-400"></i> Wifi</span>
+                    </label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-browser" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-globe mr-1 text-indigo-400"></i> Browser</span>
+                    </label>
+                    <label class="checkbox-wrapper flex items-center p-3 bg-gray-900/40 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-gray-800 transition">
+                        <input type="checkbox" id="feat-sharing" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="fas fa-check text-[8px] text-black"></i></div>
+                        <span class="text-xs text-gray-300"><i class="fas fa-share-alt mr-1 text-pink-400"></i> Social</span>
+                    </label>
                 </div>
             </div>
 
             <!-- Botão Principal -->
-            <button onclick="iniciarFabrica()" id="btn-build" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3 rounded-lg shadow-lg transform transition hover:scale-[1.02] uppercase text-sm tracking-wide">
-                <i class="fas fa-cogs"></i> Construir Aplicativo
+            <button onclick="iniciarFabrica()" id="btn-build" class="btn-neon w-full text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest flex items-center justify-center space-x-2 mt-4">
+                <i class="fas fa-bolt"></i>
+                <span>Fabricar Aplicativo</span>
             </button>
             
-            <!-- Botão Download (Aparece no final) -->
-            <a id="btn-download" href="#" class="hidden block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg text-center animate-bounce">
-                <i class="fas fa-download"></i> BAIXAR APK AGORA
+            <!-- Botão Download (Surge depois) -->
+            <a id="btn-download" href="#" target="_blank" class="hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-center shadow-lg animate-bounce flex items-center justify-center space-x-2">
+                <i class="fas fa-download text-xl"></i> <span>BAIXAR AGORA</span>
             </a>
-        </div>
 
-        <!-- Log -->
-        <div id="status-log" class="mt-4 p-2 bg-black rounded text-[10px] font-mono text-green-400 h-24 overflow-y-auto hidden border border-gray-700"></div>
+            <!-- Terminal Log -->
+            <div id="status-log" class="mt-4 p-3 bg-black/80 rounded-lg text-[10px] font-mono text-green-400 h-28 overflow-y-auto border border-gray-800 hidden shadow-inner custom-scrollbar"></div>
+        </div>
     </div>
 
+    <p class="text-gray-600 text-[10px] mt-6">Powered by GitHub Actions & Cordova</p>
+
     <script>
-        // --- CONFIGURAÇÃO (BACKEND) ---
-        const GITHUB_USER = "gamerkaua00"; // Seu usuário
-        const GITHUB_REPO = "Maquina-Apks"; // Seu repositório
-        
-        // --- FUNÇÕES VISUAIS ---
+        const GITHUB_USER = "gamerkaua00"; 
+        const GITHUB_REPO = "Maquina-Apks"; 
+
+        // --- SISTEMA DE MEMÓRIA (TOKEN) ---
+        window.onload = function() {
+            const savedToken = localStorage.getItem('fabrica_token');
+            if (savedToken) {
+                document.getElementById('github-token').value = savedToken;
+                document.getElementById('save-token').checked = true;
+                log("🔑 Token carregado da memória!", 'warn');
+            }
+        }
+
+        // --- UI UTILS ---
+        function updateFileName(input, labelId) {
+            const fileName = input.files[0]?.name;
+            if (fileName) {
+                document.getElementById(labelId).innerText = fileName;
+                document.getElementById(labelId).classList.add('text-white');
+            }
+        }
+
         const log = (msg, type = 'info') => {
             const logBox = document.getElementById('status-log');
             logBox.classList.remove('hidden');
             const color = type === 'error' ? 'text-red-400' : (type === 'warn' ? 'text-yellow-400' : 'text-green-400');
-            const icon = type === 'error' ? '❌' : (type === 'warn' ? '⚠️' : '✅');
-            logBox.innerHTML += `<div class="${color} border-b border-gray-800 pb-1 mb-1">${icon} ${msg}</div>`;
+            const time = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+            logBox.innerHTML += `<div class="${color} border-b border-gray-800/50 pb-1 mb-1 opacity-0 animate-fade-in"><span class="text-gray-600">[${time}]</span> ${msg}</div>`;
             logBox.scrollTop = logBox.scrollHeight;
         }
 
@@ -102,14 +228,17 @@
             });
         }
 
-        // --- FUNÇÃO PRINCIPAL ---
+        // --- LÓGICA PRINCIPAL ---
         async function iniciarFabrica() {
-            const token = document.getElementById('github-token').value.trim();
+            const tokenInput = document.getElementById('github-token');
+            const token = tokenInput.value.trim();
+            const saveToken = document.getElementById('save-token').checked;
+            
             const appName = document.getElementById('app-name').value;
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
 
-            // Coleta os novos recursos
+            // Coleta Recursos
             const features = {
                 notification: document.getElementById('feat-notification').checked,
                 vibration: document.getElementById('feat-vibration').checked,
@@ -117,70 +246,72 @@
                 geolocation: document.getElementById('feat-geolocation').checked,
                 battery: document.getElementById('feat-battery').checked,
                 network: document.getElementById('feat-network').checked,
-                orientation: document.getElementById('feat-orientation').checked,
-                fullscreen: document.getElementById('feat-fullscreen').checked
+                browser: document.getElementById('feat-browser').checked,
+                sharing: document.getElementById('feat-sharing').checked
             };
 
-            if (!token || !appName || !indexFile) { 
-                alert("Preencha o Token, Nome e selecione o index.html!"); 
-                return; 
-            }
+            if (!token) { alert("Ops! Cade o Token?"); tokenInput.focus(); return; }
+            if (!appName || !indexFile) { alert("Preencha o nome e escolha o index.html!"); return; }
+
+            // Salva ou apaga Token da memória
+            if (saveToken) localStorage.setItem('fabrica_token', token);
+            else localStorage.removeItem('fabrica_token');
 
             const btn = document.getElementById('btn-build');
             const btnDown = document.getElementById('btn-download');
             
             btn.disabled = true;
-            btnDown.classList.add('hidden'); // Esconde botão de download antigo se houver
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando Arquivos...';
+            btnDown.classList.add('hidden');
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ENVIANDO ARQUIVOS...';
             document.getElementById('status-log').innerHTML = '';
 
             try {
-                // 1. Enviar Index.html
-                log("Enviando site...");
-                const indexContent = await readFileAsBase64(indexFile);
-                await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/index.html", indexContent, `Update Site: ${appName}`);
+                log("🚀 Iniciando protocolos...");
 
-                // 2. Enviar Ícone (se houver)
+                // 1. Enviar Index
+                log("📦 Upload do código-fonte...");
+                const indexContent = await readFileAsBase64(indexFile);
+                await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/index.html", indexContent, `Site: ${appName}`);
+
+                // 2. Enviar Ícone
                 if (iconFile) {
-                    log("Enviando ícone...");
+                    log("🎨 Upload do ícone...");
                     const iconContent = await readFileAsBase64(iconFile);
-                    await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/icon.png", iconContent, "Update Icon");
+                    await uploadFile(GITHUB_USER, GITHUB_REPO, token, "www/icon.png", iconContent, "Icon Update");
                 }
 
-                // 3. Enviar Features (JSON)
-                log("Salvando configurações...");
+                // 3. Enviar Features
+                log("⚙️ Configurando plugins...");
                 const featuresContent = btoa(JSON.stringify(features, null, 2));
-                await uploadFile(GITHUB_USER, GITHUB_REPO, token, "features.json", featuresContent, "Update Features");
+                await uploadFile(GITHUB_USER, GITHUB_REPO, token, "features.json", featuresContent, "Features Update");
 
                 // 4. Configurar Nome
-                log("Configurando nome...");
+                log("📝 Batizando aplicativo...");
                 await updateConfigXml(GITHUB_USER, GITHUB_REPO, token, appName);
 
-                log("🎉 ARQUIVOS ENVIADOS!");
-                log("⏳ O robô começou a trabalhar. Aguarde, vou baixar o APK assim que terminar...");
+                log("✅ TUDO PRONTO! A Fábrica acordou.");
+                log("⏳ Aguardando montagem do APK (Isso leva uns 3 min)...");
                 
-                // INICIA O RADAR DE DOWNLOAD
+                // INICIA RADAR
                 monitorarFabrica(GITHUB_USER, GITHUB_REPO, token);
 
             } catch (error) {
-                log(`ERRO: ${error.message}`, 'error');
-                if (error.message.includes("401")) log("Token inválido.", 'error');
+                log(`FALHA: ${error.message}`, 'error');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-cogs"></i> CONSTRUIR NOVO APP';
+                btn.innerHTML = '<i class="fas fa-redo"></i> TENTAR NOVAMENTE';
             }
         }
 
-        // --- SISTEMA DE RADAR E DOWNLOAD DIRETO ---
+        // --- RADAR DE STATUS ---
         async function monitorarFabrica(user, repo, token) {
             const btn = document.getElementById('btn-build');
-            btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Fabricando... (Não feche)';
-            btn.classList.add('processing');
+            btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> FABRICANDO...';
+            btn.classList.add('processing-border');
             
             let tentativas = 0;
             const intervalo = setInterval(async () => {
                 tentativas++;
                 try {
-                    // Pega a última execução do workflow
                     const resp = await fetch(`https://api.github.com/repos/${user}/${repo}/actions/runs?per_page=1`, {
                         headers: { Authorization: `token ${token}` }
                     });
@@ -189,92 +320,65 @@
                     if (data.workflow_runs && data.workflow_runs.length > 0) {
                         const run = data.workflow_runs[0];
                         
-                        // Verifica se acabou
                         if (run.status === "completed") {
                             clearInterval(intervalo);
-                            btn.classList.remove('processing');
+                            btn.classList.remove('processing-border');
                             
                             if (run.conclusion === "success") {
-                                log("✅ SUCESSO! APK GERADO.");
-                                log("⬇️ Baixando arquivo...");
+                                log("✨ SUCESSO! O APK nasceu.");
+                                log("🔎 Buscando link de download...");
                                 await baixarApkDireto(user, repo, token);
                             } else {
-                                log("❌ O robô falhou. Verifique os logs no GitHub.", 'error');
+                                log("💀 A fábrica explodiu (Erro no Build).", 'error');
                                 btn.disabled = false;
-                                btn.innerHTML = 'TENTAR DE NOVO';
+                                btn.innerHTML = 'ERRO NA FÁBRICA';
                             }
                         } else {
-                            if (tentativas % 2 === 0) log(`Trabalhando... (${run.status})`);
+                            if (tentativas % 3 === 0) log(`🔨 Trabalhando... [${run.status}]`);
                         }
                     }
                 } catch (e) { console.error(e); }
 
-                if (tentativas >= 60) { // 10 minutos max
+                if (tentativas >= 60) { 
                     clearInterval(intervalo);
                     log("⚠️ Demorou muito. Verifique manualmente.", 'warn');
                     btn.disabled = false;
                     btn.innerHTML = 'TIMEOUT';
                 }
-            }, 10000); // Checa a cada 10 segundos
+            }, 10000); 
         }
 
         async function baixarApkDireto(user, repo, token) {
             try {
-                // Busca a última Release criada pelo robô
                 const resp = await fetch(`https://api.github.com/repos/${user}/${repo}/releases/latest`, {
                     headers: { Authorization: `token ${token}` }
                 });
                 const release = await resp.json();
                 
                 if (release.assets && release.assets.length > 0) {
-                    // Pega o link de download do primeiro arquivo (o APK)
-                    // Para repos privados, precisamos usar a API para baixar o blob
-                    const assetId = release.assets[0].id;
-                    const downloadUrl = `https://api.github.com/repos/${user}/${repo}/releases/assets/${assetId}`;
+                    const apkUrl = release.assets[0].browser_download_url;
                     
-                    log("Baixando bytes do arquivo...");
+                    log("💎 LINK ENCONTRADO!");
                     
-                    // Baixa o binário usando o Token (funciona mesmo em repo privado)
-                    const apkResp = await fetch(downloadUrl, {
-                        headers: { 
-                            Authorization: `token ${token}`,
-                            Accept: 'application/octet-stream'
-                        }
-                    });
-                    
-                    if (!apkResp.ok) throw new Error("Falha no download do blob");
-                    
-                    const blob = await apkResp.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    
-                    // Cria clique falso para baixar
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = release.assets[0].name; // Nome do arquivo original
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    
-                    log("🚀 DOWNLOAD INICIADO!");
-                    
-                    // Também mostra o botão caso o popup falhe
                     const btnDown = document.getElementById('btn-download');
                     const btnBuild = document.getElementById('btn-build');
+                    
                     btnBuild.classList.add('hidden');
-                    btnDown.href = url;
-                    btnDown.download = release.assets[0].name;
+                    btnDown.href = apkUrl;
                     btnDown.classList.remove('hidden');
                     
+                    // Abre download direto
+                    window.open(apkUrl, '_blank');
+                    
                 } else {
-                    log("Release encontrada, mas sem APK.", 'error');
+                    log("APK não encontrado na Release.", 'error');
                 }
             } catch (e) {
-                log(`Erro ao baixar: ${e.message}`, 'error');
-                log("Tente baixar manualmente pelo GitHub.", 'warn');
+                log(`Erro no link: ${e.message}`, 'error');
             }
         }
 
-        // --- FUNÇÕES BÁSICAS DE UPLOAD (Idênticas ao anterior) ---
+        // --- API GITHUB ---
         async function uploadFile(user, repo, token, path, content, message) {
             const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
             let sha = null;
@@ -305,5 +409,14 @@
             if (!putReq.ok) throw new Error("Erro salvar config");
         }
     </script>
+    
+    <style>
+        .animate-fade-in { animation: fadeIn 0.5s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #111; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4ade80; }
+    </style>
 </body>
 </html>
