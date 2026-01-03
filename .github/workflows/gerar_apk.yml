@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.3 (Versão Estável 12.0) 🛡️
+name: Fábrica Inteligente v3.4 (Fix Gradle 8.7) 🛡️
 
 on:
   push:
@@ -21,6 +21,11 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
+
+    - name: 🛠️ Instalando Gradle 8.7 (Compatível com Cordova)
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.7'
 
     - name: 🛠️ Configurando Android SDK
       run: |
