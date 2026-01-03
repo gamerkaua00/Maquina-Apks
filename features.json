@@ -1,0 +1,6 @@
+{
+  "notification": false,
+  "vibration": false,
+  "camera": false,
+  "geolocation": false
+}
