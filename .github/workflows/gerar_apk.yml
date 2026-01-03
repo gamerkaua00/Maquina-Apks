@@ -1,4 +1,4 @@
-name: Fábrica Turbo V17 (Deep Fix Gradle) 🚀
+name: Fábrica Turbo V18 (Fix Prepare Android) 🚀
 
 on:
   push:
@@ -19,14 +19,15 @@ jobs:
       # --- 1. CONFIGURAÇÃO DE AMBIENTE ---
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
+        continue-on-error: true # Se o cache do GitHub cair, não para o build
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-${{ github.run_id }}
+          key: ${{ runner.os }}-gradle-v4-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-v4-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -144,12 +145,16 @@ jobs:
       - name: 🚑 Reparando Scripts do Gradle (Fix Definitivo)
         run: |
           cd app-temp
+          
+          # FIX V18: Força a criação dos arquivos antes de tentar corrigir
+          echo "⚙️ Preparando plataforma Android (Gerando arquivos)..."
+          cordova prepare android
+          
           echo "🔧 Iniciando reparo profundo nos plugins..."
           
           # Garante que o diretório existe
           if [ -d "platforms/android" ]; then
               # 1. Substitui 'compile' por 'implementation' (Correção do Gradle 8)
-              # Usamos grep -rl para achar os arquivos e sed para substituir
               grep -rl "compile" platforms/android | xargs sed -i 's/compile/implementation/g' || true
               grep -rl "debugCompile" platforms/android | xargs sed -i 's/debugCompile/debugImplementation/g' || true
               grep -rl "releaseCompile" platforms/android | xargs sed -i 's/releaseCompile/releaseImplementation/g' || true
@@ -157,13 +162,14 @@ jobs:
               echo "✅ Dependências corrigidas (compile -> implementation)."
               
               # 2. Força o compileSdkVersion nos arquivos build.gradle que estiverem faltando
-              # Isso resolve o erro 'compileSdkVersion is not specified'
               find platforms/android -name "build.gradle" -exec sed -i 's/compileSdkVersion -1/compileSdkVersion 33/g' {} +
               find platforms/android -name "build.gradle" -exec sed -i 's/targetSdkVersion -1/targetSdkVersion 33/g' {} +
               
               echo "✅ Versões do SDK forçadas para 33."
           else
-              echo "❌ ERRO: Pasta platforms/android não encontrada. Cordova falhou?"
+              echo "❌ ERRO CRÍTICO: A pasta platforms/android não foi criada pelo Cordova!"
+              echo "Listando pasta atual para debug:"
+              ls -la
               exit 1
           fi
 
@@ -251,6 +257,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # --- MELHORIA 3: NOTIFICAÇÃO (OPCIONAL) ---
       - name: 🔔 Notificar Discord
         if: success() && env.DISCORD_WEBHOOK != ''
         env:
