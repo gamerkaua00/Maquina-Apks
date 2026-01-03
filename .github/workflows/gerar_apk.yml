@@ -1,4 +1,4 @@
-name: Fábrica Turbo V16.3 (Fix Gradle Compile Error) 🚀
+name: Fábrica Turbo V16.4 (Fix Plugin & SDK Errors) 🚀
 
 on:
   push:
@@ -87,6 +87,9 @@ jobs:
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
+          # Injeção de Permissões e Versão do SDK (Resolve o erro compileSdkVersion)
+          sed -i '/<widget/a \    <preference name="android-targetSdkVersion" value="33" />' config.xml
+          sed -i '/<widget/a \    <preference name="android-compileSdkVersion" value="33" />' config.xml
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
@@ -153,9 +156,12 @@ jobs:
         run: |
           cd app-temp
           echo "🔧 Buscando e corrigindo plugins desatualizados..."
-          # Substitui 'compile' por 'implementation' em todos os arquivos gradle dos plugins
-          # Isso conserta o erro "Could not find method compile()"
-          find . -name "*.gradle" -exec sed -i 's/compile /implementation /g' {} + || true
+          # Substitui 'compile' (antigo) por 'implementation' (novo) em todos os arquivos .gradle
+          # Isso conserta o erro "Could not find method compile()" do local-notification
+          find . -name "*.gradle" -print0 | xargs -0 sed -i 's/compile /implementation /g'
+          find . -name "*.gradle" -print0 | xargs -0 sed -i 's/compile(/implementation(/g'
+          find . -name "*.gradle" -print0 | xargs -0 sed -i 's/debugCompile /debugImplementation /g'
+          find . -name "*.gradle" -print0 | xargs -0 sed -i 's/releaseCompile /releaseImplementation /g'
           echo "✅ Correção aplicada."
 
       - name: 🏷️ Detectando Nome e ID
