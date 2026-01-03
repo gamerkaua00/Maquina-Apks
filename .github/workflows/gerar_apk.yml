@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.8 (Syntax Fix) 🛡️
+name: Fábrica Inteligente v3.9 (Syntax Fix Final) 🛡️
 
 on:
   push:
@@ -134,7 +134,7 @@ jobs:
         id: upload_fast
         run: |
           echo "Subindo ${{ env.APK_FINAL }}..."
-          curl --upload-file ${{ env.APK_FINAL }} https://transfer.sh/${{ env.APK_FINAL }} > link_externo.txt
+          curl --upload-file "${{ env.APK_FINAL }}" "https://transfer.sh/${{ env.APK_FINAL }}" > link_externo.txt
           echo "LINK_MIRROR=$(cat link_externo.txt)" >> $GITHUB_ENV
 
       - name: 🚀 Criar Release (Link Direto)
@@ -156,7 +156,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 📤 Backup: Upload no Actions
+      - name: 📤 Backup no Actions
         uses: actions/upload-artifact@v4
         if: success()
         with:
