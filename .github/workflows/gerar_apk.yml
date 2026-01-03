@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v3.2 (Correção de Dependências) 🛡️
+name: Fábrica Inteligente v3.3 (Versão Estável 12.0) 🛡️
 
 on:
   push:
@@ -22,6 +22,11 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
+    - name: 🛠️ Configurando Android SDK
+      run: |
+        # Aceita licenças pendentes para evitar erros de build
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
     - name: 📦 Instalando Cordova
       run: |
         npm install -g cordova
@@ -44,7 +49,8 @@ jobs:
     - name: 🔌 Instalando Plugins
       run: |
         cd app-temp
-        cordova platform add android
+        # FIX: Usando a versão 12.0.0 que é ultra estável e compatível
+        cordova platform add android@12.0.0
         
         # Plugins Base
         cordova plugin add cordova-plugin-ionic-webview
@@ -72,31 +78,27 @@ jobs:
           if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
         fi
 
-    - name: 🧹 Limpando Cache do Gradle (Correção de Erro 403)
+    - name: 🧹 Limpando Cache do Gradle
       run: |
         cd app-temp
-        # Força limpeza para evitar dependências corrompidas ou bloqueadas
-        cordova clean android
+        # Limpeza preventiva
         rm -rf ~/.gradle/caches/
 
     - name: 📱 Compilando e Rastreando APK
       run: |
         cd app-temp
-        # Compila
+        # Compila usando a versão estável
         cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
         
         echo "🔍 Procurando o APK gerado em todo o workspace..."
-        # O comando find procura o arquivo em todo o diretorio do github workspace
         APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
         
         if [ -z "$APK_PATH" ]; then
           echo "❌ ERRO CRÍTICO: O arquivo app-debug.apk não foi encontrado!"
-          # Debug: Lista todos os apks encontrados para ajudar no diagnóstico
           find "$GITHUB_WORKSPACE" -name "*.apk"
           exit 1
         else
           echo "✅ APK encontrado em: $APK_PATH"
-          # Move para a raiz do workspace para facilitar o upload
           mv "$APK_PATH" "$GITHUB_WORKSPACE/app-instalavel.apk"
           echo "📦 APK movido para a raiz com sucesso."
         fi
