@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v4.2 (Anti-Network Error) 🛡️
+name: Fábrica Turbo V9 (Final Release) 🚀
 
 on:
   push:
@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. PREPARAÇÃO DO AMBIENTE
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
@@ -36,9 +37,11 @@ jobs:
         run: |
           npm install -g cordova
 
+      # 2. CRIAÇÃO DO PROJETO
       - name: 🏗️ Criando a Base do App
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
+          # Limpa o exemplo padrão e copia o site do usuário da pasta www
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
@@ -46,26 +49,31 @@ jobs:
         run: |
           cd app-temp
           if [ -f "www/icon.png" ]; then
-            echo "🔥 Ícone encontrado!"
+            echo "🔥 Ícone encontrado! Aplicando..."
             cp www/icon.png .
             sed -i '/<content src="index.html" \/>/a <icon src="icon.png" />' config.xml
           fi
 
-      - name: 🔌 Instalando Plugins
+      # 3. INSTALAÇÃO DE PLUGINS (PODERES)
+      - name: 🔌 Instalando Plugins (Pacote Completo)
         run: |
           cd app-temp
-          # Android 12.0.0 é o mais estável
           cordova platform add android@12.0.0
           
-          # Plugins Base
+          # --- PLUGINS OBRIGATÓRIOS ---
+          echo "🔧 Instalando essenciais..."
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-android-permissions
           cordova plugin add cordova-plugin-inappbrowser
+          cordova plugin add cordova-plugin-whitelist
 
-          # Leitura do features.json
+          # --- PLUGINS OPCIONAIS (Lê do arquivo features.json) ---
           if [ -f "../features.json" ]; then
+            echo "📄 Lendo configurações do usuário..."
+            
+            # Leitura das variáveis
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
@@ -73,18 +81,18 @@ jobs:
             USE_BATTERY=$(jq -r '.battery' ../features.json)
             USE_NETWORK=$(jq -r '.network' ../features.json)
             USE_ORIENT=$(jq -r '.orientation' ../features.json)
-            
             USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
             USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
             USE_MIC=$(jq -r '.microphone' ../features.json)
             USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
             USE_TOAST=$(jq -r '.toast' ../features.json)
-            
             USE_STATUSBAR=$(jq -r '.statusbar' ../features.json)
             USE_CLIPBOARD=$(jq -r '.clipboard' ../features.json)
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
+            USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
+            # Instalação Condicional
+            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -96,21 +104,23 @@ jobs:
             if [ "$USE_FLASHLIGHT" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
             if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
             if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
+            if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
+            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
+            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
-
-            if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
-            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-clipboard; fi
-            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
           fi
 
+      # 4. COMPILAÇÃO
       - name: 🏷️ Detectando Nome do App
         id: get_name
         run: |
           cd app-temp
+          # Pega o nome de dentro do config.xml
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
@@ -119,69 +129,53 @@ jobs:
           cd app-temp
           rm -rf ~/.gradle/caches/
 
-      - name: 📱 Compilando APK
+      - name: 📱 Compilando APK (Debug)
         run: |
           cd app-temp
           cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
           
+          # Rastreador de APK
+          echo "🔍 Procurando APK..."
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           
           if [ -z "$APK_PATH" ]; then
             echo "❌ ERRO: APK não encontrado!"
             exit 1
           else
+            # Renomeia com o nome do App (substitui espaços por underline)
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
+            echo "✅ APK gerado com sucesso: $SAFE_NAME.apk"
           fi
 
-      - name: 📤 Upload Supremo (4 Servidores + Retry)
+      # 5. UPLOAD E ENTREGA
+      - name: 📤 Upload Turbo (Backup Mirrors)
         id: upload_fast
         run: |
           APK="${{ env.APK_FINAL }}"
-          echo "Iniciando upload redundante de $APK..."
+          echo "Iniciando upload de redundância para $APK..."
           LINK=""
           
-          # 1. Litterbox (Catbox) - Adicionado "|| echo" para não quebrar o script se falhar
+          # Tenta Litterbox (24h)
           if [ -z "$LINK" ]; then
-             echo "Tentando Litterbox..."
-             RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FALHA")
+             RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
-          # 2. 0x0.st
+          # Tenta 0x0.st (Backup)
           if [ -z "$LINK" ]; then
-             echo "⚠️ Litterbox falhou. Tentando 0x0.st..."
-             RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FALHA")
+             RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
-          fi
-          
-          # 3. File.io
-          if [ -z "$LINK" ]; then
-             echo "⚠️ 0x0.st falhou. Tentando File.io..."
-             RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FALHA")
-             LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
-          fi
-
-          # 4. TmpFiles
-          if [ -z "$LINK" ]; then
-             echo "⚠️ File.io falhou. Tentando TmpFiles..."
-             RESP=$(curl -s -F "file=@$APK" https://tmpfiles.org/api/v1/upload || echo "FALHA")
-             RAW_LINK=$(echo $RESP | grep -o '"url":"[^"]*' | cut -d'"' -f4)
-             if [[ "$RAW_LINK" == http* ]]; then
-                LINK=${RAW_LINK/tmpfiles.org/tmpfiles.org\/dl}
-             fi
           fi
           
           if [[ "$LINK" == http* ]]; then
-             echo "✅ LINK GERADO: $LINK"
              echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
           else
-             echo "❌ Todos os mirrors falharam. Usando GitHub Release como fallback."
-             echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
+             echo "LINK_MIRROR=Verifique o GitHub Assets" >> $GITHUB_ENV
           fi
 
-      - name: 🚀 Criar Release (Link Direto)
+      - name: 🚀 Criar Release Oficial
         uses: softprops/action-gh-release@v1
         if: success()
         with:
@@ -192,15 +186,14 @@ jobs:
             
             📱 **Nome:** ${{ env.APP_NAME }}
             
-            ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
-            MIRROR_LINK: ${{ env.LINK_MIRROR }}
+            📂 **BAIXAR (Link Oficial):** Veja em "Assets" abaixo.
             
-            _(Link alternativo do GitHub abaixo em Assets)_
+            ⚡ **Link Turbo (Temp):** ${{ env.LINK_MIRROR }}
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 📤 Backup no Actions
+      - name: 📤 Backup no Actions (Artifacts)
         uses: actions/upload-artifact@v4
         if: success()
         with:
