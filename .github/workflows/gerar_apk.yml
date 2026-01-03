@@ -1,4 +1,4 @@
-name: Fábrica Inteligente v4.0 (Fix Upload Mirror) 🛡️
+name: Fábrica Turbo V8 (Catbox Mirror + Full Plugins) 🚀
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
 
       - name: 🏗️ Criando a Base do App
         run: |
-          cordova create app-temp com.kaua.app "Seu App"
+          cordova create app-temp com.kaua.app "Seu App Turbo"
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
@@ -54,19 +54,17 @@ jobs:
       - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
-          # Android 12 já tem Whitelist nativa.
+          # Android 12.0.0 é o mais estável para plugins atuais
           cordova platform add android@12.0.0
           
-          # Plugins Base
+          # --- PLUGINS BASE (Essenciais) ---
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-android-permissions
-          
-          # Navegador Interno
           cordova plugin add cordova-plugin-inappbrowser
 
-          # Leitura do features.json
+          # --- PLUGINS OPCIONAIS (Lê do features.json) ---
           if [ -f "../features.json" ]; then
             USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
@@ -75,10 +73,13 @@ jobs:
             USE_BATTERY=$(jq -r '.battery' ../features.json)
             USE_NETWORK=$(jq -r '.network' ../features.json)
             USE_ORIENT=$(jq -r '.orientation' ../features.json)
+            
+            # Novos V5/V8
             USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
             USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
             USE_MIC=$(jq -r '.microphone' ../features.json)
             USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
+            USE_TOAST=$(jq -r '.toast' ../features.json)
 
             if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip"; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
@@ -90,13 +91,13 @@ jobs:
             
             if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
             if [ "$USE_FLASHLIGHT" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
+            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
+            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
-            
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
           fi
 
       - name: 🏷️ Detectando Nome do App
@@ -116,7 +117,6 @@ jobs:
           cd app-temp
           cordova build android --debug -- --gradleArg=-PcdvMinSdkVersion=24 --packageType=apk
           
-          echo "🔍 Procurando APK..."
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           
           if [ -z "$APK_PATH" ]; then
@@ -124,26 +124,26 @@ jobs:
             find "$GITHUB_WORKSPACE" -name "*.apk"
             exit 1
           else
-            # Renomeia para o nome real do app
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
           fi
 
-      - name: 📤 Upload Rápido (Mirror 0x0.st)
+      - name: 📤 Upload Turbo (Litterbox)
         id: upload_fast
         run: |
-          echo "Subindo ${{ env.APK_FINAL }}..."
-          # Tenta subir para o 0x0.st (Servidor mais estável)
-          curl -F "file=@${{ env.APK_FINAL }}" https://0x0.st > link_externo.txt || echo "" > link_externo.txt
+          echo "Subindo ${{ env.APK_FINAL }} para Litterbox..."
+          # Upload para Catbox/Litterbox (Retenção temporária, muito rápido)
+          # Se falhar, tenta o 0x0.st como backup
+          LINK=$(curl -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@${{ env.APK_FINAL }}" https://litterbox.catbox.moe/resources/internals/api.php) || LINK=""
           
-          LINK=$(cat link_externo.txt)
-          if [ -z "$LINK" ]; then
-             echo "⚠️ Upload falhou, usando link padrão do GitHub."
-             echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
-          else
-             echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
+          if [[ $LINK != http* ]]; then
+             echo "⚠️ Litterbox falhou, tentando 0x0.st..."
+             LINK=$(curl -F "file=@${{ env.APK_FINAL }}" https://0x0.st)
           fi
+          
+          echo "Link gerado: $LINK"
+          echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
 
       - name: 🚀 Criar Release (Link Direto)
         uses: softprops/action-gh-release@v1
@@ -159,7 +159,7 @@ jobs:
             ⬇️ **CLIQUE AQUI PARA BAIXAR (RÁPIDO):**
             MIRROR_LINK: ${{ env.LINK_MIRROR }}
             
-            _(Servidor de backup no Assets abaixo)_
+            _(Link alternativo do GitHub abaixo em Assets)_
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
