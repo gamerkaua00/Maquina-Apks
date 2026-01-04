@@ -1,11 +1,11 @@
-name: Fábrica Turbo V43 (Nuclear Fix + Discord Admin) 🚀
+name: Fábrica Turbo V44 (Fix Gradle 9 XmlParser) 🚀
 
 on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch:
   repository_dispatch:
-    types: [build_app] # Preparado para integração com Bots de Discord no futuro
+    types: [build_app]
 
 permissions:
   contents: write
@@ -26,7 +26,6 @@ jobs:
       - name: 🧠 Processando Dados (Python Seguro)
         id: dados
         run: |
-          # Lê o JSON e define variáveis de ambiente de forma segura
           cat <<EOF > ler_dados.py
           import json, os
           
@@ -41,14 +40,12 @@ jobs:
           appid = get_val('packageId', 'com.fabrica.app')
           appver = get_val('version', '1.0.0')
           
-          # Escreve no GITHUB_ENV
           with open(os.environ['GITHUB_ENV'], 'a') as f:
               f.write(f"APP_ID={appid}\n")
               f.write(f"APP_VER={appver}\n")
           EOF
           python3 ler_dados.py
           
-          # Nome vem do XML ou padrão
           APP_NAME="App Turbo"
           if [ -f config.xml ]; then
              NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
@@ -56,13 +53,12 @@ jobs:
           fi
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
-      # --- 2. NOTIFICAÇÃO INICIAL (DISCORD RICO) ---
+      # --- 2. NOTIFICAÇÃO INICIAL ---
       - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          # Script Python para enviar Embed rico com @everyone
           cat <<EOF > notify_start.py
           import os, json, urllib.request
           
@@ -75,14 +71,14 @@ jobs:
             "content": "@everyone 🏭 **Nova ordem de produção recebida!**",
             "embeds": [{
               "title": "⚙️ Iniciando Compilação",
-              "color": 16776960, # Amarelo
+              "color": 16776960,
               "fields": [
                 {"name": "📱 App", "value": "${{ env.APP_NAME }}", "inline": True},
                 {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
                 {"name": "🔢 Versão", "value": "${{ env.APP_VER }}", "inline": True},
                 {"name": "👤 Autor", "value": "${{ github.actor }}", "inline": True}
               ],
-              "footer": {"text": "Fábrica V43 Enterprise"}
+              "footer": {"text": "Fábrica V44 Enterprise"}
             }]
           }
           
@@ -95,10 +91,20 @@ jobs:
           EOF
           python3 notify_start.py
 
-      # --- 3. SETUP DE AMBIENTE ---
-      - name: ☕ Setup Java & Gradle
+      # --- 3. SETUP DE AMBIENTE (FIX GRADLE 9) ---
+      - name: ☕ Setup Java 17
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
+
+      - name: 🔨 Forçar Gradle 8.7 (Downgrade Manual)
+        run: |
+          echo "Baixando Gradle 8.7 para substituir versão 9 do sistema..."
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
+          
+          # Verifica se funcionou
+          $PWD/gradle-8.7/bin/gradle -v
 
       - name: 🛠️ Setup Android SDK
         run: |
@@ -106,27 +112,19 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 4. CRIAÇÃO E CONFIGURAÇÃO (NUCLEAR FIX) ---
+      # --- 4. CRIAÇÃO E CONFIGURAÇÃO ---
       - name: 🏗️ Criando App (ID Garantido)
         run: |
           echo "Criando projeto com ID: ${{ env.APP_ID }}"
           cordova create app-temp ${{ env.APP_ID }} "${{ env.APP_NAME }}"
-          
-          # Copia site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
-      - name: 🔧 Reconstrução do XML (Python)
+      - name: 🔧 Reconstrução do XML
         run: |
           cd app-temp
-          
-          # Se o usuário tinha config.xml, copiamos mas FORÇAMOS o ID e Versão depois
-          if [ -f "../config.xml" ]; then
-             cp ../config.xml .
-          fi
+          if [ -f "../config.xml" ]; then cp "../config.xml" .; fi
 
-          # Script Python para editar o XML com precisão cirúrgica
-          # Isso garante que o ID e Versão sejam os do Painel, ignorando o arquivo antigo
           cat <<EOF > fix_config.py
           import xml.etree.ElementTree as ET
           import os
@@ -137,25 +135,17 @@ jobs:
           try:
               tree = ET.parse('config.xml')
               root = tree.getroot()
-              
-              # FORÇA ID E VERSÃO
               root.set('id', '${{ env.APP_ID }}')
               root.set('version', '${{ env.APP_VER }}')
               
-              # FORÇA NOME
               for name in root.findall('{http://www.w3.org/ns/widgets}name'):
                   name.text = '${{ env.APP_NAME }}'
                   
-              # CONFIGURA ÍCONE (Se existir na pasta www)
               if os.path.exists('www/icon.png'):
-                  # Remove antigos
                   for icon in root.findall('{http://www.w3.org/ns/widgets}icon'): root.remove(icon)
-                  # Adiciona novo
                   icon = ET.SubElement(root, '{http://www.w3.org/ns/widgets}icon')
                   icon.set('src', 'www/icon.png')
-                  print("🔥 Ícone configurado no XML")
 
-              # PERMISSÕES DE ARQUIVO (Destravar)
               perms = {
                   'AndroidPersistentFileLocation': 'Compatibility',
                   'AllowFileAccess': 'true',
@@ -165,20 +155,15 @@ jobs:
                   found = False
                   for pref in root.findall('{http://www.w3.org/ns/widgets}preference'):
                       if pref.get('name') == k:
-                          pref.set('value', v)
-                          found = True
+                          pref.set('value', v); found = True
                   if not found:
-                      new_pref = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
-                      new_pref.set('name', k)
-                      new_pref.set('value', v)
+                      p = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
+                      p.set('name', k); p.set('value', v)
 
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-              print("✅ Config.xml reconstruído com sucesso!")
           except Exception as e:
-              print(f"❌ Erro ao editar XML: {e}")
-              exit(1)
+              print(f"Erro XML: {e}"); exit(1)
           EOF
-          
           python3 fix_config.py
 
       # --- 5. PLUGINS ---
@@ -187,7 +172,6 @@ jobs:
           cd app-temp
           cordova platform add android@12.0.0
           
-          # Plugins Essenciais
           cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
@@ -199,7 +183,6 @@ jobs:
           cordova plugin add cordova-plugin-androidx-adapter
 
           if [ -f "../features.json" ]; then
-             # Leitura simplificada e instalação condicional
              if [ "$(jq -r '.vibration' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-vibration; fi
              if [ "$(jq -r '.camera' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-camera; fi
              if [ "$(jq -r '.geolocation' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -260,13 +243,12 @@ jobs:
             📱 **ID:** `${{ env.APP_ID }}`
             💾 **Tamanho:** ${{ env.FILE_SIZE }}
             
-            ⬇️ **BAIXE O ARQUIVO ABAIXO EM ASSETS**
+            📥 **BAIXE O ARQUIVO ABAIXO EM ASSETS**
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      # --- 5. LOG FINAL (DISCORD COM DOWNLOAD) ---
-      - name: 🔔 Discord Admin (Relatório Final)
+      - name: 🔔 Discord (Fim)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -315,7 +297,7 @@ jobs:
               "description": desc,
               "color": color,
               "fields": fields,
-              "footer": {"text": "Sistema V43 Enterprise"},
+              "footer": {"text": "Sistema V44 Enterprise"},
               "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             }]
           }
