@@ -1,243 +1,115 @@
-name: Fábrica Enterprise V24 (Full Plugins + Splash) 🚀
+name: Fábrica Turbo V27 (Compact + Discord Pro) 🚀
 
 on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: { contents: write }
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 📥 Baixando Código
+      - name: 📥 Setup Ambiente
         uses: actions/checkout@v3
-
-      # --- 1. CONFIGURAÇÃO DE AMBIENTE ---
-      - name: ⚡ Cache Gradle & NPM
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.npm
-          key: ${{ runner.os }}-gradle-v24-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-v24-
-
-      - name: ☕ Configurando Java 17
+      
+      - name: ⚡ Cache & Java
         uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+        with: { distribution: 'temurin', java-version: '17', cache: 'gradle' }
 
-      - name: 🛠️ Instalando Gradle 8.7
+      - name: 🛠️ Setup Gradle & SDK
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
+        with: { gradle-version: '8.7' }
 
-      - name: 🛠️ Configurando Android SDK
+      - name: ⚙️ Instalação Core
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
-
-      - name: 📦 Instalando Cordova
-        run: |
           npm install -g cordova
 
-      # --- 2. CRIAÇÃO DO APP ---
-      - name: 🏗️ Criando a Base do App
+      - name: 🏗️ Construção do Projeto (All-in-One)
         run: |
-          cordova create app-temp com.kaua.app "Seu App Enterprise"
+          # 1. Criação
+          cordova create app-temp com.kaua.app "Seu App"
+          rm -rf app-temp/www/* && cp -r www/* app-temp/www/
+          [ -f config.xml ] && cp config.xml app-temp/
           
-          # Limpa o exemplo padrão e copia o site do usuário
-          rm -rf app-temp/www/*
-          cp -r www/* app-temp/www/
-
-          # Copia o config.xml se existir
-          if [ -f config.xml ]; then 
-            echo "📄 Config.xml encontrado! Aplicando..."
-            cp config.xml app-temp/
-          fi
-
-      - name: 🎨 Configurando Ícone e Splash
-        run: |
           cd app-temp
           
-          # --- ÍCONE ---
-          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
-          if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone encontrado!"
-            cp "$ICON_FILE" ./icon.png
-            sed -i '/<icon/d' config.xml
-            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
-          fi
+          # 2. Assets (Ícone/Splash)
+          ICON=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
+          [ -n "$ICON" ] && cp "$ICON" ./icon.png && sed -i '/<icon/d' config.xml && sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+          SPLASH=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
+          [ -n "$SPLASH" ] && cp "$SPLASH" ./splash.png && sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
           
-          # --- SPLASH SCREEN (NOVO) ---
-          # Procura por splash.png na pasta www
-          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
-          if [ -n "$SPLASH_FILE" ]; then
-             echo "🌊 Splash Screen encontrada!"
-             cp "$SPLASH_FILE" ./splash.png
-             
-             # Remove tags antigas e injeta as novas
-             sed -i '/<splash/d' config.xml
-             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
-             
-             # Configurações de exibição do Splash
-             sed -i '/<widget/a \    <preference name="SplashScreenDelay" value="3000" />' config.xml
-             sed -i '/<widget/a \    <preference name="SplashScreen" value="screen" />' config.xml
-             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
-             sed -i '/<widget/a \    <preference name="FadeSplashScreen" value="true" />' config.xml
-          fi
-          
-          # Injeção de Permissões de Arquivo
+          # 3. Configurações de Permissão
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
-
-      # --- 3. INSTALAÇÃO DE PLUGINS ---
-      - name: 🔌 Instalando Plugins e Plataforma
-        run: |
-          cd app-temp
           
-          # Adiciona plataforma Android 12 (Estável)
+          # 4. Plugins
           cordova platform add android@12.0.0
-          
-          # Remove plugin conflitante
           cordova plugin remove cordova-plugin-whitelist || true
+          PLUGINS="cordova-plugin-ionic-webview cordova-plugin-device cordova-plugin-dialogs cordova-plugin-android-permissions cordova-plugin-inappbrowser cordova-plugin-file cordova-plugin-filepath cordova-plugin-androidx-adapter"
+          for p in $PLUGINS; do cordova plugin add $p; done
           
-          # --- PLUGINS BASE ---
-          cordova plugin add cordova-plugin-ionic-webview
-          cordova plugin add cordova-plugin-device
-          cordova plugin add cordova-plugin-dialogs
-          cordova plugin add cordova-plugin-android-permissions
-          cordova plugin add cordova-plugin-inappbrowser
-          cordova plugin add cordova-plugin-file
-          cordova plugin add cordova-plugin-filepath
-          cordova plugin add cordova-plugin-androidx-adapter
-
-          # --- PLUGINS OPCIONAIS (Lê do features.json) ---
+          # Plugins Opcionais (Features JSON)
           if [ -f "../features.json" ]; then
-            echo "📄 Lendo configurações..."
-            USE_NOTIF=$(jq -r '.notification' ../features.json)
-            USE_VIBRA=$(jq -r '.vibration' ../features.json)
-            USE_CAM=$(jq -r '.camera' ../features.json)
-            USE_GPS=$(jq -r '.geolocation' ../features.json)
-            USE_BATTERY=$(jq -r '.battery' ../features.json)
-            USE_NETWORK=$(jq -r '.network' ../features.json)
-            USE_ORIENT=$(jq -r '.orientation' ../features.json)
-            USE_FULLSCREEN=$(jq -r '.fullscreen' ../features.json)
-            USE_FLASHLIGHT=$(jq -r '.flashlight' ../features.json)
-            USE_MIC=$(jq -r '.microphone' ../features.json)
-            USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
-            USE_TOAST=$(jq -r '.toast' ../features.json)
-            USE_STATUSBAR=$(jq -r '.statusbar' ../features.json)
-            USE_CLIPBOARD=$(jq -r '.clipboard' ../features.json)
-            USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
-            USE_FILE=$(jq -r '.file' ../features.json)
-
-            # Instalação condicional
-            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification; fi
-            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
-            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
-            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
-            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
-            if [ "$USE_NETWORK" = "true" ]; then cordova plugin add cordova-plugin-network-information; fi
-            if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
-            if [ "$USE_FULLSCREEN" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
-            if [ "$USE_FLASHLIGHT" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
-            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
-            if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
-            if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
-            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
+            # ID/Versão
+            CID=$(jq -r '.packageId // empty' ../features.json); [ ! -z "$CID" ] && sed -i "s/id=\"[^\"]*\"/id=\"$CID\"/" config.xml
+            CVER=$(jq -r '.version // empty' ../features.json); [ ! -z "$CVER" ] && sed -i "s/version=\"[^\"]*\"/version=\"$CVER\"/" config.xml
             
-            if [ "$USE_MIC" = "true" ]; then
-               cordova plugin add cordova-plugin-media
-               cordova plugin add cordova-plugin-media-capture
-            fi
+            # Instalação Condicional Compacta
+            declare -A P=( ["vibration"]="cordova-plugin-vibration" ["camera"]="cordova-plugin-camera" ["geolocation"]="cordova-plugin-geolocation" ["battery"]="cordova-plugin-battery-status" ["network"]="cordova-plugin-network-information" ["orientation"]="cordova-plugin-screen-orientation" ["fullscreen"]="cordova-plugin-fullscreen" ["flashlight"]="cordova-plugin-flashlight" ["toast"]="cordova-plugin-x-toast" ["insomnia"]="cordova-plugin-insomnia" ["statusbar"]="cordova-plugin-statusbar" ["clipboard"]="cordova-plugin-clipboard" ["splashscreen"]="cordova-plugin-splashscreen" ["file"]="cordova-plugin-file-opener2" )
+            for k in "${!P[@]}"; do
+               if [ "$(jq -r ".$k" ../features.json)" = "true" ]; then cordova plugin add ${P[$k]}; fi
+            done
+            if [ "$(jq -r '.microphone' ../features.json)" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
+            if [ "$(jq -r '.notification' ../features.json)" = "true" ]; then cordova plugin add cordova-plugin-local-notification || echo "Skip Notif"; fi
           fi
-          
-          # Prepara arquivos para correção
-          cordova prepare android
 
-      # --- 4. CORREÇÃO DE ERROS (GRADLE) ---
-      - name: 🚑 Reparando Scripts do Gradle
+      - name: 📱 Compilação & Fix (Gradle)
         run: |
           cd app-temp
-          echo "🔧 Iniciando reparo cirúrgico..."
-          
+          # Fix Gradle Antigo
           if [ -d "platforms/android" ]; then
-              # Substitui 'compile' por 'implementation' (Correção do Gradle 8)
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/debugCompile /debugImplementation /g' {} +
-              
-              # Força versão 33 do SDK
-              echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
-              echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
-              echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
-              echo "android.useAndroidX=true" >> platforms/android/gradle.properties
-              echo "android.enableJetifier=true" >> platforms/android/gradle.properties
-              
-              echo "✅ Reparos concluídos."
-          else
-              echo "⚠️ Pasta platforms/android não encontrada. Continuando..."
+            find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
+            echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
           fi
-
-      - name: 🏷️ Detectando Nome
-        id: get_name
-        run: |
-          cd app-temp
-          APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
           
-          # Gera ID único para não substituir apps diferentes no celular
-          SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g')
-          NEW_ID="com.kaua.app.$SAFE_ID"
-          sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
-
-      - name: 🧹 Limpando Cache
-        run: |
-          cd app-temp
-          rm -rf ~/.gradle/caches/
-
-      # --- 5. BUILD ---
-      - name: 📱 Compilando APK
-        run: |
-          cd app-temp
-          echo "🚀 Iniciando Build..."
+          # Build
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
+          # Renomear e Mover
+          APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
+          SAFE_NAME=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
-          if [ -z "$APK_PATH" ]; then
-            echo "❌ ERRO: APK não encontrado!"
-            exit 1
-          else
-            SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
-            mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
-            echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
-          fi
+          [ -z "$APK_PATH" ] && exit 1 || mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
+          
+          # Variáveis para próximos passos
+          echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
-      # --- 6. ENTREGA (RELEASE OFICIAL) ---
-      - name: 🚀 Criar Release no GitHub
+      - name: 🚀 Release & Notificação
         uses: softprops/action-gh-release@v1
         if: success()
         with:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
-          body: |
-            ✅ **Seu App está pronto!**
-            
-            📱 **Nome:** ${{ env.APP_NAME }}
-            🛠️ **Versão:** v${{ github.run_number }}
-            
-            📥 **Clique no arquivo abaixo em 'Assets' para baixar.**
+          body: "✅ **App Pronto!** Baixe em Assets."
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔔 Discord Pro Notification
+        if: always() && env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          STATUS: ${{ job.status }}
+        run: |
+          COLOR=5763712; TITLE="✅ SUCESSO"; DESC="APK Criado com sucesso!";
+          if [ "$STATUS" == "failure" ]; then COLOR=15548997; TITLE="❌ FALHA"; DESC="Erro no processamento."; fi
+          
+          # JSON Embed Formatado para Discord
+          curl -H "Content-Type: application/json" -d "{\"embeds\":[{\"title\":\"$TITLE: ${{ env.APP_NAME }}\",\"description\":\"$DESC\",\"color\":$COLOR,\"fields\":[{\"name\":\"Versão\",\"value\":\"v${{ github.run_number }}\",\"inline\":true},{\"name\":\"Link\",\"value\":\"[Baixar no GitHub](${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }})\",\"inline\":true}],\"footer\":{\"text\":\"Fábrica Turbo V27\"}}]}" $DISCORD_WEBHOOK
