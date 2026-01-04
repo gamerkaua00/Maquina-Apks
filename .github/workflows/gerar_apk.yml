@@ -1,4 +1,4 @@
-name: Fábrica Turbo V40 (Icon Fix + ID Guarantee) 🚀
+name: Fábrica Turbo V41 (Python XML Fix + Admin Dashboard) 🚀
 
 on:
   push:
@@ -20,134 +20,150 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. LEITURA "GENESIS" ---
-      - name: 🧠 Ler Configurações
-        id: genesis
-        run: |
-          # Padrões
-          ID="com.kaua.app"
-          NAME="App Turbo"
-          VER="1.0.0"
-          
-          # Lê do JSON (Painel)
-          if [ -f "features.json" ]; then
-             J_ID=$(jq -r '.packageId // empty' features.json)
-             J_VER=$(jq -r '.version // empty' features.json)
-             if [ ! -z "$J_ID" ]; then ID=$J_ID; fi
-             if [ ! -z "$J_VER" ]; then VER=$J_VER; fi
-          fi
-          
-          # Lê Nome (XML antigo)
-          if [ -f "config.xml" ]; then
-             X_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-             if [ ! -z "$X_NAME" ]; then NAME=$X_NAME; fi
-          fi
-          
-          echo "GEN_ID=$ID" >> $GITHUB_ENV
-          echo "GEN_NAME=$NAME" >> $GITHUB_ENV
-          echo "GEN_VER=$VER" >> $GITHUB_ENV
-
-      # --- 2. NOTIFICAÇÃO INÍCIO ---
-      - name: 🔔 Discord (Início)
-        if: env.DISCORD_WEBHOOK != ''
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: |
-          cat <<EOF > notify_start.py
-          import os, json, urllib.request
-          webhook = os.environ.get('DISCORD_WEBHOOK')
-          if not webhook: exit(0)
-          data = {
-            "username": "Fábrica V40 🤖",
-            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
-            "embeds": [{
-              "title": "🏭 Produção Iniciada",
-              "color": 16776960,
-              "fields": [
-                {"name": "App", "value": "${{ env.GEN_NAME }}", "inline": True},
-                {"name": "ID", "value": "\`${{ env.GEN_ID }}\`", "inline": True},
-                {"name": "Versão", "value": "${{ env.GEN_VER }}", "inline": True}
-              ]
-            }]
-          }
-          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
-          try: urllib.request.urlopen(urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers))
-          except: pass
-          EOF
-          python3 notify_start.py
-
-      # --- SETUP ---
-      - name: ☕ Setup Java 17
+      # --- 1. SETUP DE AMBIENTE ---
+      - name: ☕ Setup Java & Gradle
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🔨 Gradle 8.7 (Manual)
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip
-          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
-
-      - name: 🛠️ Android SDK
+      - name: 🛠️ Setup Android SDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 3. CONSTRUÇÃO DO NÚCLEO ---
-      - name: 🏗️ Montando Arquitetura
+      # --- 2. PREPARAÇÃO DE DADOS ---
+      - name: 🧠 Processando Dados (Python)
+        id: dados
         run: |
-          echo "🚀 Criando App: ${{ env.GEN_ID }}"
+          # Script Python para ler JSON com segurança
+          cat <<EOF > ler_dados.py
+          import json, os
           
-          # Criação limpa
-          cordova create app-temp ${{ env.GEN_ID }} "${{ env.GEN_NAME }}"
+          def get_val(key, default):
+              try:
+                  with open('features.json') as f:
+                      data = json.load(f)
+                      return data.get(key, default)
+              except:
+                  return default
           
-          # Migração do Site
+          # Define variáveis para o GitHub Action usar
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"APP_ID={get_val('packageId', 'com.fabrica.app')}\n")
+              f.write(f"APP_VER={get_val('version', '1.0.0')}\n")
+              # Nome vem do config.xml se existir, senão usa padrão
+              f.write(f"APP_NAME=App Turbo\n") 
+          EOF
+          python3 ler_dados.py
+          
+          # Tenta pegar nome do config.xml antigo se existir
+          if [ -f config.xml ]; then
+             NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
+             if [ ! -z "$NAME" ]; then echo "APP_NAME=$NAME" >> $GITHUB_ENV; fi
+          fi
+
+      - name: 🔔 Discord (Status: Iniciando)
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"username\": \"Fábrica Admin 🛡️\", \"embeds\":[{\"title\": \"🟡 Iniciando Build: ${{ env.APP_NAME }}\", \"description\": \"🆔 \`${{ env.APP_ID }}\`\\n🔢 v${{ env.APP_VER }}\", \"color\": 16776960}]}" \
+          $DISCORD_WEBHOOK
+
+      # --- 3. CRIAÇÃO DO PROJETO ---
+      - name: 🏗️ Criando Estrutura
+        run: |
+          echo "Criando projeto com ID: ${{ env.APP_ID }}"
+          cordova create app-temp ${{ env.APP_ID }} "${{ env.APP_NAME }}"
+          
+          # Limpa www padrão e copia o do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
-          
+
+      # --- 4. MANIPULAÇÃO XML (MÉTODO NOVO: PYTHON ELEMENTTREE) ---
+      # Este método é muito mais seguro que SED. Ele edita a estrutura do XML real.
+      - name: 🔧 Configuração Cirúrgica (XML)
+        run: |
           cd app-temp
           
-          # 1. FORÇA ID NO XML (Garantia absoluta)
-          # Substitui qualquer id="..." pelo ID correto do painel
-          sed -i 's/id="[^"]*"/id="${{ env.GEN_ID }}"/g' config.xml
-          
-          # 2. FORÇA VERSÃO
-          sed -i 's/version="1.0.0"/version="${{ env.GEN_VER }}"/g' config.xml
-          
-          # 3. CONFIGURAÇÃO DE ÍCONE (A chave do problema)
-          # Procura o ícone enviado
-          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
-          
-          if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone detectado: $ICON_FILE"
-            # Copia para a raiz do projeto (onde o config.xml vê)
-            cp "$ICON_FILE" ./icon.png
-            # Injeta a tag no XML (Isso faz o Cordova reconhecer)
-            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
-          else
-             echo "⚠️ Sem ícone personalizado. Baixando padrão..."
-             curl -L -o ./icon.png "https://img.icons8.com/fluency/512/robot-2.png"
-             sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+          # Prepara ícone se existir
+          HAS_ICON="false"
+          ICON_SRC=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
+          if [ -n "$ICON_SRC" ]; then
+             cp "$ICON_SRC" res_icon.png
+             HAS_ICON="true"
           fi
           
-          # 4. SPLASH SCREEN
-          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
-          if [ -n "$SPLASH_FILE" ]; then
-             cp "$SPLASH_FILE" ./splash.png
-             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
-             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
+          # Prepara Splash
+          HAS_SPLASH="false"
+          SPLASH_SRC=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
+          if [ -n "$SPLASH_SRC" ]; then
+             cp "$SPLASH_SRC" res_splash.png
+             HAS_SPLASH="true"
           fi
-          
-          # 5. PERMISSÕES
-          sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
-          sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
-          sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
+          # Script Python para editar o config.xml
+          cat <<EOF > edit_xml.py
+          import xml.etree.ElementTree as ET
+          
+          ET.register_namespace('', "http://www.w3.org/ns/widgets")
+          ET.register_namespace('cdv', "http://cordova.apache.org/ns/1.0")
+          
+          tree = ET.parse('config.xml')
+          root = tree.getroot()
+          
+          # 1. Força ID e Versão
+          root.set('id', '${{ env.APP_ID }}')
+          root.set('version', '${{ env.APP_VER }}')
+          
+          # 2. Força Nome
+          for name in root.findall('{http://www.w3.org/ns/widgets}name'):
+              name.text = '${{ env.APP_NAME }}'
+          
+          # 3. Adiciona Ícone (Se tiver)
+          if "$HAS_ICON" == "true":
+              # Remove antigos
+              for icon in root.findall('{http://www.w3.org/ns/widgets}icon'):
+                  root.remove(icon)
+              # Adiciona novo
+              icon = ET.SubElement(root, '{http://www.w3.org/ns/widgets}icon')
+              icon.set('src', 'res_icon.png')
+          
+          # 4. Adiciona Splash (Se tiver)
+          if "$HAS_SPLASH" == "true":
+              splash = ET.SubElement(root, '{http://www.w3.org/ns/widgets}splash')
+              splash.set('src', 'res_splash.png')
+              
+              pref = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
+              pref.set('name', 'ShowSplashScreen')
+              pref.set('value', 'true')
+
+          # 5. Permissões
+          perms = [
+              ('AndroidPersistentFileLocation', 'Compatibility'),
+              ('AllowFileAccess', 'true'),
+              ('requestLegacyExternalStorage', 'true')
+          ]
+          for p in perms:
+              pref = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
+              pref.set('name', p[0])
+              pref.set('value', p[1])
+
+          tree.write('config.xml', encoding='utf-8', xml_declaration=True)
+          print("✅ XML Editado com Sucesso via Python")
+          EOF
+          
+          python3 edit_xml.py
+          cat config.xml # Mostra no log para conferência
+
+      # --- 5. PLUGINS ---
       - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
+          cordova platform add android@12.0.0
           
-          # Plugins Base
+          # Base
           cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
@@ -158,125 +174,145 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
+          # Opcionais via features.json
           if [ -f "../features.json" ]; then
-            # Instalação Opcional
-            USE_VIBRA=$(jq -r '.vibration' ../features.json); [ "$USE_VIBRA" = "true" ] && cordova plugin add cordova-plugin-vibration
-            USE_CAM=$(jq -r '.camera' ../features.json); [ "$USE_CAM" = "true" ] && cordova plugin add cordova-plugin-camera
-            USE_GPS=$(jq -r '.geolocation' ../features.json); [ "$USE_GPS" = "true" ] && cordova plugin add cordova-plugin-geolocation
-            USE_BATTERY=$(jq -r '.battery' ../features.json); [ "$USE_BATTERY" = "true" ] && cordova plugin add cordova-plugin-battery-status
-            USE_FULL=$(jq -r '.fullscreen' ../features.json); [ "$USE_FULL" = "true" ] && cordova plugin add cordova-plugin-fullscreen
-            USE_FLASH=$(jq -r '.flashlight' ../features.json); [ "$USE_FLASH" = "true" ] && cordova plugin add cordova-plugin-flashlight
-            USE_TOAST=$(jq -r '.toast' ../features.json); [ "$USE_TOAST" = "true" ] && cordova plugin add cordova-plugin-x-toast
-            USE_INSOMNIA=$(jq -r '.insomnia' ../features.json); [ "$USE_INSOMNIA" = "true" ] && cordova plugin add cordova-plugin-insomnia
-            USE_FILE=$(jq -r '.file' ../features.json); [ "$USE_FILE" = "true" ] && cordova plugin add cordova-plugin-file-opener2
-            USE_CLIP=$(jq -r '.clipboard' ../features.json); [ "$USE_CLIP" = "true" ] && cordova plugin add cordova-plugin-clipboard
-            USE_SPLASH=$(jq -r '.splashscreen' ../features.json); [ "$USE_SPLASH" = "true" ] && cordova plugin add cordova-plugin-splashscreen
-            
-            if [ "$(jq -r '.microphone' ../features.json)" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
+             # (Mantendo a lógica simples de bash para plugins, que funciona bem)
+             USE_VIBRA=$(jq -r '.vibration' ../features.json); [ "$USE_VIBRA" = "true" ] && cordova plugin add cordova-plugin-vibration
+             USE_CAM=$(jq -r '.camera' ../features.json); [ "$USE_CAM" = "true" ] && cordova plugin add cordova-plugin-camera
+             USE_GPS=$(jq -r '.geolocation' ../features.json); [ "$USE_GPS" = "true" ] && cordova plugin add cordova-plugin-geolocation
+             USE_BAT=$(jq -r '.battery' ../features.json); [ "$USE_BAT" = "true" ] && cordova plugin add cordova-plugin-battery-status
+             USE_FULL=$(jq -r '.fullscreen' ../features.json); [ "$USE_FULL" = "true" ] && cordova plugin add cordova-plugin-fullscreen
+             USE_FLASH=$(jq -r '.flashlight' ../features.json); [ "$USE_FLASH" = "true" ] && cordova plugin add cordova-plugin-flashlight
+             USE_MIC=$(jq -r '.microphone' ../features.json); [ "$USE_MIC" = "true" ] && cordova plugin add cordova-plugin-media cordova-plugin-media-capture
+             USE_INS=$(jq -r '.insomnia' ../features.json); [ "$USE_INS" = "true" ] && cordova plugin add cordova-plugin-insomnia
+             USE_TOAST=$(jq -r '.toast' ../features.json); [ "$USE_TOAST" = "true" ] && cordova plugin add cordova-plugin-x-toast
+             USE_FILE=$(jq -r '.file' ../features.json); [ "$USE_FILE" = "true" ] && cordova plugin add cordova-plugin-file-opener2
           fi
 
-          echo "📱 Adicionando Plataforma..."
-          cordova platform add android@12.0.0
-          
-          # Fix API.js
-          if [ -d "platforms/android/cordova" ]; then
-             cd platforms/android
-             npm install --production --no-save
-             cd ../..
-          fi
-
-      - name: 🚑 Fix Gradle
+      - name: 🚑 Fix Gradle (Cirurgia)
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
+              # Corrige plugins antigos
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
+              # Força SDK 33
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
               echo "android.useAndroidX=true" >> platforms/android/gradle.properties
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
-              
-              if [ -f "platforms/android/gradle/wrapper/gradle-wrapper.properties" ]; then
-                  sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-all.zip|g' platforms/android/gradle/wrapper/gradle-wrapper.properties
-              fi
           fi
 
       - name: 📱 Build APK
+        id: build_apk
         run: |
           cd app-temp
-          # NÃO limpar cache para aproveitar o Gradle 8.7
+          rm -rf ~/.gradle/caches/
+          
+          # Inicia cronômetro
+          START_TIME=$(date +%s)
           
           echo "🚀 Compilando..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
+          # Finaliza cronômetro
+          END_TIME=$(date +%s)
+          echo "BUILD_TIME=$((END_TIME-START_TIME))s" >> $GITHUB_ENV
+          
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "❌ ERRO: APK não encontrado!"
+            echo "STATUS_BUILD=FALHA" >> $GITHUB_ENV
             exit 1
           else
-            SAFE_NAME=$(echo "${{ env.GEN_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
-            mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
-            echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
+            SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
+            # Adiciona versão no nome do arquivo
+            FINAL_NAME="${SAFE_NAME}_v${{ env.APP_VER }}.apk"
+            
+            mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL_NAME"
+            
+            # Pega tamanho do arquivo
+            FILE_SIZE=$(ls -lh "$GITHUB_WORKSPACE/$FINAL_NAME" | awk '{print $5}')
+            
+            echo "APK_FINAL=$FINAL_NAME" >> $GITHUB_ENV
+            echo "FILE_SIZE=$FILE_SIZE" >> $GITHUB_ENV
+            echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
           fi
 
-      - name: 🚀 Release GitHub
+      - name: 🚀 Release GitHub (Obrigatório)
+        id: create_release
         uses: softprops/action-gh-release@v1
         if: success()
         with:
           tag_name: v${{ github.run_number }}
-          name: "${{ env.GEN_NAME }} (v${{ github.run_number }})"
+          name: "${{ env.APP_NAME }} v${{ env.APP_VER }}"
           body: |
-            ✅ **App Pronto!**
-            📱 **Nome:** ${{ env.GEN_NAME }}
-            🆔 **ID:** `${{ env.GEN_ID }}`
+            ✅ **Build Finalizado!**
+            📱 **ID:** `${{ env.APP_ID }}`
+            💾 **Tamanho:** ${{ env.FILE_SIZE }}
             
-            📥 **BAIXAR AGORA:**
-            Clique no arquivo `.apk` listado abaixo em **Assets**.
+            ⬇️ **BAIXE O ARQUIVO ABAIXO EM ASSETS**
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 🔔 Discord (Fim)
+
+      # --- 6. PAINEL INFORMATIVO DO DISCORD (ADMIN) ---
+      - name: 🔔 Discord Admin (Relatório Final)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           STATUS: ${{ job.status }}
         run: |
-          cat <<EOF > notify_end.py
+          cat <<EOF > notify_final.py
           import os, json, urllib.request
           
           webhook = os.environ.get('DISCORD_WEBHOOK')
           status = os.environ.get('STATUS')
-          apk_name = os.environ.get('APK_FINAL', 'App')
           
-          color = 5763712 if status == 'success' else 15548997
-          title = "✅ Sucesso!" if status == 'success' else "❌ Falha na Fábrica"
-          
-          repo = "${{ github.repository }}"
-          run_id = "${{ github.run_number }}"
-          dl_link = f"https://github.com/{repo}/releases/tag/v{run_id}"
-          
-          desc = f"O APK **{apk_name}** foi gerado." if status == 'success' else "Ocorreu um erro no processo."
+          if status == 'success':
+              color = 5763712 # Verde
+              title = "✅ SUCESSO: Build Finalizado"
+              desc = "O aplicativo foi compilado, assinado (debug) e publicado."
+              
+              # Monta link direto do asset (Tentativa de prever o link)
+              repo = "${{ github.repository }}"
+              tag = "v${{ github.run_number }}"
+              filename = os.environ.get('APK_FINAL')
+              # Link oficial da release
+              dl_link = f"https://github.com/{repo}/releases/download/{tag}/{filename}"
+              page_link = f"https://github.com/{repo}/releases/tag/{tag}"
+              
+              fields = [
+                  {"name": "📱 App", "value": "${{ env.APP_NAME }}", "inline": True},
+                  {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
+                  {"name": "💾 Tamanho", "value": "${{ env.FILE_SIZE }}", "inline": True},
+                  {"name": "⏱️ Tempo", "value": "${{ env.BUILD_TIME }}", "inline": True},
+                  {"name": "📥 Download Direto", "value": f"[Baixar .apk]({dl_link})", "inline": False},
+                  {"name": "📄 Página de Download", "value": f"[Ver Release]({page_link})", "inline": False}
+              ]
+          else:
+              color = 15548997 # Vermelho
+              title = "❌ FALHA CRÍTICA"
+              desc = "O processo de build encontrou um erro e foi abortado."
+              fields = [
+                  {"name": "Logs", "value": f"[Ver Console de Erro](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"}
+              ]
           
           data = {
-            "username": "Fábrica V40 🤖",
+            "username": "Fábrica Admin 🛡️",
             "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
             "embeds": [{
               "title": title,
               "description": desc,
               "color": color,
-              "fields": [
-                {"name": "📥 Download", "value": f"[Baixar APK]({dl_link})", "inline": True},
-                {"name": "📄 Logs", "value": f"[Ver Console](${{ github.server_url }}/{repo}/actions/runs/${{ github.run_id }})", "inline": True}
-              ]
+              "fields": fields,
+              "footer": {"text": "Sistema V41 Enterprise"},
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             }]
           }
           
-          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
-          if webhook:
-              try: urllib.request.urlopen(urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers))
-              except: pass
+          req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+          try: urllib.request.urlopen(req)
+          except: pass
           EOF
-          
-          python3 notify_end.py
+          python3 notify_final.py
