@@ -1,4 +1,4 @@
-name: Fábrica Turbo V39 (Genesis ID + Python Discord) 🚀
+name: Fábrica Turbo V40 (Icon Fix + ID Guarantee) 🚀
 
 on:
   push:
@@ -20,16 +20,16 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. LEITURA "GENESIS" (Lê antes de criar) ---
-      - name: 🧠 Ler Configurações Iniciais
+      # --- 1. LEITURA "GENESIS" ---
+      - name: 🧠 Ler Configurações
         id: genesis
         run: |
-          # Valores Padrão
+          # Padrões
           ID="com.kaua.app"
           NAME="App Turbo"
           VER="1.0.0"
           
-          # Lê do JSON se existir
+          # Lê do JSON (Painel)
           if [ -f "features.json" ]; then
              J_ID=$(jq -r '.packageId // empty' features.json)
              J_VER=$(jq -r '.version // empty' features.json)
@@ -37,7 +37,7 @@ jobs:
              if [ ! -z "$J_VER" ]; then VER=$J_VER; fi
           fi
           
-          # Lê Nome do config.xml antigo (se houver) para manter compatibilidade
+          # Lê Nome (XML antigo)
           if [ -f "config.xml" ]; then
              X_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
              if [ ! -z "$X_NAME" ]; then NAME=$X_NAME; fi
@@ -46,93 +46,104 @@ jobs:
           echo "GEN_ID=$ID" >> $GITHUB_ENV
           echo "GEN_NAME=$NAME" >> $GITHUB_ENV
           echo "GEN_VER=$VER" >> $GITHUB_ENV
-          
-          echo "✅ Configuração Genesis Carregada:"
-          echo "ID: $ID | Nome: $NAME | Versão: $VER"
 
-      # --- 2. NOTIFICAÇÃO PYTHON (RICA E DETALHADA) ---
-      - name: 🔔 Discord (Python Script)
+      # --- 2. NOTIFICAÇÃO INÍCIO ---
+      - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          # Cria um script Python temporário para mandar o Embed bonito
-          cat <<EOF > notify.py
+          cat <<EOF > notify_start.py
           import os, json, urllib.request
-          
           webhook = os.environ.get('DISCORD_WEBHOOK')
           if not webhook: exit(0)
-          
           data = {
-            "username": "Fábrica V39 🤖",
+            "username": "Fábrica V40 🤖",
             "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
             "embeds": [{
-              "title": "🏭 Início da Fabricação",
-              "color": 16776960, # Amarelo
+              "title": "🏭 Produção Iniciada",
+              "color": 16776960,
               "fields": [
-                {"name": "📱 Aplicativo", "value": "${{ env.GEN_NAME }}", "inline": True},
-                {"name": "🆔 Package ID", "value": "\`${{ env.GEN_ID }}\`", "inline": True},
-                {"name": "🔢 Versão", "value": "${{ env.GEN_VER }}", "inline": True},
-                {"name": "👤 Autor", "value": "${{ github.actor }}", "inline": True}
-              ],
-              "footer": {"text": "Nova arquitetura Genesis aplicada"}
+                {"name": "App", "value": "${{ env.GEN_NAME }}", "inline": True},
+                {"name": "ID", "value": "\`${{ env.GEN_ID }}\`", "inline": True},
+                {"name": "Versão", "value": "${{ env.GEN_VER }}", "inline": True}
+              ]
             }]
           }
-          
-          # FIX: Adicionado User-Agent para evitar Erro 403 do Discord
-          headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-          
-          req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
-          try:
-            urllib.request.urlopen(req)
-          except Exception as e:
-            print(f"Erro ao enviar notificação: {e}")
+          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          try: urllib.request.urlopen(urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers))
+          except: pass
           EOF
-          
-          python3 notify.py
+          python3 notify_start.py
 
-      # --- SETUP AMBIENTE ---
+      # --- SETUP ---
       - name: ☕ Setup Java 17
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🔨 Instalar Gradle 8.7 (Manual)
+      - name: 🔨 Gradle 8.7 (Manual)
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      - name: 🛠️ Setup Android SDK
+      - name: 🛠️ Android SDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 3. CRIAÇÃO COM ID REAL ---
-      - name: 🏗️ Criando App (ID Nativo)
+      # --- 3. CONSTRUÇÃO DO NÚCLEO ---
+      - name: 🏗️ Montando Arquitetura
         run: |
-          echo "🚀 Criando projeto já com o ID: ${{ env.GEN_ID }}"
+          echo "🚀 Criando App: ${{ env.GEN_ID }}"
           
-          # AQUI É O PULO DO GATO: O app nasce com o ID certo
+          # Criação limpa
           cordova create app-temp ${{ env.GEN_ID }} "${{ env.GEN_NAME }}"
           
-          # Copia o site
+          # Migração do Site
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
           
           cd app-temp
-          # Configura versão no config.xml gerado
-          sed -i "s/version=\"1.0.0\"/version=\"${{ env.GEN_VER }}\"/" config.xml
           
-          # Permissões
+          # 1. FORÇA ID NO XML (Garantia absoluta)
+          # Substitui qualquer id="..." pelo ID correto do painel
+          sed -i 's/id="[^"]*"/id="${{ env.GEN_ID }}"/g' config.xml
+          
+          # 2. FORÇA VERSÃO
+          sed -i 's/version="1.0.0"/version="${{ env.GEN_VER }}"/g' config.xml
+          
+          # 3. CONFIGURAÇÃO DE ÍCONE (A chave do problema)
+          # Procura o ícone enviado
+          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
+          
+          if [ -n "$ICON_FILE" ]; then
+            echo "🔥 Ícone detectado: $ICON_FILE"
+            # Copia para a raiz do projeto (onde o config.xml vê)
+            cp "$ICON_FILE" ./icon.png
+            # Injeta a tag no XML (Isso faz o Cordova reconhecer)
+            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+          else
+             echo "⚠️ Sem ícone personalizado. Baixando padrão..."
+             curl -L -o ./icon.png "https://img.icons8.com/fluency/512/robot-2.png"
+             sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+          fi
+          
+          # 4. SPLASH SCREEN
+          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
+          if [ -n "$SPLASH_FILE" ]; then
+             cp "$SPLASH_FILE" ./splash.png
+             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
+             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
+          fi
+          
+          # 5. PERMISSÕES
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      - name: 🔌 Plugins e Plataforma
+      - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
           
@@ -148,103 +159,44 @@ jobs:
           cordova plugin add cordova-plugin-androidx-adapter
 
           if [ -f "../features.json" ]; then
-            USE_VIBRA=$(jq -r '.vibration' ../features.json)
-            USE_CAM=$(jq -r '.camera' ../features.json)
-            USE_GPS=$(jq -r '.geolocation' ../features.json)
-            USE_BATTERY=$(jq -r '.battery' ../features.json)
-            USE_FULL=$(jq -r '.fullscreen' ../features.json)
-            USE_FLASH=$(jq -r '.flashlight' ../features.json)
-            USE_MIC=$(jq -r '.microphone' ../features.json)
-            USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
-            USE_TOAST=$(jq -r '.toast' ../features.json)
-            USE_FILE=$(jq -r '.file' ../features.json)
-            USE_CLIP=$(jq -r '.clipboard' ../features.json)
-            USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
-
-            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
-            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
-            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
-            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
-            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
-            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
-            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
-            if [ "$USE_CLIP" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
-            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
+            # Instalação Opcional
+            USE_VIBRA=$(jq -r '.vibration' ../features.json); [ "$USE_VIBRA" = "true" ] && cordova plugin add cordova-plugin-vibration
+            USE_CAM=$(jq -r '.camera' ../features.json); [ "$USE_CAM" = "true" ] && cordova plugin add cordova-plugin-camera
+            USE_GPS=$(jq -r '.geolocation' ../features.json); [ "$USE_GPS" = "true" ] && cordova plugin add cordova-plugin-geolocation
+            USE_BATTERY=$(jq -r '.battery' ../features.json); [ "$USE_BATTERY" = "true" ] && cordova plugin add cordova-plugin-battery-status
+            USE_FULL=$(jq -r '.fullscreen' ../features.json); [ "$USE_FULL" = "true" ] && cordova plugin add cordova-plugin-fullscreen
+            USE_FLASH=$(jq -r '.flashlight' ../features.json); [ "$USE_FLASH" = "true" ] && cordova plugin add cordova-plugin-flashlight
+            USE_TOAST=$(jq -r '.toast' ../features.json); [ "$USE_TOAST" = "true" ] && cordova plugin add cordova-plugin-x-toast
+            USE_INSOMNIA=$(jq -r '.insomnia' ../features.json); [ "$USE_INSOMNIA" = "true" ] && cordova plugin add cordova-plugin-insomnia
+            USE_FILE=$(jq -r '.file' ../features.json); [ "$USE_FILE" = "true" ] && cordova plugin add cordova-plugin-file-opener2
+            USE_CLIP=$(jq -r '.clipboard' ../features.json); [ "$USE_CLIP" = "true" ] && cordova plugin add cordova-plugin-clipboard
+            USE_SPLASH=$(jq -r '.splashscreen' ../features.json); [ "$USE_SPLASH" = "true" ] && cordova plugin add cordova-plugin-splashscreen
             
-            if [ "$USE_MIC" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
+            if [ "$(jq -r '.microphone' ../features.json)" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
           fi
 
           echo "📱 Adicionando Plataforma..."
           cordova platform add android@12.0.0
           
-          echo "🏗️ Forçando Prepare..."
-          cordova prepare android || true
-          
-          # Fix API.js se necessário
+          # Fix API.js
           if [ -d "platforms/android/cordova" ]; then
              cd platforms/android
              npm install --production --no-save
              cd ../..
           fi
 
-      # --- 4. ÍCONE NUCLEAR (SUBSTITUIÇÃO FÍSICA) ---
-      - name: 🔨 Injetar Ícone (Modo Nuclear)
-        run: |
-          cd app-temp
-          # Procura ícone em www
-          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
-          
-          if [ -n "$ICON_FILE" ]; then
-             echo "🔥 Ícone encontrado: $ICON_FILE"
-             
-             # Caminho onde o Android guarda os recursos reais
-             RES="platforms/android/app/src/main/res"
-             
-             # Se a pasta res existir, vamos substituir TODOS os ícones padrão
-             if [ -d "$RES" ]; then
-                 echo "👊 Substituindo arquivos nativos..."
-                 
-                 # Lista de pastas de densidade
-                 FOLDERS="mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable"
-                 
-                 for folder in $FOLDERS; do
-                     mkdir -p "$RES/$folder"
-                     # Sobrescreve o ícone padrão do Android (ic_launcher)
-                     cp "$ICON_FILE" "$RES/$folder/ic_launcher.png"
-                     # Sobrescreve ícone redondo se existir
-                     cp "$ICON_FILE" "$RES/$folder/ic_launcher_round.png"
-                 done
-                 echo "✅ Ícones substituídos com sucesso no sistema de arquivos."
-             fi
-          else
-             echo "⚠️ Nenhum ícone encontrado para injeção nuclear."
-          fi
-          
-          # Configura Splash no config.xml se existir
-          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
-          if [ -n "$SPLASH_FILE" ]; then
-             cp "$SPLASH_FILE" ./splash.png
-             sed -i '/<platform name="android">/a \        <splash src="splash.png" />' config.xml
-             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
-          fi
-
-      - name: 🚑 Fix Gradle (Cirurgia)
+      - name: 🚑 Fix Gradle
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
-              # Troca compile por implementation
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # Força versão 33 do SDK
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
               echo "android.useAndroidX=true" >> platforms/android/gradle.properties
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
               
-              # Bloqueia Gradle 9
               if [ -f "platforms/android/gradle/wrapper/gradle-wrapper.properties" ]; then
                   sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-all.zip|g' platforms/android/gradle/wrapper/gradle-wrapper.properties
               fi
@@ -263,7 +215,6 @@ jobs:
             echo "❌ ERRO: APK não encontrado!"
             exit 1
           else
-            # Usa o nome do App para o arquivo (limpa espaços)
             SAFE_NAME=$(echo "${{ env.GEN_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
@@ -286,7 +237,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 🔔 Discord (Fim - Python)
+      - name: 🔔 Discord (Fim)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -309,7 +260,7 @@ jobs:
           desc = f"O APK **{apk_name}** foi gerado." if status == 'success' else "Ocorreu um erro no processo."
           
           data = {
-            "username": "Fábrica Bot 🤖",
+            "username": "Fábrica V40 🤖",
             "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
             "embeds": [{
               "title": title,
@@ -322,18 +273,10 @@ jobs:
             }]
           }
           
-          # FIX: User-Agent adicionado
-          headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-          
+          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
           if webhook:
-              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
-              try:
-                urllib.request.urlopen(req)
-              except Exception as e:
-                print(f"Erro Discord: {e}")
+              try: urllib.request.urlopen(urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers))
+              except: pass
           EOF
           
           python3 notify_end.py
