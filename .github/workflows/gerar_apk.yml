@@ -79,8 +79,17 @@ jobs:
             }]
           }
           
-          req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
-          urllib.request.urlopen(req)
+          # FIX: Adicionado User-Agent para evitar Erro 403 do Discord
+          headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+          
+          req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
+          try:
+            urllib.request.urlopen(req)
+          except Exception as e:
+            print(f"Erro ao enviar notificação: {e}")
           EOF
           
           python3 notify.py
@@ -313,9 +322,18 @@ jobs:
             }]
           }
           
+          # FIX: User-Agent adicionado
+          headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+          
           if webhook:
-              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
-              urllib.request.urlopen(req)
+              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
+              try:
+                urllib.request.urlopen(req)
+              except Exception as e:
+                print(f"Erro Discord: {e}")
           EOF
           
           python3 notify_end.py
