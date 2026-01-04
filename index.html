@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica Turbo V9</title>
+    <title>Fábrica Turbo V10</title>
     
     <!-- PWA Config -->
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/robot-2.png">
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgVjkiLAogICJzaG9ydF9uYW1lIjogIkZhYnJpY2EiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJpY29ucyI6IFt7InNyYyI6Imh0dHBzOi8vaW1nLmljb25zOC5jb20vZmx1ZW5jeS8xOTIvcm9ib3QtMi5wbmciLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgVjEwIiwKICAic2hvcnRfbmFtZSI6ICJGYWJyaWNhIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuaWNvbnM4LmNvbS9mbHVlbmN5LzE5Mi9yb2JvdC0yLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -31,32 +31,34 @@
     </style>
     
     <script>
-        // --- FUNÇÕES UTILITÁRIAS CARREGADAS ANTES ---
+        // --- FUNÇÕES GLOBAIS ---
+        function safeHide(id) { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }
+        function safeShow(id) { const el = document.getElementById(id); if(el) el.classList.remove('hidden'); }
+        function safeVal(id, val) { const el = document.getElementById(id); if(el) el.value = val; }
+        function safeClass(id, action, className) {
+            const el = document.getElementById(id);
+            if(el) {
+                if (action === 'add') el.classList.add(className);
+                if (action === 'remove') el.classList.remove(className);
+            }
+        }
+        
         function showView(targetId) {
             const views = ['view-login', 'view-dashboard', 'view-editor'];
-            
-            // Esconde todas as views
             views.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden-view');
             });
-
-            // Mostra a view alvo (com proteção contra null)
             const target = document.getElementById(targetId);
-            if (target) {
-                target.classList.remove('hidden-view');
-            } else {
-                console.error(`Erro Crítico: Tela '${targetId}' não encontrada no HTML.`);
-                // Fallback de segurança: tenta ir pro login
-                if(targetId !== 'view-login') showView('view-login');
+            if (target) target.classList.remove('hidden-view');
+            else {
+                const dash = document.getElementById('view-dashboard');
+                if(dash) dash.classList.remove('hidden-view');
             }
         }
 
         function updateFileStatus(input, dotId) {
-            if (input.files.length > 0) {
-                const dot = document.getElementById(dotId);
-                if(dot) dot.classList.remove('hidden');
-            }
+            if (input.files.length > 0) safeShow(dotId);
         }
     </script>
 </head>
@@ -66,18 +68,16 @@
     <!-- PWA Bar -->
     <div id="pwa-install-bar" class="hidden bg-blue-600 p-3 shadow-lg z-50 flex justify-between items-center px-6 shrink-0 safe-area-top">
         <div class="flex items-center"><i class="fas fa-download mr-3 text-white animate-bounce"></i><span class="text-xs font-bold uppercase tracking-widest">Instalar App</span></div>
-        <button onclick="instalarPWA()" class="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow hover:bg-gray-100">BAIXAR</button>
+        <button onclick="instalarPWA()" class="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow hover:bg-gray-100 transition">BAIXAR</button>
     </div>
 
     <!-- TELA 1: LOGIN -->
     <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 hidden-view scroll fade-in">
         <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-blue-500">
             <i class="fas fa-robot text-5xl text-blue-500 mb-4 block"></i>
-            <h1 class="text-2xl font-bold mb-2">Fábrica V9</h1>
+            <h1 class="text-2xl font-bold mb-2">Fábrica V10</h1>
             <p class="text-gray-400 text-sm mb-6">Acesso Seguro</p>
-            
             <input type="password" id="input-token" placeholder="Cole seu Token GitHub" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 text-sm font-mono shadow-inner">
-            
             <button onclick="salvarToken()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95 mb-4">ENTRAR</button>
             <button onclick="resetarDados()" class="text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer">Limpar Dados / Resetar</button>
         </div>
@@ -114,20 +114,31 @@
 
             <!-- Uploads -->
             <div class="grid grid-cols-3 gap-2">
-                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-blue-500 transition">
-                    <i class="fas fa-image text-xl text-gray-500 mb-1 group-hover:text-blue-500"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Ícone</p>
-                    <input type="file" id="app-icon" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'icon-dot')">
-                    <div id="icon-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
+                <div class="drop-zone bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-blue-500 transition group" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event, 'f-icon', 'preview-icon')">
+                    <img id="preview-icon" class="hidden w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition absolute inset-0">
+                    <div id="icon-placeholder" class="text-center pointer-events-none">
+                        <i class="fas fa-image text-xl text-gray-500 mb-1 group-hover:text-blue-500 transition"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Ícone</p>
+                    </div>
+                    <input type="file" id="f-icon" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="previewFile(this, 'preview-icon', 'icon-placeholder')">
+                    <div id="icon-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden z-20"></div>
                 </div>
-                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-purple-500 transition">
-                    <i class="fas fa-mobile-alt text-xl text-gray-500 mb-1 group-hover:text-purple-500"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Splash</p>
-                    <input type="file" id="app-splash" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'splash-dot')">
-                    <div id="splash-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
+
+                <div class="drop-zone bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-purple-500 transition group" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event, 'f-splash', 'preview-splash')">
+                    <img id="preview-splash" class="hidden w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition absolute inset-0">
+                    <div id="splash-placeholder" class="text-center pointer-events-none">
+                        <i class="fas fa-mobile-alt text-xl text-gray-500 mb-1 group-hover:text-purple-500 transition"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Splash</p>
+                    </div>
+                    <input type="file" id="f-splash" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="previewFile(this, 'preview-splash', 'splash-placeholder')">
+                    <div id="splash-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden z-20"></div>
                 </div>
-                <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-green-500 transition">
-                    <i class="fas fa-code text-xl text-gray-500 mb-1 group-hover:text-green-500"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Index</p>
-                    <input type="file" id="app-index" accept=".html" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'index-dot')">
-                    <div id="index-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
+
+                <div class="drop-zone bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-green-500 transition group" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event, 'f-index', 'preview-index')">
+                    <div id="preview-index" class="hidden w-full h-full bg-green-500/20 flex items-center justify-center border-2 border-green-500 rounded-xl absolute inset-0"><i class="fas fa-check text-2xl text-green-500"></i></div>
+                    <div id="index-placeholder" class="text-center pointer-events-none">
+                        <i class="fas fa-code text-xl text-gray-500 mb-1 group-hover:text-green-500 transition"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Index</p>
+                    </div>
+                    <input type="file" id="f-index" accept=".html" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="previewFile(this, 'preview-index', 'index-placeholder')">
+                    <div id="index-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden z-20"></div>
                 </div>
             </div>
 
@@ -147,16 +158,21 @@
                     <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-net" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wifi text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Wifi</span></div></label>
                     <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-bat" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-battery-half text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bat</span></div></label>
                     <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-bar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bar</span></div></label>
+                    
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-browser" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-globe text-[10px] text-gray-400 mb-1"></i><span class="text-[7px] font-bold">Web</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-toast" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-comment-alt text-[10px] text-gray-400 mb-1"></i><span class="text-[7px] font-bold">Toast</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-ins" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-eye text-[10px] text-gray-400 mb-1"></i><span class="text-[7px] font-bold">Wake</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-splash" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-bolt text-[10px] text-gray-400 mb-1"></i><span class="text-[7px] font-bold">Splash</span></div></label>
                 </div>
             </div>
             
             <div id="status-log" class="hidden bg-black/80 rounded-xl p-3 text-[10px] font-mono text-green-400 h-24 border border-gray-800 shadow-inner scroll"></div>
         </div>
 
-        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-2xl">
+        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-2xl backdrop-blur-lg">
             <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
-                <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
-                <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
+                <button onclick="save()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700 shadow">SALVAR</button>
+                <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg flex items-center justify-center space-x-2 active:scale-95 border border-white/10"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
             </div>
             <a id="btn-dl" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 text-white font-bold py-3 rounded-xl text-center text-xs block shadow-lg transition transform active:scale-95"><i class="fas fa-download mr-1"></i> BAIXAR (TURBO)</a>
             <a id="btn-backup" href="#" target="_blank" class="hidden mt-3 w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-xl text-center text-xs block shadow-lg border border-gray-700"><i class="fab fa-github mr-1"></i> PÁGINA DO GITHUB</a>
@@ -167,331 +183,166 @@
         // CONFIGURAÇÕES GLOBAIS
         const GITHUB_USER = "gamerkaua00";
         const GITHUB_REPO = "Maquina-Apks";
+        
+        // CORREÇÃO CFG - Adicionado aqui para uso nas funções API
+        const CFG = { u: GITHUB_USER, r: GITHUB_REPO };
+
         let MEUS_APPS = JSON.parse(localStorage.getItem('ma') || '[]');
+        const $ = (id) => document.getElementById(id);
 
-        // --- SISTEMA PWA ---
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-            navigator.serviceWorker.register('sw.js').catch(console.error);
+        function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+        function dragLeave(e){ e.currentTarget.classList.remove('dragover'); }
+        function dropFile(e, inputId, previewId){
+            e.preventDefault(); e.currentTarget.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if(file){
+                const input = $(inputId); const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+                previewFile(input, previewId, inputId.replace('f-','d-').replace('index', 'index'));
+                updateFileStatus(input, inputId.replace('f-','') + '-dot');
+            }
         }
-
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('pwa-install-bar').classList.remove('hidden');
-            document.getElementById('pwa-install-bar').classList.add('flex');
-        });
-
-        async function instalarPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    document.getElementById('pwa-install-bar').classList.add('hidden');
+        function previewFile(input, previewId, placeholderId) {
+            const file = input.files[0];
+            if(file){
+                if(input.id !== 'f-index') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = $(previewId);
+                        if(img) { img.src = e.target.result; img.classList.remove('hidden'); }
+                        const ph = $(placeholderId);
+                        if(ph) ph.classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    safeClass('preview-index', 'remove', 'hidden');
+                    safeClass('index-placeholder', 'add', 'hidden');
                 }
-                deferredPrompt = null;
             }
         }
 
-        // --- AUTH & INIT ---
-        window.onload = () => {
-            const token = localStorage.getItem('gt');
-            const buildPendente = localStorage.getItem('bp');
-            if (token) { 
-                showView('view-dashboard'); 
-                renderAppsList(); 
-                
-                // Sistema de Resgate de Build
-                if (buildPendente) {
-                    showView('view-editor');
-                    const logBox = document.getElementById('status-log');
-                    if (logBox) {
-                        logBox.classList.remove('hidden');
-                        logBox.innerHTML = '<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1 font-bold">> Retomando...</div>';
-                    }
-                    monitorar(token, (msg, err) => {
-                        if (logBox) {
-                            logBox.innerHTML += `<div class="${err?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1">> ${msg}</div>`;
-                            logBox.scrollTop = logBox.scrollHeight;
-                        }
-                    });
-                }
-            } else {
-                showView('view-login');
-            }
+        function updateFileStatus(input, dotId) { if(input.files.length > 0) safeClass(dotId, 'remove', 'hidden'); }
+
+        if('serviceWorker'in navigator && (location.protocol==='https:'||location.protocol==='http:')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        let defP; window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();defP=e;safeClass('pwa-install-bar','remove','hidden');safeClass('pwa-install-bar','add','flex')});
+        async function instalarPWA(){if(defP){defP.prompt();const{outcome}=await defP.userChoice;if(outcome==='accepted')safeClass('pwa-install-bar','add','hidden');defP=null}}
+
+        window.onload=()=>{
+            const t=localStorage.getItem('gt'); const bp=localStorage.getItem('bp');
+            if(t){ showView('view-dashboard'); list(); if(bp){ showView('view-editor'); safeClass('status-log','remove','hidden'); const logEl=$('status-log'); if(logEl) logEl.innerHTML='<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1 font-bold">> Reconectando...</div>'; monitor(t); }
+            }else showView('view-login');
         };
+        function salvarToken(){ const t=$('input-token').value.trim(); if(t.startsWith('ghp_')){localStorage.setItem('gt',t);showView('view-dashboard');list();}else alert("Token inválido!"); }
+        function logout(){ if(confirm("Sair?")){localStorage.removeItem('gt');location.reload();} }
+        function resetarDados(){ if(confirm("Apagar tudo?")){localStorage.clear();location.reload();} }
+        function showView(id){ ['view-login','view-dashboard','view-editor'].forEach(v=>safeClass(v,'add','hidden-view')); safeClass(id,'remove','hidden-view'); }
+        function voltarDashboard(){ localStorage.removeItem('bp'); showView('view-dashboard'); list(); }
 
-        function salvarToken() {
-            const t = document.getElementById('input-token').value.trim();
-            if (t.startsWith('ghp_')) {
-                localStorage.setItem('gt', t);
-                showView('view-dashboard');
-                renderAppsList();
-            } else alert("Token inválido! Deve começar com ghp_");
-        }
-
-        function logout() {
-            if(confirm("Tem certeza que deseja sair?")) {
-                localStorage.removeItem('gt');
-                location.reload();
-            }
-        }
-
-        function resetarDados() {
-            if(confirm("Isso apagará TODOS os apps salvos e o token. Continuar?")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        function showView(id) {
-            ['view-login', 'view-dashboard', 'view-editor'].forEach(v => {
-                const el = document.getElementById(v);
-                if(el) el.classList.add('hidden-view');
-            });
-            const target = document.getElementById(id);
-            if(target) target.classList.remove('hidden-view');
-        }
-
-        function voltarDashboard() { 
-            localStorage.removeItem('bp'); 
-            showView('view-dashboard'); 
-            renderAppsList(); 
-        }
-
-        // --- DASHBOARD LOGIC (LOJA DE APPS) ---
-        function renderAppsList() {
-            const list = document.getElementById('apps-list');
-            if(!list) return;
-            list.innerHTML = '';
-            
-            if (MEUS_APPS.length === 0) {
-                list.innerHTML = `<div class="col-span-2 text-center py-20 text-gray-700 opacity-60"><i class="fas fa-ghost text-5xl mb-3"></i><br>Nenhum projeto.</div>`;
-                return;
-            }
-
-            MEUS_APPS.forEach(app => {
-                const icon = app.iconData ? `data:image/png;base64,${app.iconData}` : 'https://img.icons8.com/fluency/48/android-os.png';
-                let btn = app.lastDownloadUrl ? `<a href="${app.lastDownloadUrl}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-3 left-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1.5 rounded-full shadow-lg font-bold z-10 flex items-center active:scale-95 transition border border-white/10"><i class="fas fa-download mr-1"></i> BAIXAR</a>` : '';
-                list.innerHTML += `<div onclick="openApp(${app.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition"><div class="flex flex-col items-center"><img src="${icon}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${app.name}</h3><div class="text-[9px] text-gray-500">${app.ver||'v1.0'}</div></div>${btn}<button onclick="event.stopPropagation();del(${app.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
+        function list(){
+            const l=$('apps-list'); if(!l) return; l.innerHTML='';
+            if(!MEUS_APPS.length) l.innerHTML='<div class="col-span-2 text-center py-20 text-gray-700 opacity-60">Nenhum projeto.</div>';
+            MEUS_APPS.forEach(a=>{
+                const i=a.icon||'https://img.icons8.com/fluency/48/android-os.png';
+                const b=a.url?`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-2 left-2 bg-green-600 text-white text-[9px] px-2 py-1 rounded shadow z-10 font-bold tracking-wide">BAIXAR</a>`:'';
+                l.innerHTML+=`<div onclick="openApp(${a.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition cursor-pointer shadow-lg"><div class="flex flex-col items-center"><img src="${i}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${a.name}</h3><div class="text-[9px] text-gray-500">${a.ver||'v1.0'}</div></div>${b}<button onclick="event.stopPropagation();del(${a.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/5 transition"><i class="fas fa-times"></i></button></div>`;
             });
         }
 
-        // --- FUNÇÕES EDITOR ---
-        function novoApp() {
-            // Limpa tudo com verificações de segurança
-            const editId = document.getElementById('edit-id'); if(editId) editId.value = '';
-            const appName = document.getElementById('app-name'); if(appName) appName.value = '';
-            const appPkg = document.getElementById('app-pkg'); if(appPkg) appPkg.value = '';
-            const appVer = document.getElementById('app-ver'); if(appVer) appVer.value = '1.0.0';
+        // --- FUNÇÃO NOVOAPP CORRIGIDA ---
+        function novoApp(){ 
+            safeVal('edit-id', ''); safeVal('app-name', ''); safeVal('app-pkg', ''); safeVal('app-ver', '1.0.0');
+            ['f-icon','f-index','f-splash'].forEach(i=>safeVal(i, ''));
+            ['preview-icon','preview-splash','preview-index'].forEach(i=>safeClass(i,'add','hidden'));
+            ['icon-placeholder','splash-placeholder','index-placeholder'].forEach(i=>safeClass(i,'remove','hidden'));
+            ['icon-dot','index-dot','splash-dot'].forEach(i=>safeClass(i,'add','hidden'));
+            ['status-log','btn-dl','btn-backup'].forEach(i=>safeClass(i,'add','hidden'));
+            safeClass('btn-build','remove','hidden');
+            const et = $('editor-title'); if(et) et.innerText = "Novo Projeto";
+            document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
+            showView('view-editor');
+        }
+
+        function openApp(id){
+            const a=MEUS_APPS.find(x=>x.id===id); if(!a)return;
+            safeVal('edit-id', a.id); safeVal('app-name', a.name); safeVal('app-pkg', a.pkg||''); safeVal('app-ver', a.ver||'1.0.0');
+            const et=$('editor-title'); if(et) et.innerText=a.name;
+            ['f-icon','f-index','f-splash'].forEach(i=>safeVal(i, ''));
+            if(a.feat) for(let k in a.feat) { const el=$('c-'+k); if(el) el.checked=a.feat[k]; }
             
-            // Limpa inputs file
-            ['app-icon', 'app-index', 'app-splash'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = '';
-            });
-            
-            // Esconde dots
-            ['icon-dot', 'index-dot', 'splash-dot'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.classList.add('hidden');
-            });
-            
-            // Uncheck all
-            document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
-            
-            // Reset botões
-            const statusLog = document.getElementById('status-log'); if(statusLog) statusLog.classList.add('hidden');
-            const btnDownload = document.getElementById('btn-download'); if(btnDownload) btnDownload.classList.add('hidden');
-            const btnBackup = document.getElementById('btn-backup'); if(btnBackup) btnBackup.classList.add('hidden');
-            const btnBuild = document.getElementById('btn-build'); if(btnBuild) btnBuild.classList.remove('hidden');
-            
-            const editorTitle = document.getElementById('editor-title');
-            if(editorTitle) editorTitle.innerText = "Novo Projeto";
+            if(a.icon) { if($('preview-icon')) { $('preview-icon').src=`data:image/png;base64,${a.icon}`; safeClass('preview-icon','remove','hidden'); safeClass('icon-placeholder','add','hidden'); safeClass('icon-dot','remove','hidden'); } }
+            if(a.html) { safeClass('preview-index','remove','hidden'); safeClass('index-placeholder','add','hidden'); safeClass('index-dot','remove','hidden'); }
+            if(a.splash) { if($('preview-splash')) { $('preview-splash').src=`data:image/png;base64,${a.splash}`; safeClass('preview-splash','remove','hidden'); safeClass('splash-placeholder','add','hidden'); safeClass('splash-dot','remove','hidden'); } }
             
             showView('view-editor');
         }
 
-        function openApp(id) {
-            const app = MEUS_APPS.find(x => x.id === id);
-            if(!app) return;
-            
-            const editId = document.getElementById('edit-id'); if(editId) editId.value = app.id;
-            const appName = document.getElementById('app-name'); if(appName) appName.value = app.name;
-            const appPkg = document.getElementById('app-pkg'); if(appPkg) appPkg.value = app.pkg || '';
-            const appVer = document.getElementById('app-ver'); if(appVer) appVer.value = app.ver || '1.0.0';
-            
-            const editorTitle = document.getElementById('editor-title');
-            if(editorTitle) editorTitle.innerText = app.name;
-            
-            // Limpa file inputs
-            ['app-icon', 'app-index', 'app-splash'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = '';
-            });
-
-            if(app.features) {
-                for (let k in app.features) {
-                    const el = document.getElementById('c-'+k);
-                    if(el) el.checked = app.features[k];
-                }
-            }
-            
-            // Mostra dots
-            const iconDot = document.getElementById('icon-dot');
-            if(iconDot) { if(app.iconData) iconDot.classList.remove('hidden'); else iconDot.classList.add('hidden'); }
-            
-            const indexDot = document.getElementById('index-dot');
-            if(indexDot) { if(app.indexData) indexDot.classList.remove('hidden'); else indexDot.classList.add('hidden'); }
-            
-            const splashDot = document.getElementById('splash-dot');
-            if(splashDot) { if(app.splashData) splashDot.classList.remove('hidden'); else splashDot.classList.add('hidden'); }
-            
-            showView('view-editor');
-        }
-
-        function del(id) {
-            if(confirm("Apagar?")) {
-                MEUS_APPS = MEUS_APPS.filter(x => x.id !== id);
-                localStorage.setItem('ma', JSON.stringify(MEUS_APPS));
-                renderAppsList();
-            }
-        }
-
+        function del(id){ if(confirm("Apagar?")){ MEUS_APPS=MEUS_APPS.filter(x=>x.id!==id); localStorage.setItem('ma',JSON.stringify(MEUS_APPS)); list(); } }
         const b64 = f => new Promise((r,j)=>{const d=new FileReader();d.readAsDataURL(f);d.onload=()=>r(d.result.split(',')[1]);d.onerror=j;});
 
-        // --- SAVE & BUILD ---
-        async function save(url = null) {
-            const nameEl = document.getElementById('app-name');
-            const name = nameEl ? nameEl.value : null;
-            
-            if(!name) return alert("Dê um nome ao app!");
-            
-            const idInput = document.getElementById('edit-id');
-            const iconFile = document.getElementById('app-icon').files[0];
-            const indexFile = document.getElementById('app-index').files[0];
-            const splashFile = document.getElementById('app-splash').files[0];
-            
-            const pkgInput = document.getElementById('app-pkg');
-            const verInput = document.getElementById('app-ver');
-
-            let app = idInput.value ? MEUS_APPS.find(x => x.id == idInput.value) : null;
-            if(!app) { app = {id: Date.now()}; MEUS_APPS.push(app); }
-
-            app.name = name;
-            app.date = Date.now();
-            app.pkg = pkgInput ? pkgInput.value : '';
-            app.ver = verInput ? verInput.value : '1.0.0';
-            
-            if(url) app.lastDownloadUrl = url;
-            
-            app.features = {};
-            document.querySelectorAll('input[type=checkbox]').forEach(c => app.features[c.id.replace('c-','')] = c.checked);
-
-            if(iconFile) app.iconData = await b64(iconFile);
-            if(indexFile) app.indexData = await b64(indexFile);
-            if(splashFile) app.splashData = await b64(splashFile);
-
-            const idx = MEUS_APPS.findIndex(x => x.id === app.id);
-            if(idx >= 0) MEUS_APPS[idx] = app; else MEUS_APPS.push(app);
-            
-            localStorage.setItem('ma', JSON.stringify(MEUS_APPS));
-            
-            if(!url) { alert("✅ Salvo!"); voltarDashboard(); }
+        // SAVE & BUILD
+        async function save(url=null){
+            const name=$('app-name').value; if(!name) return alert("Dê um nome!");
+            const id=$('edit-id').value; const fi=$('f-icon').files[0]; const fh=$('f-index').files[0]; const fs=$('f-splash').files[0];
+            let a=id?MEUS_APPS.find(x=>x.id==id):null; if(!a){a={id:Date.now()};MEUS_APPS.push(a);}
+            a.name=name; a.date=Date.now(); a.pkg=$('app-pkg').value; a.ver=$('app-ver').value;
+            if(url) a.url=url;
+            a.feat={}; document.querySelectorAll('input[type=checkbox]').forEach(c=>a.feat[c.id.replace('c-','')] = c.checked);
+            if(fi)a.icon=await b64(fi); if(fh)a.html=await b64(fh); if(fs)a.splash=await b64(fs);
+            const idx=MEUS_APPS.findIndex(x=>x.id===a.id); if(idx>=0)MEUS_APPS[idx]=a; else MEUS_APPS.push(a);
+            localStorage.setItem('ma',JSON.stringify(MEUS_APPS));
+            if(!url){alert("✅ Salvo!"); voltarDashboard();}
         }
 
         const logger = (m, e) => {
-            const b = document.getElementById('status-log');
+            const b = $('status-log');
             if(!b) return;
             const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
             b.innerHTML += `<div class="${e?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1 font-mono leading-tight"><span class="text-gray-500 text-[9px]">[${t}]</span> ${m}</div>`;
             b.scrollTop = b.scrollHeight;
         };
 
-        async function build() {
-            const t=localStorage.getItem('gt'); 
-            const nameEl = document.getElementById('app-name');
-            const n = nameEl ? nameEl.value : "SemNome";
+        async function fabricarApp() {
+            const token = localStorage.getItem('gt'); const name = $('app-name').value;
+            const id = $('edit-id').value; let a = id ? MEUS_APPS.find(x => x.id == id) : {};
             
-            const fh=document.getElementById('app-index').files[0]; 
-            const fi=document.getElementById('app-icon').files[0]; 
-            const fs=document.getElementById('app-splash').files[0];
+            const iconFile = $('f-icon').files[0]; const indexFile = $('f-index').files[0]; const splashFile = $('f-splash').files[0];
             
-            const idInput = document.getElementById('edit-id');
-            const id = idInput ? idInput.value : null;
-            
-            let a = id ? MEUS_APPS.find(x => x.id == id) : {};
-            
-            let h=fh?await b64(fh):a.html; let i=fi?await b64(fi):a.icon; let s=fs?await b64(fs):a.splash;
-            if(!h)return alert("Falta Index!");
+            let iconData = iconFile ? await b64(iconFile) : a.icon;
+            let indexData = indexFile ? await b64(indexFile) : a.html;
+            let splashData = splashFile ? await b64(splashFile) : a.splash;
 
-            const pkgInput = document.getElementById('app-pkg');
-            const verInput = document.getElementById('app-ver');
-            const ft={packageId: pkgInput ? pkgInput.value : '', version: verInput ? verInput.value : '1.0.0'};
-            
+            if(!indexData) return alert("Faltou o arquivo Index.html! Selecione novamente.");
+
+            const ft={packageId:$('app-pkg').value, version:$('app-ver').value};
             document.querySelectorAll('input[type=checkbox]').forEach(c => { 
                 const key = c.id.replace('c-', '');
-                const map = {notif:'notification',vib:'vibration',cam:'camera',gps:'geolocation',full:'fullscreen',flash:'flashlight',mic:'microphone',ins:'insomnia',file:'file',clip:'clipboard',net:'network',bar:'statusbar',toast:'toast'};
+                const map = {notif:'notification',vib:'vibration',cam:'camera',gps:'geolocation',full:'fullscreen',flash:'flashlight',mic:'microphone',ins:'insomnia',file:'file',clip:'clipboard',net:'network',bar:'statusbar',toast:'toast',splash:'splashscreen',browser:'browser'};
                 ft[map[key]||key] = c.checked; 
             });
 
-            const btn=document.getElementById('btn-build'); 
-            const logBox=document.getElementById('status-log');
-            
-            if(logBox) {
-                logBox.classList.remove('hidden'); 
-                logBox.innerHTML='';
-            }
-            if(btn) {
-                btn.disabled=true; 
-                btn.innerHTML='ENVIANDO...';
-            }
+            const btn=$('btn-build'); safeClass('status-log','remove','hidden'); 
+            const logBox = $('status-log'); if(logBox) logBox.innerHTML='';
+            if(btn) { btn.disabled=true; btn.innerHTML='ENVIANDO...'; }
 
             try {
-                logger("🚀 Upload Arquivos...");
-                await up(t,"www/index.html",h,`Site:${n} [skip ci]`);
-                if(i) await up(t,"www/icon.png",i,"Icon [skip ci]");
-                if(s) await up(t,"www/splash.png",s,"Splash [skip ci]");
-                await up(t,"features.json",btoa(JSON.stringify(ft)),"Feat [skip ci]");
-                
-                logger("⚡ Disparando Fábrica...");
-                await cfg(t,n);
-                
-                logger("✅ INICIADO! Aguarde...");
-                
-                if(!id){ 
-                    const newId = Date.now(); 
-                    if(idInput) idInput.value = newId; 
-                    await save(null); 
-                } else await save(null);
-                
-                localStorage.setItem('bp', '1');
+                logger("🚀 Upload...");
+                await up(token,"www/index.html",indexData,`Site:${name} [skip ci]`);
+                if(iconData) await up(token,"www/icon.png",iconData,"Icon [skip ci]");
+                if(splashData) await up(token,"www/splash.png",splashData,"Splash [skip ci]");
+                await up(token,"features.json",btoa(JSON.stringify(ft)),"Feat [skip ci]");
+                logger("⚡ Ativando Fábrica...");
+                await cfg(token,name);
+                logger("✅ INICIADO!");
+                if(!id){const newId=Date.now(); $('edit-id').value=newId; await save();} else await save();
+                localStorage.setItem('bp','1');
                 monitor(t);
-            } catch(e){ logger(e.message,1); if(btn){btn.disabled=false; btn.innerHTML="ERRO";} }
+            } catch(e){ logger(e.message,1); if(btn){ btn.disabled=false; btn.innerHTML="ERRO"; } }
         }
 
-        // --- API GITHUB ---
-        async function up(t,p,c,m){
-            const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${p}`; let s=null;
-            try{const r=await fetch(u,{headers:{Authorization:`token ${t}`}});if(r.ok)s=(await r.json()).sha;}catch(e){}
-            const res=await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:m,content:c,sha:s,branch:"main"})});
-            if(!res.ok) throw new Error("Erro upload "+p);
-        }
+        async function up(t,p,c,m){ const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${p}`; let s=null; try{const r=await fetch(u,{headers:{Authorization:`token ${t}`}});if(r.ok)s=(await r.json()).sha;}catch(e){} const res=await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:m,content:c,sha:s,branch:"main"})}); if(!res.ok) throw new Error("Erro upload "+p); }
+        async function cfg(t,n){ const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/config.xml`; const r=await fetch(u,{headers:{Authorization:`token ${t}`}}); let c=`<?xml version='1.0'?><widget id="com.default" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><name>App</name><content src="index.html"/><access origin="*"/><allow-navigation href="*"/><allow-intent href="*"/><preference name="AndroidInsecureFileModeEnabled" value="true"/><preference name="scheme" value="http"/><preference name="hostname" value="localhost"/></widget>`; let s=null; if(r.ok){const d=await r.json();c=decodeURIComponent(escape(atob(d.content.replace(/\s/g,''))));s=d.sha;} const nc=c.replace(/<name>.*?<\/name>/,`<name>${n}</name>`); await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:"Trig:"+n,content:btoa(unescape(encodeURIComponent(nc))),sha:s,branch:"main"})}); }
 
-        async function cfg(t,n){
-            const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/config.xml`;
-            const r=await fetch(u,{headers:{Authorization:`token ${t}`}});
-            let c=`<?xml version='1.0'?><widget id="com.default" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><name>App</name><content src="index.html"/><access origin="*"/><allow-navigation href="*"/><allow-intent href="*"/><preference name="AndroidInsecureFileModeEnabled" value="true"/><preference name="scheme" value="http"/><preference name="hostname" value="localhost"/></widget>`;
-            let s=null; if(r.ok){const d=await r.json();c=decodeURIComponent(escape(atob(d.content.replace(/\s/g,''))));s=d.sha;}
-            const nc=c.replace(/<name>.*?<\/name>/,`<name>${n}</name>`);
-            await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:"Trig:"+n,content:btoa(unescape(encodeURIComponent(nc))),sha:s,branch:"main"})});
-        }
-
-        // --- MONITOR ---
         async function monitor(t){
-            const btn=document.getElementById('btn-build'); 
-            if(btn) { btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing'); }
-            
+            const btn=$('btn-build'); if(btn){ btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing'); }
             let att=0;
             const i=setInterval(async()=>{
                 att++;
@@ -501,15 +352,13 @@
                     if(d.workflow_runs?.[0]){
                         const run=d.workflow_runs[0];
                         if(run.status==="completed"){
-                            clearInterval(i); 
-                            if(btn) btn.classList.remove('processing'); 
-                            localStorage.removeItem('bp');
-                            if(run.conclusion==="success"){ logger("✨ SUCESSO! Pegando link..."); await link(t); }
-                            else{ logger("❌ Falha no Build.",1); if(btn){btn.disabled=false; btn.innerHTML="FALHA";} }
+                            clearInterval(i); if(btn) btn.classList.remove('processing'); localStorage.removeItem('bp');
+                            if(run.conclusion==="success"){ logger("✨ SUCESSO!"); await link(t); }
+                            else{ logger("❌ Falha Build",1); if(btn){ btn.disabled=false; btn.innerHTML="FALHOU"; } }
                         } else { if(att%3===0) logger(`🔨 Trabalhando... [${run.status}]`); }
                     }
                 }catch(e){}
-                if(att>60){clearInterval(i); logger("Tempo esgotado.",1); if(btn){btn.disabled=false; btn.innerHTML="TIMEOUT";} }
+                if(att>60){clearInterval(i); logger("Tempo Esgotado",1); if(btn){ btn.disabled=false; btn.innerHTML="TIMEOUT"; }}
             },10000);
         }
 
@@ -522,29 +371,14 @@
                 const turbo=(match && match[1] && !match[1].includes("Verifique"))?match[1]:null;
                 const direct=d.assets?.[0]?.browser_download_url;
 
-                const btnBuild = document.getElementById('btn-build');
-                if(btnBuild) btnBuild.classList.add('hidden');
+                safeClass('btn-build','add','hidden');
+                const btnDown=$('btn-dl'); const btnBackup=$('btn-backup');
                 
-                const btnDown=document.getElementById('btn-download');
-                const btnBackup=document.getElementById('btn-backup');
-
-                if(turbo && btnDown){
-                    btnDown.href=turbo; btnDown.classList.remove('hidden'); btnDown.innerHTML=`<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`; logger("⚡ Link Turbo"); save(turbo);
-                } else if(direct && btnDown){
-                    btnDown.href=direct; btnDown.classList.remove('hidden'); btnDown.innerHTML=`<i class="fab fa-github text-lg"></i> BAIXAR (GITHUB)`; logger("✅ Link Direto"); save(direct);
-                }
-
-                if(url && btnBackup){
-                    btnBackup.href=url; btnBackup.classList.remove('hidden');
-                    if(!turbo && !direct && btnDown){
-                         btnDown.classList.add('hidden');
-                         btnBackup.classList.remove('hidden','mt-3','bg-gray-800');
-                         btnBackup.classList.add('bg-blue-600','text-white','py-4');
-                         btnBackup.innerHTML=`<i class="fab fa-github text-xl"></i> ABRIR PÁGINA`;
-                         logger("💡 Página disponível"); save(url);
-                    }
-                }
-            }catch(e){logger("Erro link.",1);}
+                if(turbo){ btnDown.href=turbo; safeClass('btn-dl','remove','hidden'); btnDown.innerHTML=`<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`; logger("⚡ Link Turbo"); save(turbo); }
+                else if(direct){ btnDown.href=direct; safeClass('btn-dl','remove','hidden'); btnDown.innerHTML=`<i class="fab fa-github text-lg"></i> BAIXAR (GITHUB)`; logger("✅ Link Direto"); save(direct); }
+                
+                if(url){ btnBackup.href=url; safeClass('btn-backup','remove','hidden'); if(!turbo&&!direct){ safeClass('btn-dl','add','hidden'); safeClass('btn-backup','remove','hidden'); safeClass('btn-backup','remove','mt-3'); safeClass('btn-backup','remove','bg-gray-800'); safeClass('btn-backup','add','bg-blue-600'); btnBackup.innerHTML=`<i class="fab fa-github text-xl"></i> ABRIR PÁGINA`; save(url); } }
+            }catch(e){logger("Erro link",1);}
         }
     </script>
 </body>
