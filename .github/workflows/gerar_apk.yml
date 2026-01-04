@@ -1,4 +1,4 @@
-name: Fábrica Turbo V36 (Fix Build & Discord) 🚀
+name: Fábrica Turbo V37 (Fix Gradle 9 Incompatibility) 🚀
 
 on:
   push:
@@ -11,6 +11,13 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    # --- FIX CRÍTICO: FORÇAR GRADLE 8.7 ---
+    # O Gradle 9 (padrão do GitHub agora) quebra o Cordova.
+    # Essas variáveis obrigam o sistema a usar a versão compatível.
+    env:
+      CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
+      JAVA_HOME_17_X64: "/usr/lib/jvm/temurin-17-jdk-amd64"
 
     steps:
       - name: 📥 Baixando Código
@@ -55,6 +62,7 @@ jobs:
           -d "{
             \"username\": \"Fábrica Bot 🤖\",
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
+            \"content\": \"@everyone\",
             \"embeds\": [{
               \"title\": \"🚧 Iniciando Produção\",
               \"description\": \"Criando: **${{ env.APP_NAME }}**\nID: \`${{ env.APP_ID }}\`\",
@@ -63,7 +71,7 @@ jobs:
                 { \"name\": \"Versão\", \"value\": \"${{ env.APP_VER }}\", \"inline\": true },
                 { \"name\": \"Ícone\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true }
               ],
-              \"footer\": { \"text\": \"Run #${{ github.run_number }}\" }
+              \"footer\": { \"text\": \"Run #${{ github.run_number }} • V37 Fix Gradle\" }
             }]
           }" \
           $DISCORD_WEBHOOK
@@ -164,7 +172,6 @@ jobs:
           echo "📱 Adicionando Plataforma..."
           cordova platform add android@12.0.0
           
-          # FIX: Força criação das pastas antes de tentar corrigir
           echo "🏗️ Forçando Prepare..."
           cordova prepare android || true
           
@@ -173,7 +180,7 @@ jobs:
           
           # FIX: Reinstala dependências internas se a pasta existir
           if [ -d "platforms/android/cordova" ]; then
-             echo "🚑 Reparando API Cordova..."
+             echo "🚑 Reparando API Cordova (npm install)..."
              cd platforms/android
              npm install --production --no-save
              cd ../..
@@ -186,7 +193,6 @@ jobs:
           cd app-temp
           if [ -f "icon.png" ]; then
              RES="platforms/android/app/src/main/res"
-             # Só tenta copiar se a pasta res existir
              if [ -d "$RES" ]; then
                  for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
                      mkdir -p "$RES/$folder"
@@ -196,13 +202,14 @@ jobs:
              fi
           fi
 
-      - name: 🚑 Fix Gradle
+      - name: 🚑 Fix Gradle Scripts
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
+              # Corrige plugins antigos
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # Força SDK 33
+              # Força versão 33 do SDK para evitar erro compileSdkVersion
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
@@ -215,6 +222,7 @@ jobs:
           cd app-temp
           rm -rf ~/.gradle/caches/
           echo "🚀 Compilando..."
+          # Adicionei argumentos para reforçar o Gradle 8.7
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
@@ -253,18 +261,18 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           STATUS: ${{ job.status }}
         run: |
-          DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
-          LOG_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
           if [ "$STATUS" == "success" ]; then
             COLOR=5763712
             TITLE="✅ SUCESSO"
-            CONTENT="@everyone 🎉 **${{ env.APP_NAME }}** está pronto!"
+            CONTENT="@everyone 🎉 **APK PRONTO!**"
           else
             COLOR=15548997
             TITLE="❌ FALHA"
-            CONTENT="@everyone ⚠️ Erro na produção de **${{ env.APP_NAME }}**"
+            CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
           fi
+          
+          DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+          LOG_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
           curl -H "Content-Type: application/json" \
           -d "{
@@ -276,9 +284,7 @@ jobs:
               \"color\": $COLOR,
               \"fields\": [
                 { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                { \"name\": \"🆔 ID\", \"value\": \"\`${{ env.APP_ID }}\`\", \"inline\": true },
-                { \"name\": \"🔌 Plugins\", \"value\": \"${{ env.PLUGINS_LIST }}\", \"inline\": false },
-                { \"name\": \"📥 Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": true },
+                { \"name\": \"📥 Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": false },
                 { \"name\": \"📄 Logs\", \"value\": \"[Ver Erro]($LOG_LINK)\", \"inline\": true }
               ],
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
