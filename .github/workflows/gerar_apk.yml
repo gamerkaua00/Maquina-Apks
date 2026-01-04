@@ -1,4 +1,4 @@
-name: Fábrica Turbo V29 (Icon Brute Force + Fix Cache) 🚀
+name: Fábrica Turbo V30 (Discord Logs + Fix ID/Icon) 🚀
 
 on:
   push:
@@ -16,90 +16,140 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      - name: ⚡ Cache Gradle & NPM
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.npm
-          key: ${{ runner.os }}-gradle-v29-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-v29-
+      # --- 1. LEITURA ANTECIPADA (Para criar o app já com o ID certo) ---
+      - name: 🧐 Lendo Configurações (Pre-Build)
+        id: config
+        run: |
+          # Valores Padrão
+          APP_NAME="App Turbo"
+          APP_ID="com.kaua.app"
+          APP_VER="1.0.0"
+          HAS_ICON="❌ Não"
+          
+          if [ -f "features.json" ]; then
+            echo "📄 Lendo features.json..."
+            # Extrai dados usando jq
+            JSON_ID=$(jq -r '.packageId // empty' features.json)
+            JSON_VER=$(jq -r '.version // empty' features.json)
+            
+            # Se tiver ID no JSON, usa ele. Senão usa o padrão.
+            if [ ! -z "$JSON_ID" ]; then APP_ID=$JSON_ID; fi
+            if [ ! -z "$JSON_VER" ]; then APP_VER=$JSON_VER; fi
+          fi
 
-      - name: ☕ Configurando Java 17
+          # Tenta ler nome do config.xml se existir (o frontend manda o nome lá)
+          if [ -f "config.xml" ]; then
+             XML_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
+             if [ ! -z "$XML_NAME" ]; then APP_NAME=$XML_NAME; fi
+          fi
+          
+          # Verifica se tem ícone
+          if [ -f "www/icon.png" ]; then HAS_ICON="✅ Sim"; fi
+          
+          echo "DADOS DO PROJETO:"
+          echo "Nome: $APP_NAME"
+          echo "ID: $APP_ID"
+          echo "Versão: $APP_VER"
+          echo "Ícone: $HAS_ICON"
+          
+          # Salva nas variáveis de ambiente para usar nos próximos passos
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "APP_ID=$APP_ID" >> $GITHUB_ENV
+          echo "APP_VER=$APP_VER" >> $GITHUB_ENV
+          echo "HAS_ICON=$HAS_ICON" >> $GITHUB_ENV
+
+      # --- 2. NOTIFICAÇÃO DE INÍCIO (DISCORD) ---
+      - name: 🔔 Discord (Início)
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"embeds\":[{\"title\":\"🏭 Fábrica Iniciada\",\"description\":\"Criando: **${{ env.APP_NAME }}**\nID: \`${{ env.APP_ID }}\`\nVersão: \`${{ env.APP_VER }}\`\",\"color\":16776960}]}" \
+          $DISCORD_WEBHOOK
+
+      - name: ☕ Configurando Ambiente
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🛠️ Instalando Gradle 8.7
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
-
-      - name: 🛠️ Configurando Android SDK
+      - name: 🛠️ Ferramentas Android
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
-
-      - name: 📦 Instalando Cordova
-        run: |
           npm install -g cordova
 
-      - name: 🏗️ Criando a Base do App
+      # --- 3. CRIAÇÃO DO APP (COM O ID CERTO AGORA) ---
+      - name: 🏗️ Criando App
         run: |
-          cordova create app-temp com.kaua.app "Seu App Turbo"
+          # O comando create agora usa as variáveis que lemos no começo
+          cordova create app-temp ${{ env.APP_ID }} "${{ env.APP_NAME }}"
+          
+          # Limpa e copia o site
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
-
-          if [ -f config.xml ]; then 
-            echo "📄 Config.xml encontrado! Aplicando..."
-            cp config.xml app-temp/
-          fi
-
-      - name: 🎨 Preparando Ícone e Splash
-        run: |
+          
+          # Ajusta versão no config.xml gerado
           cd app-temp
+          sed -i "s/version=\"1.0.0\"/version=\"${{ env.APP_VER }}\"/" config.xml
           
-          # Procura ícone (qualquer nome comum)
-          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
-          
-          if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone encontrado: $ICON_FILE"
-            cp "$ICON_FILE" ./icon.png
-            # Remove tags antigas e define a nova
-            sed -i '/<icon/d' config.xml
-            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
-          else
-            echo "⚠️ Usando ícone padrão (Robô)."
-            curl -L -o ./icon.png "https://img.icons8.com/fluency/512/robot-2.png"
-            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
-          fi
-          
-          # Splash Screen
-          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
-          if [ -n "$SPLASH_FILE" ]; then
-             echo "🌊 Splash Screen encontrada!"
-             cp "$SPLASH_FILE" ./splash.png
-             sed -i '/<splash/d' config.xml
-             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
-             sed -i '/<widget/a \    <preference name="SplashScreenDelay" value="3000" />' config.xml
-             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
-          fi
-          
-          # Permissões
+          # Adiciona permissões essenciais
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      - name: 🔌 Instalando Plugins e Plataforma
+      # --- 4. ÍCONE E SPLASH (FORÇA BRUTA) ---
+      - name: 🎨 Configurando Visual
         run: |
           cd app-temp
+          
+          # --- ÍCONE ---
+          # Se o usuário mandou icon.png na pasta www
+          if [ -f "www/icon.png" ]; then
+             echo "🔥 Aplicando ícone personalizado..."
+             cp www/icon.png ./icon.png
+             
+             # Método 1: Config.xml (Padrão)
+             sed -i '/<icon/d' config.xml
+             sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+             
+             # Método 2: Força Bruta (Copia para pastas do sistema Android após add platform)
+             # Faremos isso no próximo passo após 'cordova platform add'
+          else
+             echo "⚠️ Usando ícone padrão."
+          fi
+          
+          # --- SPLASH ---
+          if [ -f "www/splash.png" ]; then
+             cp www/splash.png ./splash.png
+             sed -i '/<splash/d' config.xml
+             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
+             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
+          fi
+
+      - name: 🔌 Plugins e Plataforma
+        run: |
+          cd app-temp
+          
+          echo "📱 Adicionando Android..."
           cordova platform add android@12.0.0
-          cordova plugin remove cordova-plugin-whitelist || true
+          
+          # --- AQUI ACONTECE A FORÇA BRUTA DO ÍCONE ---
+          if [ -f "icon.png" ]; then
+             echo "👊 Substituindo ícones do sistema Android..."
+             RES="platforms/android/app/src/main/res"
+             # Copia o ícone para todas as resoluções (O Android redimensiona ou usa assim mesmo)
+             cp icon.png $RES/mipmap-ldpi/ic_launcher.png || true
+             cp icon.png $RES/mipmap-mdpi/ic_launcher.png || true
+             cp icon.png $RES/mipmap-hdpi/ic_launcher.png || true
+             cp icon.png $RES/mipmap-xhdpi/ic_launcher.png || true
+             cp icon.png $RES/mipmap-xxhdpi/ic_launcher.png || true
+             cp icon.png $RES/mipmap-xxxhdpi/ic_launcher.png || true
+          fi
           
           # Plugins Base
+          cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -109,88 +159,45 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Leitura do features.json
-          if [ -f "../features.json" ]; then
-            
-            # Personalização ID/Versão
-            CUSTOM_ID=$(jq -r '.packageId // empty' ../features.json)
-            CUSTOM_VER=$(jq -r '.version // empty' ../features.json)
-            if [ ! -z "$CUSTOM_ID" ]; then sed -i "s/id=\"[^\"]*\"/id=\"$CUSTOM_ID\"/" config.xml; fi
-            if [ ! -z "$CUSTOM_VER" ]; then sed -i "s/version=\"[^\"]*\"/version=\"$CUSTOM_VER\"/" config.xml; fi
+          # Variável para logar quais plugins foram instalados
+          INSTALLED_PLUGINS="Básicos"
 
-            # Instalação Plugins
+          if [ -f "../features.json" ]; then
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
             USE_BATTERY=$(jq -r '.battery' ../features.json)
-            USE_NETWORK=$(jq -r '.network' ../features.json)
-            USE_ORIENT=$(jq -r '.orientation' ../features.json)
             USE_FULL=$(jq -r '.fullscreen' ../features.json)
             USE_FLASH=$(jq -r '.flashlight' ../features.json)
             USE_MIC=$(jq -r '.microphone' ../features.json)
             USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
             USE_TOAST=$(jq -r '.toast' ../features.json)
-            USE_STATUS=$(jq -r '.statusbar' ../features.json)
-            USE_CLIP=$(jq -r '.clipboard' ../features.json)
-            USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
-            USE_NOTIF=$(jq -r '.notification' ../features.json)
 
-            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
-            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
-            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
-            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
-            if [ "$USE_NETWORK" = "true" ]; then cordova plugin add cordova-plugin-network-information; fi
-            if [ "$USE_ORIENT" = "true" ]; then cordova plugin add cordova-plugin-screen-orientation; fi
-            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
-            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
-            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
-            if [ "$USE_STATUS" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
-            if [ "$USE_CLIP" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
-            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
+            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Vibração"; fi
+            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Câmera"; fi
+            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, GPS"; fi
+            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Bateria"; fi
+            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Tela Cheia"; fi
+            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Lanterna"; fi
+            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Toast"; fi
+            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Insomnia"; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Arquivos"; fi
             
             if [ "$USE_MIC" = "true" ]; then 
-               cordova plugin add cordova-plugin-media
-               cordova plugin add cordova-plugin-media-capture
-            fi
-            
-            # Notificação (Versão estável)
-            if [ "$USE_NOTIF" = "true" ]; then
-                cordova plugin add cordova-plugin-local-notification || echo "⚠️ Falha ao instalar notificação (Ignorado)"
+               cordova plugin add cordova-plugin-media cordova-plugin-media-capture
+               INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Microfone"
             fi
           fi
           
-          cordova prepare android
+          # Salva lista para o log final
+          echo "PLUGINS_LIST=$INSTALLED_PLUGINS" >> $GITHUB_ENV
 
-      # --- NOVO: SUBSTITUIÇÃO FORÇADA DE ÍCONE ---
-      - name: 🔨 Forçando Ícone (Brute Force)
-        run: |
-          cd app-temp
-          if [ -f "icon.png" ]; then
-             echo "👊 Substituindo ícones nativos do Android..."
-             # Copia o ícone.png para todas as pastas de densidade (mipmap)
-             # Isso garante que o Android use esse arquivo, ignorando config.xml se necessário
-             RES_PATH="platforms/android/app/src/main/res"
-             cp icon.png "$RES_PATH/mipmap-ldpi/ic_launcher.png" || true
-             cp icon.png "$RES_PATH/mipmap-mdpi/ic_launcher.png" || true
-             cp icon.png "$RES_PATH/mipmap-hdpi/ic_launcher.png" || true
-             cp icon.png "$RES_PATH/mipmap-xhdpi/ic_launcher.png" || true
-             cp icon.png "$RES_PATH/mipmap-xxhdpi/ic_launcher.png" || true
-             cp icon.png "$RES_PATH/mipmap-xxxhdpi/ic_launcher.png" || true
-             echo "✅ Ícones substituídos fisicamente."
-          fi
-
-      # --- 5. CORREÇÃO DE ERROS (GRADLE) ---
-      - name: 🚑 Reparando Scripts do Gradle
+      - name: 🚑 Fix Gradle
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/debugCompile /debugImplementation /g' {} +
-              
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
@@ -198,73 +205,67 @@ jobs:
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
           fi
 
-      - name: 🏷️ Detectando Nome
-        id: get_name
+      - name: 📱 Build APK
         run: |
           cd app-temp
-          APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-          
-          SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g')
-          NEW_ID="com.kaua.app.$SAFE_ID"
-          sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
-
-      - name: 📱 Compilando APK
-        run: |
-          cd app-temp
-          # Limpa cache do Gradle antes
           rm -rf ~/.gradle/caches/
+          echo "🚀 Compilando..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "❌ ERRO: APK não encontrado!"
+            echo "STATUS_BUILD=FALHA" >> $GITHUB_ENV
             exit 1
           else
-            SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/ /_/g')
+            SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
+            echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
           fi
 
-      - name: 📤 Upload Turbo (Mirrors)
-        id: upload_fast
-        run: |
-          APK="${{ env.APK_FINAL }}"
-          LINK=""
-          # Tenta 3 servidores de backup
-          if [ -z "$LINK" ]; then RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL"); if [[ "$RESP" == http* ]]; then LINK=$RESP; fi; fi
-          if [ -z "$LINK" ]; then RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL"); if [[ "$RESP" == http* ]]; then LINK=$RESP; fi; fi
-          if [ -z "$LINK" ]; then RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL"); LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4); fi
-
-          if [[ "$LINK" == http* ]]; then
-             echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
-          else
-             echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
-          fi
-
-      - name: 🚀 Criar Release no GitHub
-        uses: softprops/action-gh-release@v1
+      - name: 🚀 Release GitHub
         if: success()
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
-          body: |
-            ✅ **Seu App está pronto!**
-            
-            📱 **Nome:** ${{ env.APP_NAME }}
-            
-            ⬇️ **LINK TURBO:** ${{ env.LINK_MIRROR }}
-            
-            _(Backup: Assets do GitHub abaixo)_
+          body: "✅ App Criado com Sucesso!"
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 🔔 Notificar Discord
-        if: success() && env.DISCORD_WEBHOOK != ''
+      # --- 5. RELATÓRIO FINAL (DISCORD) ---
+      - name: 🔔 Discord (Relatório Final)
+        if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          STATUS: ${{ job.status }}
         run: |
+          COLOR=5763712 # Verde
+          TITLE="✅ SUCESSO"
+          if [ "$STATUS" == "failure" ]; then 
+            COLOR=15548997 # Vermelho
+            TITLE="❌ FALHA"
+          fi
+          
+          # Monta o JSON do Discord com detalhes
+          # Link direto para a release
+          DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+          
           curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"✅ **APK PRONTO!**\n📱 App: ${{ env.APP_NAME }}\n📥 Download: ${{ env.LINK_MIRROR }}\"}" \
+          -d "{
+            \"embeds\": [{
+              \"title\": \"$TITLE: Fábrica de Apps\",
+              \"color\": $COLOR,
+              \"fields\": [
+                { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
+                { \"name\": \"🆔 ID\", \"value\": \"\`${{ env.APP_ID }}\`\", \"inline\": true },
+                { \"name\": \"🔢 Versão\", \"value\": \"${{ env.APP_VER }}\", \"inline\": true },
+                { \"name\": \"🖼️ Ícone\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true },
+                { \"name\": \"🔌 Plugins\", \"value\": \"${{ env.PLUGINS_LIST }}\" },
+                { \"name\": \"📥 Download\", \"value\": \"[Clique aqui para baixar]($DL_LINK)\" }
+              ],
+              \"footer\": { \"text\": \"Build #${{ github.run_number }}\" }
+            }]
+          }" \
           $DISCORD_WEBHOOK
