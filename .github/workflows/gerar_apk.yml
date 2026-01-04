@@ -1,4 +1,4 @@
-name: Fábrica Turbo V41 (Python XML Fix + Admin Dashboard) 🚀
+name: Fábrica Turbo V41.1 (Fix Syntax Error) 🚀
 
 on:
   push:
@@ -51,7 +51,7 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as f:
               f.write(f"APP_ID={get_val('packageId', 'com.fabrica.app')}\n")
               f.write(f"APP_VER={get_val('version', '1.0.0')}\n")
-              # Nome vem do config.xml se existir, senão usa padrão
+              # Nome padrão, será sobrescrito se houver config.xml
               f.write(f"APP_NAME=App Turbo\n") 
           EOF
           python3 ler_dados.py
@@ -62,14 +62,36 @@ jobs:
              if [ ! -z "$NAME" ]; then echo "APP_NAME=$NAME" >> $GITHUB_ENV; fi
           fi
 
+      # --- NOTIFICAÇÃO INICIAL (FIXED: USANDO PYTHON) ---
       - name: 🔔 Discord (Status: Iniciando)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"username\": \"Fábrica Admin 🛡️\", \"embeds\":[{\"title\": \"🟡 Iniciando Build: ${{ env.APP_NAME }}\", \"description\": \"🆔 \`${{ env.APP_ID }}\`\\n🔢 v${{ env.APP_VER }}\", \"color\": 16776960}]}" \
-          $DISCORD_WEBHOOK
+          cat <<EOF > notify_start.py
+          import os, json, urllib.request
+          
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          if not webhook: exit(0)
+          
+          data = {
+            "username": "Fábrica Admin 🛡️",
+            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
+            "embeds": [{
+              "title": "🟡 Iniciando Build: ${{ env.APP_NAME }}",
+              "description": "🆔 \`${{ env.APP_ID }}\`\n🔢 v${{ env.APP_VER }}",
+              "color": 16776960
+            }]
+          }
+          
+          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          try:
+              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
+              urllib.request.urlopen(req)
+          except Exception as e:
+              print(f"Aviso: Erro ao notificar Discord: {e}")
+          EOF
+          python3 notify_start.py
 
       # --- 3. CRIAÇÃO DO PROJETO ---
       - name: 🏗️ Criando Estrutura
@@ -81,8 +103,7 @@ jobs:
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
-      # --- 4. MANIPULAÇÃO XML (MÉTODO NOVO: PYTHON ELEMENTTREE) ---
-      # Este método é muito mais seguro que SED. Ele edita a estrutura do XML real.
+      # --- 4. MANIPULAÇÃO XML (PYTHON ELEMENTTREE) ---
       - name: 🔧 Configuração Cirúrgica (XML)
         run: |
           cd app-temp
@@ -103,9 +124,10 @@ jobs:
              HAS_SPLASH="true"
           fi
 
-          # Script Python para editar o config.xml
+          # Script Python para editar o config.xml com segurança
           cat <<EOF > edit_xml.py
           import xml.etree.ElementTree as ET
+          import os
           
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
           ET.register_namespace('cdv', "http://cordova.apache.org/ns/1.0")
@@ -113,31 +135,30 @@ jobs:
           tree = ET.parse('config.xml')
           root = tree.getroot()
           
-          # 1. Força ID e Versão
-          root.set('id', '${{ env.APP_ID }}')
-          root.set('version', '${{ env.APP_VER }}')
+          # 1. Força ID e Versão (Lendo das env vars para evitar erro de aspas)
+          root.set('id', os.environ.get('APP_ID', 'com.error.id'))
+          root.set('version', os.environ.get('APP_VER', '1.0.0'))
           
           # 2. Força Nome
           for name in root.findall('{http://www.w3.org/ns/widgets}name'):
-              name.text = '${{ env.APP_NAME }}'
+              name.text = os.environ.get('APP_NAME', 'App Turbo')
           
-          # 3. Adiciona Ícone (Se tiver)
+          # 3. Adiciona Ícone
           if "$HAS_ICON" == "true":
-              # Remove antigos
-              for icon in root.findall('{http://www.w3.org/ns/widgets}icon'):
-                  root.remove(icon)
-              # Adiciona novo
+              for icon in root.findall('{http://www.w3.org/ns/widgets}icon'): root.remove(icon)
               icon = ET.SubElement(root, '{http://www.w3.org/ns/widgets}icon')
               icon.set('src', 'res_icon.png')
           
-          # 4. Adiciona Splash (Se tiver)
+          # 4. Adiciona Splash
           if "$HAS_SPLASH" == "true":
               splash = ET.SubElement(root, '{http://www.w3.org/ns/widgets}splash')
               splash.set('src', 'res_splash.png')
-              
               pref = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
               pref.set('name', 'ShowSplashScreen')
               pref.set('value', 'true')
+              pref2 = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
+              pref2.set('name', 'SplashScreenDelay')
+              pref2.set('value', '3000')
 
           # 5. Permissões
           perms = [
@@ -155,7 +176,7 @@ jobs:
           EOF
           
           python3 edit_xml.py
-          cat config.xml # Mostra no log para conferência
+          cat config.xml
 
       # --- 5. PLUGINS ---
       - name: 🔌 Instalando Plugins
@@ -163,7 +184,6 @@ jobs:
           cd app-temp
           cordova platform add android@12.0.0
           
-          # Base
           cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
@@ -174,9 +194,7 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Opcionais via features.json
           if [ -f "../features.json" ]; then
-             # (Mantendo a lógica simples de bash para plugins, que funciona bem)
              USE_VIBRA=$(jq -r '.vibration' ../features.json); [ "$USE_VIBRA" = "true" ] && cordova plugin add cordova-plugin-vibration
              USE_CAM=$(jq -r '.camera' ../features.json); [ "$USE_CAM" = "true" ] && cordova plugin add cordova-plugin-camera
              USE_GPS=$(jq -r '.geolocation' ../features.json); [ "$USE_GPS" = "true" ] && cordova plugin add cordova-plugin-geolocation
@@ -193,10 +211,8 @@ jobs:
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
-              # Corrige plugins antigos
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # Força SDK 33
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
@@ -226,12 +242,8 @@ jobs:
             exit 1
           else
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
-            # Adiciona versão no nome do arquivo
             FINAL_NAME="${SAFE_NAME}_v${{ env.APP_VER }}.apk"
-            
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL_NAME"
-            
-            # Pega tamanho do arquivo
             FILE_SIZE=$(ls -lh "$GITHUB_WORKSPACE/$FINAL_NAME" | awk '{print $5}')
             
             echo "APK_FINAL=$FINAL_NAME" >> $GITHUB_ENV
@@ -239,8 +251,7 @@ jobs:
             echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
           fi
 
-      - name: 🚀 Release GitHub (Obrigatório)
-        id: create_release
+      - name: 🚀 Release GitHub
         uses: softprops/action-gh-release@v1
         if: success()
         with:
@@ -268,17 +279,16 @@ jobs:
           
           webhook = os.environ.get('DISCORD_WEBHOOK')
           status = os.environ.get('STATUS')
+          apk_name = os.environ.get('APK_FINAL', 'App')
           
           if status == 'success':
               color = 5763712 # Verde
               title = "✅ SUCESSO: Build Finalizado"
               desc = "O aplicativo foi compilado, assinado (debug) e publicado."
               
-              # Monta link direto do asset (Tentativa de prever o link)
               repo = "${{ github.repository }}"
               tag = "v${{ github.run_number }}"
               filename = os.environ.get('APK_FINAL')
-              # Link oficial da release
               dl_link = f"https://github.com/{repo}/releases/download/{tag}/{filename}"
               page_link = f"https://github.com/{repo}/releases/tag/{tag}"
               
@@ -311,8 +321,12 @@ jobs:
             }]
           }
           
-          req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
-          try: urllib.request.urlopen(req)
-          except: pass
+          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          try:
+            req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
+            urllib.request.urlopen(req)
+          except Exception as e:
+            print(f"Erro Discord: {e}")
           EOF
+          
           python3 notify_final.py
