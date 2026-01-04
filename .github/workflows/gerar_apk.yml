@@ -1,4 +1,4 @@
-name: Fábrica Turbo V21 (Estável - Sem Plugins Quebrados) 🚀
+name: Fábrica Turbo V22 (Icon Fix + Estabilidade) 🚀
 
 on:
   push:
@@ -15,6 +15,17 @@ jobs:
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
+
+      - name: ⚡ Cache Gradle & NPM
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.npm
+          key: ${{ runner.os }}-gradle-v22-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-v22-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -43,35 +54,53 @@ jobs:
           cp -r www/* app-temp/www/
 
           if [ -f config.xml ]; then 
+            echo "📄 Config.xml encontrado! Aplicando..."
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone
+      - name: 🎨 Configurando Ícone (Modo Forçado)
         run: |
           cd app-temp
+          
+          # 1. Procura o arquivo de imagem
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
           
           if [ -n "$ICON_FILE" ]; then
             echo "🔥 Ícone encontrado: $ICON_FILE"
-            cp "$ICON_FILE" ./res_icon.png
+            # Copia para a raiz com nome padrão
+            cp "$ICON_FILE" ./icon.png
+            
+            # 2. Limpa configurações antigas de ícone no XML
             sed -i '/<icon/d' config.xml
-            sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
+            
+            # 3. INJEÇÃO AGRESSIVA: Adiciona o ícone global E para Android especificamente
+            # Injeta após a tag <name>
+            sed -i '/<\/name>/a \    <icon src="icon.png" />' config.xml
+            
+            # Se já tiver plataforma android definida, injeta lá dentro também
+            if grep -q '<platform name="android">' config.xml; then
+                # Adiciona ícone para todas as densidades (aponta pro mesmo arquivo, o Android se vira pra redimensionar)
+                sed -i '/<platform name="android">/a \        <icon src="icon.png" density="ldpi" />\n        <icon src="icon.png" density="mdpi" />\n        <icon src="icon.png" density="hdpi" />\n        <icon src="icon.png" density="xhdpi" />\n        <icon src="icon.png" density="xxhdpi" />\n        <icon src="icon.png" density="xxxhdpi" />' config.xml
+            fi
+            
+            echo "✅ Ícone configurado no XML."
+          else
+            echo "⚠️ Nenhum ícone personalizado encontrado."
           fi
           
-          # Injeção de Permissões Básicas
+          # Injeção de Permissões de Arquivo
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      - name: 🔌 Instalando Plugins (Apenas os Estáveis)
+      - name: 🔌 Instalando Plugins e Plataforma
         run: |
           cd app-temp
           
           echo "📱 Adicionando Android..."
           cordova platform add android@12.0.0
           
-          echo "🔌 Instalando Plugins..."
-          # Plugins que SABEMOS que funcionam e não quebram o build
+          # Plugins Estáveis
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -83,6 +112,7 @@ jobs:
 
           # Leitura do features.json
           if [ -f "../features.json" ]; then
+            # (Mantendo a lógica simples e robusta)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
@@ -97,9 +127,8 @@ jobs:
             USE_STATUSBAR=$(jq -r '.statusbar' ../features.json)
             USE_CLIPBOARD=$(jq -r '.clipboard' ../features.json)
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
+            USE_FILE=$(jq -r '.file' ../features.json)
 
-            # NOTA: O plugin de notificação foi REMOVIDO propositalmente para evitar erros.
-            
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -113,6 +142,7 @@ jobs:
             if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
             if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
@@ -127,6 +157,7 @@ jobs:
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
           
+          # Gera ID único baseado no nome
           SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g')
           NEW_ID="com.kaua.app.$SAFE_ID"
           sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
@@ -162,16 +193,19 @@ jobs:
           APK="${{ env.APK_FINAL }}"
           LINK=""
           
+          # 1. Litterbox
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
+          # 2. 0x0.st
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
              if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
           fi
           
+          # 3. File.io
           if [ -z "$LINK" ]; then
              RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
              LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
@@ -206,5 +240,4 @@ jobs:
         with:
           name: APK-Debug-Backup
           path: ${{ env.APK_FINAL }}
-
 
