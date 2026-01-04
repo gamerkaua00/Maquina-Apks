@@ -11,6 +11,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # FIX: Força o Cordova a usar Gradle 8.7 (Compatível) em vez do 9.0 (Incompatível)
+    env:
+      CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
+      JAVA_HOME_17_X64: "/usr/lib/jvm/temurin-17-jdk-amd64"
 
     steps:
       - name: 📥 Baixando Código
@@ -203,6 +207,12 @@ jobs:
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
               echo "android.useAndroidX=true" >> platforms/android/gradle.properties
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
+              
+              # FIX: Forçar o Gradle Wrapper para a versão 8.7 (Compatível)
+              if [ -f "platforms/android/gradle/wrapper/gradle-wrapper.properties" ]; then
+                  echo "Forçando Gradle 8.7 no wrapper..."
+                  sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-all.zip|g' platforms/android/gradle/wrapper/gradle-wrapper.properties
+              fi
           fi
 
       - name: 📱 Build APK
