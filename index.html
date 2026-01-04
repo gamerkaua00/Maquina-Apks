@@ -3,56 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica V27</title>
+    <title>Fábrica Turbo V8</title>
     
-    <!-- Configuração PWA (Instalar como App) -->
+    <!-- Configuração PWA -->
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- Ícone e Manifesto Embutidos -->
     <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/robot-2.png">
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgVjI3IiwKICAic2hvcnRfbmFtZSI6ICJGYWJyaWNhIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuaWNvbnM4LmNvbS9mbHVlbmN5LzE5Mi9yb2JvdC0yLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
+    
+    <!-- Manifesto Embutido -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgVjgiLAogICJzaG9ydF9uYW1lIjogIkZhYnJpY2EiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJpY29ucyI6IFt7InNyYyI6Imh0dHBzOi8vaW1nLmljb25zOC5jb20vZmx1ZW5jeS8xOTIvcm9ib3QtMi5wbmciLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==">
 
-    <!-- Tailwind & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Estilo Cyberpunk Clean */
-        body { 
-            background-color: #000; 
-            background-image: radial-gradient(circle at 50% 0%, #111827 0%, #000 100%); 
-            color: white; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            overflow: hidden; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .glass { 
-            background: rgba(20, 25, 40, 0.9); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255,255,255,0.08); 
-        }
-        
+        body { background-color: #000; background-image: radial-gradient(circle at 50% 0%, #111827 0%, #000 100%); color: white; font-family: system-ui, sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(20, 25, 40, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         .hidden-view { display: none !important; }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Checkbox Customizado */
         .check-card { transition: all 0.2s; }
-        .check-card input:checked + div { 
-            border-color: #3b82f6; 
-            background: rgba(59, 130, 246, 0.15); 
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); 
-        }
+        .check-card input:checked + div { border-color: #3b82f6; background: rgba(59, 130, 246, 0.15); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
         .check-card input:checked + div i { color: #60a5fa; transform: scale(1.1); }
-        
-        /* Loading */
         .processing { border-color: #22c55e; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
-
-        /* Scrollbar */
         .scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .scroll::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
@@ -60,20 +35,25 @@
 
 <body class="flex flex-col h-[100dvh]">
 
-    <!-- PWA Install Bar -->
-    <div id="pwa-install-bar" class="hidden bg-blue-600 p-3 shadow-lg z-50 flex justify-between items-center px-6 shrink-0 safe-area-top">
+    <!-- PWA Bar -->
+    <div id="pwa-bar" class="hidden bg-blue-600 p-3 shadow-lg z-50 flex justify-between items-center px-6 shrink-0 safe-area-top">
         <div class="flex items-center"><i class="fas fa-download mr-3 text-white animate-bounce"></i><span class="text-xs font-bold uppercase tracking-widest">Instalar App</span></div>
-        <button onclick="instalarPWA()" class="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow hover:bg-gray-100">BAIXAR</button>
+        <button onclick="instalarPWA()" class="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow">BAIXAR</button>
     </div>
 
     <!-- TELA 1: LOGIN -->
     <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 hidden-view scroll fade-in">
         <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-blue-500">
             <i class="fas fa-robot text-5xl text-blue-500 mb-4 block"></i>
-            <h1 class="text-2xl font-bold mb-2">Fábrica V27</h1>
+            <h1 class="text-2xl font-bold mb-2">Fábrica V8</h1>
             <p class="text-gray-400 text-sm mb-6">Acesso Seguro</p>
-            <input type="password" id="input-token" placeholder="Cole seu Token GitHub" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 text-sm font-mono">
-            <button onclick="salvarToken()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95">ENTRAR</button>
+            
+            <input type="password" id="input-token" placeholder="Cole seu Token GitHub" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 text-sm font-mono shadow-inner">
+            
+            <button onclick="salvarToken()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95 mb-4">ENTRAR</button>
+            
+            <!-- Botão de Reset para caso trave -->
+            <button onclick="resetarDados()" class="text-[10px] text-red-400 hover:text-red-300 underline">Limpar Dados / Resetar</button>
         </div>
     </div>
 
@@ -84,13 +64,13 @@
             <button onclick="logout()" class="text-gray-500 hover:text-white transition p-2"><i class="fas fa-sign-out-alt"></i></button>
         </div>
         <div id="apps-list" class="grid grid-cols-2 gap-3 p-4 scroll flex-1 pb-32 content-start"></div>
-        <button onclick="novoApp()" class="fixed bottom-8 right-6 w-14 h-14 bg-blue-600 rounded-2xl shadow-lg flex items-center justify-center text-white text-2xl z-50 hover:scale-105 active:scale-90 transition"><i class="fas fa-plus"></i></button>
+        <button onclick="novoApp()" class="fixed bottom-8 right-6 w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-center text-white text-2xl z-50 hover:scale-105 active:scale-90 transition border border-white/20"><i class="fas fa-plus"></i></button>
     </div>
 
     <!-- TELA 3: EDITOR -->
     <div id="view-edit" class="flex-1 flex flex-col hidden-view h-full bg-black relative">
         <div class="p-4 shrink-0 flex items-center border-b border-gray-800 bg-gray-900/90 z-20 shadow-lg pt-6">
-            <button onclick="voltarDashboard()" class="p-2 mr-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg"><i class="fas fa-chevron-left"></i></button>
+            <button onclick="voltarDashboard()" class="p-2 mr-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg transition active:scale-90 border border-gray-700"><i class="fas fa-chevron-left"></i></button>
             <h2 id="editor-title" class="text-lg font-bold">Novo App</h2>
         </div>
 
@@ -99,295 +79,230 @@
 
             <!-- Identidade -->
             <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800 space-y-3">
-                <div>
-                    <label class="text-[10px] text-blue-500 font-bold uppercase ml-1">Nome do App</label>
-                    <input type="text" id="app-name" placeholder="Ex: Minha Loja" class="w-full bg-black/60 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none font-bold mt-1">
-                </div>
+                <input type="text" id="app-name" placeholder="Nome (Ex: Minha Loja)" class="w-full bg-black/60 border border-gray-700 rounded-lg p-3 text-white font-bold outline-none focus:border-blue-500">
                 <div class="flex gap-2">
-                    <div class="w-2/3">
-                        <label class="text-[10px] text-gray-500 font-bold uppercase ml-1">ID (Pacote)</label>
-                        <input type="text" id="app-pkg" placeholder="com.loja.app" class="w-full bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-gray-300 outline-none mt-1">
-                    </div>
-                    <div class="w-1/3">
-                        <label class="text-[10px] text-gray-500 font-bold uppercase ml-1">Versão</label>
-                        <input type="text" id="app-ver" placeholder="1.0.0" class="w-full bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-center text-gray-300 outline-none mt-1">
-                    </div>
+                    <input type="text" id="app-pkg" placeholder="ID (com.loja)" class="w-2/3 bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-gray-300 outline-none">
+                    <input type="text" id="app-ver" placeholder="1.0.0" class="w-1/3 bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-center text-gray-300 outline-none">
                 </div>
             </div>
 
             <!-- Uploads -->
             <div class="grid grid-cols-3 gap-2">
-                <!-- Ícone -->
                 <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-blue-500 transition">
-                    <i class="fas fa-image text-xl text-gray-500 mb-1"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Ícone</p>
-                    <input type="file" id="app-icon" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full" onchange="dot(this,'d-icon')">
-                    <div id="d-icon" class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full hidden shadow-lg"></div>
+                    <i class="fas fa-image text-xl text-gray-500 mb-1 group-hover:text-blue-500"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Ícone</p>
+                    <input type="file" id="app-icon" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'icon-dot')">
+                    <div id="icon-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
-                <!-- Splash -->
                 <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-purple-500 transition">
-                    <i class="fas fa-mobile-alt text-xl text-gray-500 mb-1"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Splash</p>
-                    <input type="file" id="app-splash" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full" onchange="dot(this,'d-splash')">
-                    <div id="d-splash" class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full hidden shadow-lg"></div>
+                    <i class="fas fa-mobile-alt text-xl text-gray-500 mb-1 group-hover:text-purple-500"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Splash</p>
+                    <input type="file" id="app-splash" accept="image/png" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'splash-dot')">
+                    <div id="splash-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
-                <!-- Index -->
                 <div class="bg-gray-900 border border-gray-700 border-dashed rounded-xl p-2 h-24 flex flex-col items-center justify-center relative cursor-pointer hover:border-green-500 transition">
-                    <i class="fas fa-code text-xl text-gray-500 mb-1"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Index</p>
-                    <input type="file" id="app-index" accept=".html" class="absolute inset-0 opacity-0 w-full h-full" onchange="dot(this,'d-index')">
-                    <div id="d-index" class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full hidden shadow-lg"></div>
+                    <i class="fas fa-code text-xl text-gray-500 mb-1 group-hover:text-green-500"></i><p class="text-[8px] text-gray-400 font-bold uppercase">Index</p>
+                    <input type="file" id="app-index" accept=".html" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="updateFileStatus(this, 'index-dot')">
+                    <div id="index-dot" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] hidden"></div>
                 </div>
             </div>
 
             <!-- Recursos -->
-            <div>
-                <label class="text-[10px] text-blue-500 font-bold uppercase ml-1 mb-3 block">Recursos</label>
-                <div class="grid grid-cols-4 gap-2">
-                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-notif" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-bell text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Notif</span></div></label>
-                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-vib" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-wave-square text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Vib</span></div></label>
-                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-cam" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-camera text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Cam</span></div></label>
-                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-gps" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-map-marker-alt text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">GPS</span></div></label>
-                    
-                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-full" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-expand text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Tela</span></div></label>
-                    <label class="check-card relative"><input type="checkbox" id="c-mic" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-microphone text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Mic</span></div></label>
-                    <label class="check-card relative"><input type="checkbox" id="c-flash" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-lightbulb text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Luz</span></div></label>
-                    <label class="check-card relative"><input type="checkbox" id="c-file" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-folder text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">File</span></div></label>
-                    
-                    <label class="check-card relative"><input type="checkbox" id="c-clip" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-clipboard text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Copy</span></div></label>
-                    <label class="check-card relative"><input type="checkbox" id="c-net" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-wifi text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Wifi</span></div></label>
-                    <label class="check-card relative"><input type="checkbox" id="c-bat" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-battery-half text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bat</span></div></label>
-                    <label class="check-card relative"><input type="checkbox" id="c-bar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-14 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bar</span></div></label>
-                </div>
+            <div class="grid grid-cols-4 gap-2">
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-notif" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-bell text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Notif</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-cam" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-camera text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Cam</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-gps" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-map-marker-alt text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">GPS</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-full" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-expand text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Tela</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-vib" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wave-square text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Vibra</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-mic" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-microphone text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Mic</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-flash" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-lightbulb text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Luz</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-file" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-folder text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">File</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-clip" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-clipboard text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Copy</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-net" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wifi text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Wifi</span></div></label>
+                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-bat" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-battery-half text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bat</span></div></label>
+                <label class="check-card relative"><input type="checkbox" id="c-bar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bar</span></div></label>
             </div>
-
-            <div id="log" class="hidden bg-black/80 rounded-xl p-3 text-[10px] font-mono text-green-400 h-24 border border-gray-800 scroll"></div>
+            
+            <div id="status-log" class="hidden bg-black/80 rounded-xl p-3 text-[10px] font-mono text-green-400 h-24 border border-gray-800 scroll shadow-inner"></div>
         </div>
 
         <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-2xl">
             <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
-                <button onclick="save()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 border border-gray-700">SALVAR</button>
-                <button id="btn-build" onclick="build()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:bg-blue-500 transition shadow-lg flex items-center justify-center space-x-2"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
+                <button onclick="save()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
+                <button id="btn-build" onclick="build()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:bg-blue-500 transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
             </div>
-            
-            <a id="btn-dl" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-center text-xs block shadow-lg transition transform active:scale-95"><i class="fab fa-github text-lg mr-2"></i> PÁGINA DO APK</a>
+            <a id="btn-dl" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 text-white font-bold py-3 rounded-xl text-center text-xs block shadow-lg transition transform active:scale-95"><i class="fas fa-download mr-1"></i> BAIXAR (TURBO)</a>
+            <a id="btn-bk" href="#" target="_blank" class="hidden mt-3 w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-xl text-center text-xs block shadow-lg border border-gray-700"><i class="fab fa-github mr-1"></i> PÁGINA DO GITHUB</a>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÕES GLOBAIS
-        const CFG = { u: "gamerkaua00", r: "Maquina-Apks" };
-        let APPS = JSON.parse(localStorage.getItem('ma') || '[]');
-        const dot = (i, d) => document.getElementById(d).classList.toggle('hidden', !i.files.length);
-        const $ = (i) => document.getElementById(i);
+        const CFG={u:"gamerkaua00",r:"Maquina-Apks"}; 
+        let APPS=JSON.parse(localStorage.getItem('ma')||'[]');
+        const dot=(i,d)=>document.getElementById(d).classList.toggle('hidden',!i.files.length);
+        const $=(i)=>document.getElementById(i);
 
-        // --- PWA SETUP ---
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-            navigator.serviceWorker.register('sw.js').catch(console.error);
-        }
-        let defP; window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); defP = e; $('pwa-install-bar').classList.remove('hidden'); $('pwa-install-bar').classList.add('flex'); });
-        async function instalarPWA() { if(defP){ defP.prompt(); const {outcome} = await defP.userChoice; if(outcome==='accepted')$('pwa-install-bar').classList.add('hidden'); defP=null; } }
+        // PWA
+        if('serviceWorker'in navigator && (location.protocol==='https:'||location.protocol==='http:')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        let defP; window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();defP=e;$('pwa-install-bar').classList.remove('hidden');$('pwa-install-bar').classList.add('flex')});
+        async function instalarPWA(){if(defP){defP.prompt();const{outcome}=await defP.userChoice;if(outcome==='accepted')$('pwa-install-bar').classList.add('hidden');defP=null}}
 
-        // --- AUTH & INIT ---
-        window.onload = () => {
-            const token = localStorage.getItem('gt');
-            const buildPendente = localStorage.getItem('bp');
-            if (token) { 
-                show('view-dash'); list(); 
-                if (buildPendente) {
-                    show('view-edit');
-                    $('log').classList.remove('hidden');
-                    $('log').innerHTML = '<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1 font-bold">> Reconectando ao robô...</div>';
-                    monitor(token);
+        // AUTH
+        window.onload=()=>{
+            const t=localStorage.getItem('gt'); 
+            const bp=localStorage.getItem('bp');
+            if(t){
+                show('view-dash'); list();
+                if(bp){
+                    show('view-edit'); $('status-log').classList.remove('hidden');
+                    monitor(t);
                 }
-            } else show('view-login');
+            }else show('view-login');
         };
 
-        function login() { const t = $('input-token').value.trim(); if (t.startsWith('ghp_')) { localStorage.setItem('gt', t); show('view-dash'); list(); } else alert("Token inválido!"); }
-        function logout() { if(confirm("Sair?")){ localStorage.removeItem('gt'); location.reload(); } }
-        function show(id) { ['view-login','view-dash','view-edit'].forEach(v=>$(v).classList.add('hidden-view')); $(id).classList.remove('hidden-view'); }
-        function voltarDashboard() { localStorage.removeItem('bp'); show('view-dash'); list(); }
+        function salvarToken(){ const t=$('input-token').value.trim(); if(t.startsWith('ghp_')){localStorage.setItem('gt',t);show('view-dash');list();}else alert("Token inválido! (ghp_...)"); }
+        function logout(){ if(confirm("Sair?")){localStorage.removeItem('gt');location.reload();} }
+        function resetarDados(){ if(confirm("Limpar tudo (Apps e Token)?")){localStorage.clear();location.reload();} }
+        function show(id){ ['view-login','view-dash','view-edit'].forEach(v=>$(v).classList.add('hidden-view')); $(id).classList.remove('hidden-view'); }
+        function voltarDashboard(){ localStorage.removeItem('bp'); show('view-dash'); list(); }
 
-        // --- DASHBOARD ---
-        function list() {
-            const l = $('apps-list'); l.innerHTML = '';
-            if (!APPS.length) { l.innerHTML = `<div class="col-span-2 text-center py-20 text-gray-700 opacity-60"><i class="fas fa-ghost text-5xl mb-3"></i><br>Vazio</div>`; return; }
-            APPS.forEach(a => {
-                const i = a.icon || 'https://img.icons8.com/fluency/48/android-os.png';
-                const btn = a.url ? `<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-2 left-2 bg-green-600 text-white text-[9px] px-2 py-1 rounded shadow z-10">BAIXAR</a>` : '';
-                l.innerHTML += `<div onclick="openApp(${a.id})" class="bg-gray-900 rounded-xl p-4 relative group shadow-lg"><div class="flex flex-col items-center"><img src="${i}" class="w-12 h-12 mb-2 rounded object-contain bg-black/50 p-1"><h3 class="font-bold text-xs truncate w-full text-center">${a.name}</h3><span class="text-[9px] text-gray-500">${a.ver||'1.0'}</span></div>${btn}<button onclick="event.stopPropagation();del(${a.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
+        // DASHBOARD
+        function list(){
+            const l=$('apps-list'); l.innerHTML='';
+            if(!APPS.length) l.innerHTML='<div class="col-span-2 text-center py-10 text-gray-700 opacity-60">Nenhum projeto.</div>';
+            APPS.forEach(a=>{
+                const i=a.icon||'https://img.icons8.com/fluency/48/android-os.png';
+                const b=a.url?`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-2 left-2 bg-green-600 text-white text-[9px] px-2 py-1 rounded shadow z-10">BAIXAR</a>`:'';
+                l.innerHTML+=`<div onclick="edit(${a.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition"><div class="flex flex-col items-center"><img src="${i}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${a.name}</h3><div class="text-[9px] text-gray-500">${a.ver||'1.0'}</div></div>${b}<button onclick="event.stopPropagation();del(${a.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
             });
         }
 
-        function novo() {
-            $('edit-id').value = ''; $('app-name').value = ''; $('editor-title').innerText = "Novo Projeto";
-            $('app-pkg').value = ''; $('app-ver').value = '1.0.0';
+        function novo(){ 
+            $('edit-id').value=''; $('app-name').value=''; $('app-pkg').value=''; $('app-ver').value='1.0.0'; 
             ['f-icon','f-index','f-splash'].forEach(i=>$(i).value=''); 
-            ['d-icon','d-index','d-splash','log','btn-dl'].forEach(i=>$(i).classList.add('hidden'));
-            document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
-            $('btn-build').classList.remove('hidden');
-            show('view-edit');
+            ['d-icon','d-index','d-splash','status-log','btn-dl','btn-bk'].forEach(i=>$(i).classList.add('hidden')); 
+            document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false); 
+            $('btn-build').classList.remove('hidden'); show('view-edit');
         }
 
-        function openApp(id) {
-            const a = APPS.find(x => x.id === id); if(!a) return;
-            $('edit-id').value = a.id; $('app-name').value = a.name; $('app-pkg').value = a.pkg||''; $('app-ver').value = a.ver||'1.0.0';
+        function edit(id){
+            const a=APPS.find(x=>x.id===id); if(!a)return;
+            $('edit-id').value=a.id; $('app-name').value=a.name; $('app-pkg').value=a.pkg||''; $('app-ver').value=a.ver||'1.0.0';
             $('editor-title').innerText = a.name;
-            
-            // Limpa inputs de arquivo
-            ['f-icon','f-index','f-splash'].forEach(i=>$(i).value='');
-            ['d-icon','d-index','d-splash'].forEach(i=>$(i).classList.add('hidden'));
-            
-            // Mostra bolinhas se tiver arquivo salvo (Base64)
-            if(a.icon) $('d-icon').classList.remove('hidden');
-            if(a.html) $('d-index').classList.remove('hidden');
-            if(a.splash) $('d-splash').classList.remove('hidden');
-
-            if(a.feat) for(let k in a.feat) if($('c-'+k)) $('c-'+k).checked = a.feat[k];
+            if(a.feat) for(let k in a.feat) if($('c-'+k)) $('c-'+k).checked=a.feat[k];
+            if(a.icon)$('d-icon').classList.remove('hidden'); else $('d-icon').classList.add('hidden');
+            if(a.html)$('d-index').classList.remove('hidden'); else $('d-index').classList.add('hidden');
+            if(a.splash)$('d-splash').classList.remove('hidden'); else $('d-splash').classList.add('hidden');
             show('view-edit');
         }
 
-        function del(id) { if(confirm("Apagar?")) { APPS = APPS.filter(x => x.id !== id); localStorage.setItem('ma', JSON.stringify(APPS)); list(); } }
-        const b64 = f => new Promise((r, j) => { const d = new FileReader(); d.readAsDataURL(f); d.onload = () => r(d.result.split(',')[1]); d.onerror = j; });
+        function del(id){ if(confirm("Apagar?")){ APPS=APPS.filter(x=>x.id!==id); localStorage.setItem('ma',JSON.stringify(APPS)); list(); } }
+        const b64 = f => new Promise((r,j)=>{const d=new FileReader();d.readAsDataURL(f);d.onload=()=>r(d.result.split(',')[1]);d.onerror=j;});
 
-        // --- SALVAR ---
-        async function save(url = null) {
-            const n = $('app-name').value; if(!n) return alert("Nome?");
-            const id = $('edit-id').value;
-            let a = id ? APPS.find(x => x.id == id) : { id: Date.now() };
-            if(!a) a = { id: Date.now() }; // Novo caso não ache
-
-            a.name = n; a.pkg = $('app-pkg').value; a.ver = $('app-ver').value; a.date = Date.now();
-            if(url) a.url = url;
-            
-            // Files (Só atualiza se user mandou novo)
-            const fi=$('f-icon').files[0]; const fh=$('f-index').files[0]; const fs=$('f-splash').files[0];
-            if(fi) a.icon = await b64(fi);
-            if(fh) a.html = await b64(fh);
-            if(fs) a.splash = await b64(fs);
-            
-            a.feat = {};
-            document.querySelectorAll('input[type=checkbox]').forEach(c => a.feat[c.id.replace('c-', '')] = c.checked);
-
-            const idx = APPS.findIndex(x => x.id === a.id);
-            if(idx >= 0) APPS[idx] = a; else APPS.push(a);
-            
-            localStorage.setItem('ma', JSON.stringify(APPS));
-            if(!url) { alert("Salvo!"); voltarDashboard(); }
+        // BUILD
+        async function save(url){
+            const n=$('app-name').value; if(!n) return alert("Nome?");
+            const id=$('edit-id').value; const fi=$('f-icon').files[0]; const fh=$('f-index').files[0]; const fs=$('f-splash').files[0];
+            let a=id?APPS.find(x=>x.id==id):null; if(!a){a={id:Date.now()};APPS.push(a);}
+            a.name=n; a.date=Date.now(); a.pkg=$('app-pkg').value; a.ver=$('app-ver').value;
+            if(url) a.url=url;
+            a.feat={}; document.querySelectorAll('input[type=checkbox]').forEach(c=>a.feat[c.id.replace('c-','')] = c.checked);
+            if(fi)a.icon=await b64(fi); if(fh)a.html=await b64(fh); if(fs)a.splash=await b64(fs);
+            const idx=APPS.findIndex(x=>x.id===a.id); if(idx>=0)APPS[idx]=a; else APPS.push(a);
+            localStorage.setItem('ma',JSON.stringify(APPS));
+            if(!url){alert("Salvo!"); voltarDashboard();}
         }
 
-        // --- LOG ---
-        const logger = (m, e) => {
-            const b = $('log');
-            const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
-            b.innerHTML += `<div class="${e?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1"><span class="text-gray-500">[${t}]</span> ${m}</div>`;
-            b.scrollTop = b.scrollHeight;
-        };
+        const logger=(m,e)=>{const b=$('status-log');b.innerHTML+=`<div class="${e?'text-red-400':'text-green-400'}">> ${m}</div>`;b.scrollTop=b.scrollHeight;};
 
-        // --- BUILD ---
-        async function build() {
-            const t = localStorage.getItem('gt');
-            const n = $('app-name').value;
-            const id = $('edit-id').value;
-            let a = id ? APPS.find(x => x.id == id) : {};
+        async function build(){
+            const t=localStorage.getItem('gt'); const n=$('app-name').value;
+            const fh=$('f-index').files[0]; const fi=$('f-icon').files[0]; const fs=$('f-splash').files[0];
+            const id=$('edit-id').value; let a=id?APPS.find(x=>x.id==id):{};
             
-            const fi=$('f-icon').files[0]; const fh=$('f-index').files[0]; const fs=$('f-splash').files[0];
-            // Prioriza arquivo novo, senão usa salvo
-            let i = fi ? await b64(fi) : a.icon;
-            let h = fh ? await b64(fh) : a.html;
-            let s = fs ? await b64(fs) : a.splash;
-            
-            if(!h) return alert("Falta o Index.html!");
+            let h=fh?await b64(fh):a.html; let i=fi?await b64(fi):a.icon; let s=fs?await b64(fs):a.splash;
+            if(!h)return alert("Falta Index!");
 
-            const ft = { packageId: $('app-pkg').value, version: $('app-ver').value };
-            document.querySelectorAll('input[type=checkbox]').forEach(c => {
-                const map = {notif:'notification', vib:'vibration', cam:'camera', gps:'geolocation', bat:'battery', net:'network', full:'fullscreen', flash:'flashlight', mic:'microphone', ins:'insomnia', clip:'clipboard', bar:'statusbar', splash:'splashscreen', file:'file'};
-                const k = c.id.replace('c-', '');
-                ft[map[k]||k] = c.checked;
+            const ft={packageId:$('app-pkg').value, version:$('app-ver').value};
+            document.querySelectorAll('input[type=checkbox]').forEach(c=>{ 
+                const key = c.id.replace('c-','');
+                const map = {notif:'notification',vib:'vibration',cam:'camera',gps:'geolocation',full:'fullscreen',flash:'flashlight',mic:'microphone',ins:'insomnia',file:'file',clip:'clipboard',net:'network',bar:'statusbar',toast:'toast'};
+                ft[map[key]||key] = c.checked; 
             });
 
-            const btn = $('btn-build');
-            $('log').classList.remove('hidden'); $('log').innerHTML = '';
-            btn.disabled = true; btn.innerHTML = 'ENVIANDO...';
+            const btn=$('btn-build'); $('status-log').classList.remove('hidden'); $('status-log').innerHTML='';
+            btn.disabled=true; btn.innerHTML='ENVIANDO...';
 
             try {
                 logger("🚀 Upload Arquivos...");
-                await up(t, "www/index.html", h, `Site: ${n} [skip ci]`);
-                if(i) await up(t, "www/icon.png", i, "Icon [skip ci]");
-                if(s) await up(t, "www/splash.png", s, "Splash [skip ci]");
-                await up(t, "features.json", btoa(JSON.stringify(ft)), "Features [skip ci]");
+                await up(t,"www/index.html",h,`Site:${n} [skip ci]`);
+                if(i) await up(t,"www/icon.png",i,"Icon [skip ci]");
+                if(s) await up(t,"www/splash.png",s,"Splash [skip ci]");
+                await up(t,"features.json",btoa(JSON.stringify(ft)),"Feat [skip ci]");
                 
                 logger("⚡ Disparando Fábrica...");
-                await cfg(t, n);
+                await cfg(t,n);
                 
-                if(!id) { $('edit-id').value = Date.now(); await save(); } else await save();
-                localStorage.setItem('bp', '1');
-                
+                if(!id){ $('edit-id').value=Date.now(); await save(); } else await save();
+                localStorage.setItem('bp','1');
                 monitor(t);
-            } catch(e) {
-                logger(e.message, 1);
-                btn.disabled = false; btn.innerHTML = "ERRO";
-            }
+            } catch(e){ logger(e.message,1); btn.disabled=false; btn.innerHTML="ERRO"; }
         }
 
-        async function up(t, p, c, m) {
-            const u = `https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${p}`;
-            let s = null; try { const r = await fetch(u, { headers: { Authorization: `token ${t}` } }); if(r.ok) s = (await r.json()).sha; } catch(e){}
-            const res = await fetch(u, {
-                method: 'PUT',
-                headers: { Authorization: `token ${t}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: m, content: c, sha: s, branch: "main" })
-            });
-            if(!res.ok) throw new Error("Erro upload " + p);
+        async function up(t,p,c,m){
+            const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${p}`; let s=null;
+            try{const r=await fetch(u,{headers:{Authorization:`token ${t}`}});if(r.ok)s=(await r.json()).sha;}catch(e){}
+            await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:m,content:c,sha:s,branch:"main"})});
+        }
+        async function cfg(t,n){
+            const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/config.xml`;
+            const r=await fetch(u,{headers:{Authorization:`token ${t}`}});
+            let c=`<?xml version='1.0'?><widget id="com.default" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><name>App</name><content src="index.html"/><access origin="*"/><allow-navigation href="*"/><allow-intent href="*"/><preference name="AndroidInsecureFileModeEnabled" value="true"/><preference name="scheme" value="http"/><preference name="hostname" value="localhost"/></widget>`;
+            let s=null; if(r.ok){const d=await r.json();c=decodeURIComponent(escape(atob(d.content.replace(/\s/g,''))));s=d.sha;}
+            const nc=c.replace(/<name>.*?<\/name>/,`<name>${n}</name>`);
+            await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:"Trig:"+n,content:btoa(unescape(encodeURIComponent(nc))),sha:s,branch:"main"})});
         }
 
-        async function cfg(t, n) {
-            const u = `https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/config.xml`;
-            const r = await fetch(u, { headers: { Authorization: `token ${t}` } });
-            let c = `<?xml version='1.0'?><widget id="com.kaua.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><name>App</name><content src="index.html"/><access origin="*"/><allow-navigation href="*"/><allow-intent href="*"/><preference name="AndroidInsecureFileModeEnabled" value="true"/><preference name="scheme" value="http"/><preference name="hostname" value="localhost"/></widget>`;
-            let s = null; if(r.ok) { const d = await r.json(); c = decodeURIComponent(escape(atob(d.content.replace(/\s/g, '')))); s = d.sha; }
-            const nc = c.replace(/<name>.*?<\/name>/, `<name>${n}</name>`);
-            await fetch(u, {
-                method: 'PUT',
-                headers: { Authorization: `token ${t}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Build: " + n, content: btoa(unescape(encodeURIComponent(nc))), sha: s, branch: "main" })
-            });
+        async function monitor(t){
+            const btn=$('btn-build'); btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing');
+            let att=0;
+            const i=setInterval(async()=>{
+                att++;
+                try{
+                    const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`,{headers:{Authorization:`token ${t}`}});
+                    const d=await r.json();
+                    if(d.workflow_runs?.[0]){
+                        const run=d.workflow_runs[0];
+                        if(run.status==="completed"){
+                            clearInterval(i); btn.classList.remove('processing'); localStorage.removeItem('bp');
+                            if(run.conclusion==="success"){ logger("SUCESSO!"); await link(t); }
+                            else{ logger("FALHOU",1); btn.disabled=false; btn.innerHTML="FALHA"; }
+                        } else { if(att%3===0) logger(`🔨 Trabalhando... [${run.status}]`); }
+                    }
+                }catch(e){}
+                if(att>60){clearInterval(i); logger("Timeout",1); btn.disabled=false; btn.innerHTML="TIMEOUT";}
+            },10000);
         }
 
-        async function monitor(t) {
-            const btn = $('btn-build'); btn.innerHTML = "FABRICANDO... (3 min)"; btn.classList.add('processing');
-            let att = 0;
-            setTimeout(() => {
-                const i = setInterval(async () => {
-                    att++;
-                    try {
-                        const r = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`, { headers: { Authorization: `token ${t}` } });
-                        const d = await r.json();
-                        if (d.workflow_runs?.[0]) {
-                            const run = d.workflow_runs[0];
-                            if (run.status === "completed") {
-                                clearInterval(i); btn.classList.remove('processing'); localStorage.removeItem('bp');
-                                if (run.conclusion === "success") { logger("✨ SUCESSO!"); await link(t); }
-                                else { logger("❌ Falha no Build.", 1); btn.disabled = false; btn.innerHTML = "FALHOU"; }
-                            } else { if(att%3===0) logger(`🔨 Trabalhando... [${run.status}]`); }
-                        }
-                    } catch(e){}
-                    if(att > 60) { clearInterval(i); logger("Tempo esgotado.", 1); btn.disabled = false; btn.innerHTML = "TIMEOUT"; btn.classList.remove('processing'); }
-                }, 10000);
-            }, 5000);
-        }
-
-        async function link(t) {
+        async function link(t){
             try {
-                const r = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`, { headers: { Authorization: `token ${t}` } });
-                const d = await r.json();
-                const url = d.html_url; // Link da Página da Release (Seguro)
+                const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`,{headers:{Authorization:`token ${t}`}});
+                const d=await r.json();
+                const url = d.html_url;
+                const direct = d.assets?.[0]?.browser_download_url;
+                const match = d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
+                const turbo = (match && match[1] && !match[1].includes("Verifique")) ? match[1] : null;
+
+                $('btn-build').classList.add('hidden');
                 
-                if (url) {
-                    $('btn-build').classList.add('hidden');
-                    $('btn-dl').href = url;
-                    $('btn-dl').classList.remove('hidden');
-                    logger("✅ LINK PRONTO!");
-                    save(url); // Salva o link no card
-                } else logger("Link não achado.", 1);
-            } catch(e) { logger("Erro link", 1); }
+                // Botão Principal (Turbo ou Direto)
+                if(turbo) { $('btn-dl').href=turbo; $('btn-dl').classList.remove('hidden'); }
+                else if(direct) { $('btn-dl').href=direct; $('btn-dl').classList.remove('hidden'); $('btn-dl').innerHTML="BAIXAR (GITHUB)"; }
+                
+                // Botão Backup (Sempre aparece)
+                if(url) { $('btn-bk').href=url; $('btn-bk').classList.remove('hidden'); }
+
+                logger("LINKS PRONTOS!");
+                save(turbo || direct || url);
+            } catch(e){ logger("Erro link",1); }
         }
     </script>
 </body>
