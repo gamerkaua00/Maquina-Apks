@@ -1,4 +1,4 @@
-name: Fábrica Turbo V32 (Admin Discord Logs) 🚀
+name: Fábrica Turbo V33 (Fix API Load Error) 🚀
 
 on:
   push:
@@ -67,7 +67,7 @@ jobs:
                 { \"name\": \"🖼️ Ícone?\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true },
                 { \"name\": \"🔗 Repo\", \"value\": \"[Ver Arquivos](${{ github.server_url }}/${{ github.repository }})\", \"inline\": false }
               ],
-              \"footer\": { \"text\": \"Run #${{ github.run_number }} • V32 Enterprise\" },
+              \"footer\": { \"text\": \"Run #${{ github.run_number }} • V33 Stable\" },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }]
           }" \
@@ -136,11 +136,12 @@ jobs:
              sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
           fi
 
-      - name: 🔌 Instalando Plugins
+      - name: 🔌 Instalando Plugins (Ordem Segura)
         run: |
           cd app-temp
-          # Adiciona plataforma (Isso gera a estrutura Android)
-          cordova platform add android@12.0.0
+          
+          # MUDANÇA V33: Instala plugins ANTES de adicionar a plataforma
+          echo "🔌 Preparando Plugins..."
           
           # Plugins Base
           cordova plugin remove cordova-plugin-whitelist || true
@@ -180,6 +181,13 @@ jobs:
                cordova plugin add cordova-plugin-media cordova-plugin-media-capture
             fi
           fi
+
+          # MUDANÇA V33: Adiciona a plataforma SÓ AGORA (com tudo pronto)
+          echo "📱 Gerando Plataforma Android..."
+          cordova platform add android@12.0.0
+          
+          echo "🔨 Preparando arquivos finais..."
+          cordova prepare android
 
       # --- 3. FORÇA BRUTA (ÍCONES NUCLEARES) ---
       - name: 🔨 Substituição Física de Ícones
