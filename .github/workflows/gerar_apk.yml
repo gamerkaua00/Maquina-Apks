@@ -1,4 +1,4 @@
-name: Fábrica Turbo V42 (Fix Syntax & Discord) 🚀
+name: Fábrica Turbo V42 (Fix Syntax & Discord & Gradle) 🚀
 
 on:
   push:
@@ -12,9 +12,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    # --- FIX CRÍTICO: FORÇAR GRADLE 8.7 ---
+    # O Gradle 9 quebra o Cordova. Estas variáveis forçam o uso da versão compatível.
     env:
       CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
-      JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
+      JAVA_HOME_17_X64: "/usr/lib/jvm/temurin-17-jdk-amd64"
 
     steps:
       - name: 📥 Baixando Código
@@ -24,6 +26,12 @@ jobs:
       - name: ☕ Setup Java & Gradle
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
+
+      # ADICIONADO: Instalação explícita do Gradle 8.7 para garantir
+      - name: 🛠️ Setup Gradle 8.7 Manual
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
 
       - name: 🛠️ Setup Android SDK
         run: |
@@ -212,6 +220,7 @@ jobs:
           rm -rf ~/.gradle/caches/
           
           echo "🚀 Compilando..."
+          # Adicionado -PcdvCompileSdkVersion=33 para reforçar a versão do SDK
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
