@@ -1,4 +1,4 @@
-name: Fábrica Turbo V33 (Fix API Load Error) 🚀
+name: Fábrica Turbo V34 (Fix API.js + Discord Ping) 🚀
 
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
           echo "APP_VER=$APP_VER" >> $GITHUB_ENV
           echo "HAS_ICON=$HAS_ICON" >> $GITHUB_ENV
 
-      # --- LOG DE INÍCIO TURBINADO ---
+      # --- LOG DE INÍCIO (COM PING) ---
       - name: 🔔 Discord Admin (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
@@ -56,19 +56,11 @@ jobs:
           -d "{
             \"username\": \"Fábrica Bot 🤖\",
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
+            \"content\": \"@everyone 🏭 **Nova produção iniciada!**\",
             \"embeds\": [{
-              \"title\": \"🚧 Iniciando Produção (Admin Log)\",
-              \"description\": \"O usuário **${{ github.actor }}** solicitou um novo build.\",
-              \"color\": 16776960,
-              \"fields\": [
-                { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                { \"name\": \"🆔 ID\", \"value\": \"\`${{ env.APP_ID }}\`\", \"inline\": true },
-                { \"name\": \"🔢 Versão\", \"value\": \"\`${{ env.APP_VER }}\`\", \"inline\": true },
-                { \"name\": \"🖼️ Ícone?\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true },
-                { \"name\": \"🔗 Repo\", \"value\": \"[Ver Arquivos](${{ github.server_url }}/${{ github.repository }})\", \"inline\": false }
-              ],
-              \"footer\": { \"text\": \"Run #${{ github.run_number }} • V33 Stable\" },
-              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              \"title\": \"🚧 Construindo: ${{ env.APP_NAME }}\",
+              \"description\": \"ID: \`${{ env.APP_ID }}\`\nVersão: \`${{ env.APP_VER }}\`\",
+              \"color\": 16776960
             }]
           }" \
           $DISCORD_WEBHOOK
@@ -95,10 +87,10 @@ jobs:
           
           cd app-temp
           
-          # 1. FORÇA O NOME (Substitui tags name)
+          # 1. FORÇA O NOME
           sed -i "s|<name>.*</name>|<name>${{ env.APP_NAME }}</name>|g" config.xml
           
-          # 2. FORÇA O ID (Substitui o id="...")
+          # 2. FORÇA O ID
           sed -i "s/id=\"[^\"]*\"/id=\"${{ env.APP_ID }}\"/g" config.xml
           
           # 3. FORÇA A VERSÃO
@@ -140,9 +132,7 @@ jobs:
         run: |
           cd app-temp
           
-          # MUDANÇA V33: Instala plugins ANTES de adicionar a plataforma
           echo "🔌 Preparando Plugins..."
-          
           # Plugins Base
           cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
@@ -154,7 +144,7 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Plugins Opcionais (Features)
+          # Plugins Opcionais
           if [ -f "../features.json" ]; then
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
@@ -182,12 +172,26 @@ jobs:
             fi
           fi
 
-          # MUDANÇA V33: Adiciona a plataforma SÓ AGORA (com tudo pronto)
           echo "📱 Gerando Plataforma Android..."
           cordova platform add android@12.0.0
           
           echo "🔨 Preparando arquivos finais..."
           cordova prepare android
+
+      # --- NOVO: REPARO DE API.JS E NODE_MODULES ---
+      - name: 🚑 Fix API Cordova (Reanimação)
+        run: |
+          cd app-temp
+          echo "🔧 Verificando integridade da plataforma..."
+          
+          if [ -d "platforms/android/cordova" ]; then
+              cd platforms/android/cordova
+              echo "📦 Reinstalando dependências internas do Android..."
+              npm install --production --no-save
+              echo "✅ Dependências restauradas."
+          else
+              echo "❌ ERRO: Pasta cordova não encontrada. O build vai falhar."
+          fi
 
       # --- 3. FORÇA BRUTA (ÍCONES NUCLEARES) ---
       - name: 🔨 Substituição Física de Ícones
@@ -195,16 +199,12 @@ jobs:
           cd app-temp
           if [ -f "icon.png" ]; then
              echo "👊 Esmagando ícones padrão do Android..."
-             # Caminho onde o Android guarda os ícones
              RES="platforms/android/app/src/main/res"
-             
-             # Substitui em TODAS as pastas de densidade (mipmap e drawable)
              for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
                  mkdir -p "$RES/$folder"
                  cp icon.png "$RES/$folder/ic_launcher.png"
                  cp icon.png "$RES/$folder/icon.png"
              done
-             echo "✅ Ícones substituídos fisicamente no disco."
           fi
 
       - name: 🚑 Fix Gradle & Config
@@ -214,7 +214,7 @@ jobs:
               # Fix Compile/Implementation
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # Garante ID no AndroidManifest também (Segurança Extra)
+              # Garante ID no AndroidManifest
               sed -i 's/package="com.temp.id"/package="${{ env.APP_ID }}"/g' platforms/android/app/src/main/AndroidManifest.xml || true
               
               # Força versão SDK 33
@@ -228,29 +228,31 @@ jobs:
       - name: 📱 Build APK
         run: |
           cd app-temp
+          # Limpa cache do Gradle local para evitar corrupção
           rm -rf ~/.gradle/caches/
+          
           echo "🚀 Compilando..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "❌ ERRO: APK não encontrado!"
+            echo "STATUS_BUILD=FALHA" >> $GITHUB_ENV
             exit 1
           else
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
+            echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
           fi
 
-      - name: 🚀 Release GitHub (Final)
-        uses: softprops/action-gh-release@v1
+      - name: 🚀 Release GitHub
         if: success()
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
           body: |
             ✅ **Seu App está pronto!**
-            
             📱 **Nome:** ${{ env.APP_NAME }}
             🆔 **ID:** `${{ env.APP_ID }}`
             
@@ -260,7 +262,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- LOG DE FIM TURBINADO (DISCORD) ---
+      # --- LOG DE FIM TURBINADO (DISCORD COM PING) ---
       - name: 🔔 Discord Admin (Relatório Final)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
@@ -269,32 +271,28 @@ jobs:
         run: |
           if [ "$STATUS" == "success" ]; then
             COLOR=5763712
-            TITLE="✅ Build Concluído com Sucesso"
-            DESC="O APK foi gerado e publicado na aba Releases."
+            TITLE="✅ SUCESSO"
+            CONTENT="@everyone 🎉 **APK PRONTO!**"
           else
             COLOR=15548997
-            TITLE="❌ Falha no Build"
-            DESC="Ocorreu um erro durante o processamento. Verifique os logs."
+            TITLE="❌ FALHA"
+            CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
           fi
           
-          LOG_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
           
           curl -H "Content-Type: application/json" \
           -d "{
             \"username\": \"Fábrica Bot 🤖\",
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
+            \"content\": \"$CONTENT\",
             \"embeds\": [{
               \"title\": \"$TITLE\",
-              \"description\": \"$DESC\",
               \"color\": $COLOR,
               \"fields\": [
                 { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                { \"name\": \"👤 Autor\", \"value\": \"${{ github.actor }}\", \"inline\": true },
-                { \"name\": \"📥 Download APK\", \"value\": \"[Clique para Baixar]($DL_LINK)\", \"inline\": false },
-                { \"name\": \"📄 Logs do Console (Admin)\", \"value\": \"[Ver Logs Completos]($LOG_URL)\", \"inline\": false }
+                { \"name\": \"📥 Download\", \"value\": \"[Clique para Baixar]($DL_LINK)\", \"inline\": false }
               ],
-              \"footer\": { \"text\": \"Finalizado em $(date -u +%H:%M:%S)\" },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }]
           }" \
