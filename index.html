@@ -36,9 +36,9 @@
 <body class="flex flex-col h-[100dvh]">
 
     <!-- PWA Bar -->
-    <div id="pwa-bar" class="hidden bg-blue-600 p-3 shadow-lg z-50 flex justify-between items-center px-6 shrink-0 safe-area-top">
+    <div id="pwa-install-bar" class="hidden bg-blue-600 p-3 shadow-lg z-50 flex justify-between items-center px-6 shrink-0 safe-area-top">
         <div class="flex items-center"><i class="fas fa-download mr-3 text-white animate-bounce"></i><span class="text-xs font-bold uppercase tracking-widest">Instalar App</span></div>
-        <button onclick="instalarPWA()" class="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow">BAIXAR</button>
+        <button onclick="instalarPWA()" class="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow hover:bg-gray-100">BAIXAR</button>
     </div>
 
     <!-- TELA 1: LOGIN -->
@@ -51,9 +51,7 @@
             <input type="password" id="input-token" placeholder="Cole seu Token GitHub" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 text-sm font-mono shadow-inner">
             
             <button onclick="salvarToken()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95 mb-4">ENTRAR</button>
-            
-            <!-- Botão de Reset para caso trave -->
-            <button onclick="resetarDados()" class="text-[10px] text-red-400 hover:text-red-300 underline">Limpar Dados / Resetar</button>
+            <button onclick="resetarDados()" class="text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer">Limpar Dados / Resetar</button>
         </div>
     </div>
 
@@ -64,6 +62,7 @@
             <button onclick="logout()" class="text-gray-500 hover:text-white transition p-2"><i class="fas fa-sign-out-alt"></i></button>
         </div>
         <div id="apps-list" class="grid grid-cols-2 gap-3 p-4 scroll flex-1 pb-32 content-start"></div>
+        <!-- BOTÃO NOVO APP (CORRIGIDO) -->
         <button onclick="novoApp()" class="fixed bottom-8 right-6 w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-center text-white text-2xl z-50 hover:scale-105 active:scale-90 transition border border-white/20"><i class="fas fa-plus"></i></button>
     </div>
 
@@ -106,31 +105,34 @@
             </div>
 
             <!-- Recursos -->
-            <div class="grid grid-cols-4 gap-2">
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-notif" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-bell text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Notif</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-cam" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-camera text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Cam</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-gps" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-map-marker-alt text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">GPS</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-full" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-expand text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Tela</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-vib" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wave-square text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Vibra</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-mic" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-microphone text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Mic</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-flash" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-lightbulb text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Luz</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-file" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-folder text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">File</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-clip" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-clipboard text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Copy</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-net" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wifi text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Wifi</span></div></label>
-                <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-bat" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-battery-half text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bat</span></div></label>
-                <label class="check-card relative"><input type="checkbox" id="c-bar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bar</span></div></label>
+            <div>
+                <label class="text-[10px] text-blue-500 font-bold uppercase ml-1 mb-3 block">Recursos</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-notif" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-bell text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Notif</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-cam" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-camera text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Cam</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-gps" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-map-marker-alt text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">GPS</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-full" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-expand text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Tela</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-vib" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wave-square text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Vib</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-mic" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-microphone text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Mic</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-flash" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-lightbulb text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Luz</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-file" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-folder text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">File</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-clip" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-clipboard text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Copy</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-net" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-wifi text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Wifi</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-bat" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-battery-half text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bat</span></div></label>
+                    <label class="check-card relative cursor-pointer"><input type="checkbox" id="c-bar" class="hidden"><div class="bg-gray-900 border border-gray-700 rounded-lg h-12 flex flex-col items-center justify-center"><i class="fas fa-window-maximize text-[10px] text-gray-500 mb-1"></i><span class="text-[7px] font-bold">Bar</span></div></label>
+                </div>
             </div>
             
-            <div id="status-log" class="hidden bg-black/80 rounded-xl p-3 text-[10px] font-mono text-green-400 h-24 border border-gray-800 scroll shadow-inner"></div>
+            <div id="status-log" class="hidden bg-black/80 rounded-xl p-3 text-[10px] font-mono text-green-400 h-24 border border-gray-800 shadow-inner scroll"></div>
         </div>
 
         <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-2xl">
             <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
                 <button onclick="save()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
-                <button id="btn-build" onclick="build()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:bg-blue-500 transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
+                <button id="btn-build" onclick="build()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
             </div>
             <a id="btn-dl" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 text-white font-bold py-3 rounded-xl text-center text-xs block shadow-lg transition transform active:scale-95"><i class="fas fa-download mr-1"></i> BAIXAR (TURBO)</a>
-            <a id="btn-bk" href="#" target="_blank" class="hidden mt-3 w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-xl text-center text-xs block shadow-lg border border-gray-700"><i class="fab fa-github mr-1"></i> PÁGINA DO GITHUB</a>
+            <a id="btn-backup" href="#" target="_blank" class="hidden mt-3 w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-xl text-center text-xs block shadow-lg border border-gray-700"><i class="fab fa-github mr-1"></i> PÁGINA DO GITHUB</a>
         </div>
     </div>
 
@@ -160,7 +162,7 @@
 
         function salvarToken(){ const t=$('input-token').value.trim(); if(t.startsWith('ghp_')){localStorage.setItem('gt',t);show('view-dash');list();}else alert("Token inválido! (ghp_...)"); }
         function logout(){ if(confirm("Sair?")){localStorage.removeItem('gt');location.reload();} }
-        function resetarDados(){ if(confirm("Limpar tudo (Apps e Token)?")){localStorage.clear();location.reload();} }
+        function resetarDados(){ if(confirm("Apagar todos os dados locais?")){localStorage.clear();location.reload();} }
         function show(id){ ['view-login','view-dash','view-edit'].forEach(v=>$(v).classList.add('hidden-view')); $(id).classList.remove('hidden-view'); }
         function voltarDashboard(){ localStorage.removeItem('bp'); show('view-dash'); list(); }
 
@@ -171,16 +173,30 @@
             APPS.forEach(a=>{
                 const i=a.icon||'https://img.icons8.com/fluency/48/android-os.png';
                 const b=a.url?`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-2 left-2 bg-green-600 text-white text-[9px] px-2 py-1 rounded shadow z-10">BAIXAR</a>`:'';
-                l.innerHTML+=`<div onclick="edit(${a.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition"><div class="flex flex-col items-center"><img src="${i}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${a.name}</h3><div class="text-[9px] text-gray-500">${a.ver||'1.0'}</div></div>${b}<button onclick="event.stopPropagation();del(${a.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
+                l.innerHTML+=`<div onclick="edit(${a.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition"><div class="flex flex-col items-center"><img src="${i}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${a.name}</h3><div class="text-[9px] text-gray-500">${a.ver||'v1.0'}</div></div>${b}<button onclick="event.stopPropagation();del(${a.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
             });
         }
 
+        // FIX: Função novoApp agora limpa TUDO corretamente
         function novo(){ 
-            $('edit-id').value=''; $('app-name').value=''; $('app-pkg').value=''; $('app-ver').value='1.0.0'; 
+            $('edit-id').value=''; 
+            $('app-name').value=''; 
+            $('app-pkg').value=''; 
+            $('app-ver').value='1.0.0'; 
+            
+            // Limpa inputs de arquivo
             ['f-icon','f-index','f-splash'].forEach(i=>$(i).value=''); 
-            ['d-icon','d-index','d-splash','status-log','btn-dl','btn-bk'].forEach(i=>$(i).classList.add('hidden')); 
+            
+            // Esconde indicadores visuais
+            ['d-icon','d-index','d-splash','status-log','btn-dl','btn-backup'].forEach(i=>$(i).classList.add('hidden')); 
+            
+            // Reseta checkboxes
             document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false); 
-            $('btn-build').classList.remove('hidden'); show('view-edit');
+            
+            $('btn-build').classList.remove('hidden'); 
+            $('editor-title').innerText = "Novo Projeto";
+            
+            show('view-edit');
         }
 
         function edit(id){
@@ -208,7 +224,7 @@
             if(fi)a.icon=await b64(fi); if(fh)a.html=await b64(fh); if(fs)a.splash=await b64(fs);
             const idx=APPS.findIndex(x=>x.id===a.id); if(idx>=0)APPS[idx]=a; else APPS.push(a);
             localStorage.setItem('ma',JSON.stringify(APPS));
-            if(!url){alert("Salvo!"); voltarDashboard();}
+            if(!url){alert("Salvo!"); dash();}
         }
 
         const logger=(m,e)=>{const b=$('status-log');b.innerHTML+=`<div class="${e?'text-red-400':'text-green-400'}">> ${m}</div>`;b.scrollTop=b.scrollHeight;};
@@ -302,7 +318,7 @@
 
                 logger("LINKS PRONTOS!");
                 save(turbo || direct || url);
-            } catch(e){ logger("Erro link",1); }
+            } catch(e){ logger("Erro link.", true); }
         }
     </script>
 </body>
