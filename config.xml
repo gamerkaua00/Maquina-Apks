@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <widget id="com.kaua.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>VocalStudio</name>
+    <name>EletroNIC</name>
     <description>App criado pela Fabrica</description>
     <author email="dev@example.com" href="http://example.com">Dev</author>
     <content src="index.html" />
