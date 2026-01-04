@@ -281,7 +281,7 @@
             document.getElementById('app-ver').value = '1.0.0';
             
             // Limpa inputs file
-            ['f-icon', 'f-index', 'f-splash'].forEach(id => {
+            ['app-icon', 'app-index', 'app-splash'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = '';
             });
@@ -316,7 +316,7 @@
             document.getElementById('editor-title').innerText = app.name;
             
             // Limpa file inputs
-            ['f-icon', 'f-index', 'f-splash'].forEach(id => {
+            ['app-icon', 'app-index', 'app-splash'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = '';
             });
@@ -357,9 +357,9 @@
             if(!name) return alert("Dê um nome!");
             
             const idInput = document.getElementById('edit-id');
-            const iconFile = document.getElementById('f-icon').files[0];
-            const indexFile = document.getElementById('f-index').files[0];
-            const splashFile = document.getElementById('f-splash').files[0];
+            const iconFile = document.getElementById('app-icon').files[0];
+            const indexFile = document.getElementById('app-index').files[0];
+            const splashFile = document.getElementById('app-splash').files[0];
 
             let app = idInput.value ? MEUS_APPS.find(x => x.id == idInput.value) : null;
             if(!app) { app = {id: Date.now()}; MEUS_APPS.push(app); }
@@ -393,7 +393,7 @@
 
         async function build() {
             const t=localStorage.getItem('gt'); const n=document.getElementById('app-name').value;
-            const fh=document.getElementById('f-index').files[0]; const fi=document.getElementById('f-icon').files[0]; const fs=document.getElementById('f-splash').files[0];
+            const fh=document.getElementById('app-index').files[0]; const fi=document.getElementById('app-icon').files[0]; const fs=document.getElementById('app-splash').files[0];
             const id=document.getElementById('edit-id').value; let a=id?APPS.find(x=>x.id==id):{};
             
             let h=fh?await b64(fh):a.html; let i=fi?await b64(fi):a.icon; let s=fs?await b64(fs):a.splash;
