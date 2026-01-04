@@ -1,4 +1,4 @@
-name: Fábrica Turbo V28 (Fix Java Cache + Enterprise) 🚀
+name: Fábrica Turbo V29 (Icon Brute Force + Fix Cache) 🚀
 
 on:
   push:
@@ -16,8 +16,6 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- CORREÇÃO DO ERRO DE CACHE ---
-      # Usamos cache manual em vez do cache integrado do setup-java
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
         with:
@@ -25,16 +23,15 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-v28-${{ github.run_id }}
+          key: ${{ runner.os }}-gradle-v29-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-gradle-v28-
+            ${{ runner.os }}-gradle-v29-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-          # REMOVIDO: cache: 'gradle' (Causava o erro "No file matched")
 
       - name: 🛠️ Instalando Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
@@ -50,7 +47,6 @@ jobs:
         run: |
           npm install -g cordova
 
-      # --- 2. CRIAÇÃO DO APP ---
       - name: 🏗️ Criando a Base do App
         run: |
           cordova create app-temp com.kaua.app "Seu App Turbo"
@@ -62,17 +58,22 @@ jobs:
             cp config.xml app-temp/
           fi
 
-      # --- 3. CONFIGURAÇÃO VISUAL ---
-      - name: 🎨 Configurando Ícone e Splash
+      - name: 🎨 Preparando Ícone e Splash
         run: |
           cd app-temp
           
-          # Ícone
+          # Procura ícone (qualquer nome comum)
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
+          
           if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone encontrado!"
+            echo "🔥 Ícone encontrado: $ICON_FILE"
             cp "$ICON_FILE" ./icon.png
+            # Remove tags antigas e define a nova
             sed -i '/<icon/d' config.xml
+            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+          else
+            echo "⚠️ Usando ícone padrão (Robô)."
+            curl -L -o ./icon.png "https://img.icons8.com/fluency/512/robot-2.png"
             sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
           fi
           
@@ -87,12 +88,11 @@ jobs:
              sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
           fi
           
-          # Permissões de Arquivo
+          # Permissões
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      # --- 4. INSTALAÇÃO DE PLUGINS ---
       - name: 🔌 Instalando Plugins e Plataforma
         run: |
           cd app-temp
@@ -109,7 +109,7 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Plugins Opcionais (Leitura do features.json)
+          # Leitura do features.json
           if [ -f "../features.json" ]; then
             
             # Personalização ID/Versão
@@ -118,7 +118,7 @@ jobs:
             if [ ! -z "$CUSTOM_ID" ]; then sed -i "s/id=\"[^\"]*\"/id=\"$CUSTOM_ID\"/" config.xml; fi
             if [ ! -z "$CUSTOM_VER" ]; then sed -i "s/version=\"[^\"]*\"/version=\"$CUSTOM_VER\"/" config.xml; fi
 
-            # Instalação de Plugins
+            # Instalação Plugins
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
@@ -151,33 +151,46 @@ jobs:
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
             if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
             
-            # Mídia
             if [ "$USE_MIC" = "true" ]; then 
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
             
-            # Notificação (Versão estável sem erro de compile)
+            # Notificação (Versão estável)
             if [ "$USE_NOTIF" = "true" ]; then
-                # Vamos tentar instalar, mas se falhar não quebra o build
                 cordova plugin add cordova-plugin-local-notification || echo "⚠️ Falha ao instalar notificação (Ignorado)"
             fi
           fi
           
-          # Prepara arquivos para correção
           cordova prepare android
+
+      # --- NOVO: SUBSTITUIÇÃO FORÇADA DE ÍCONE ---
+      - name: 🔨 Forçando Ícone (Brute Force)
+        run: |
+          cd app-temp
+          if [ -f "icon.png" ]; then
+             echo "👊 Substituindo ícones nativos do Android..."
+             # Copia o ícone.png para todas as pastas de densidade (mipmap)
+             # Isso garante que o Android use esse arquivo, ignorando config.xml se necessário
+             RES_PATH="platforms/android/app/src/main/res"
+             cp icon.png "$RES_PATH/mipmap-ldpi/ic_launcher.png" || true
+             cp icon.png "$RES_PATH/mipmap-mdpi/ic_launcher.png" || true
+             cp icon.png "$RES_PATH/mipmap-hdpi/ic_launcher.png" || true
+             cp icon.png "$RES_PATH/mipmap-xhdpi/ic_launcher.png" || true
+             cp icon.png "$RES_PATH/mipmap-xxhdpi/ic_launcher.png" || true
+             cp icon.png "$RES_PATH/mipmap-xxxhdpi/ic_launcher.png" || true
+             echo "✅ Ícones substituídos fisicamente."
+          fi
 
       # --- 5. CORREÇÃO DE ERROS (GRADLE) ---
       - name: 🚑 Reparando Scripts do Gradle
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
-              # Substitui 'compile' por 'implementation'
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/debugCompile /debugImplementation /g' {} +
               
-              # Força versão 33 do SDK
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
