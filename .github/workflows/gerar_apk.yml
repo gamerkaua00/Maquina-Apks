@@ -1,4 +1,4 @@
-name: Fábrica Turbo V37 (Fix Gradle 9 Incompatibility) 🚀
+name: Fábrica Turbo V38 (Gradle Force Downgrade) 🚀
 
 on:
   push:
@@ -12,18 +12,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # --- FIX CRÍTICO: FORÇAR GRADLE 8.7 ---
-    # O Gradle 9 (padrão do GitHub agora) quebra o Cordova.
-    # Essas variáveis obrigam o sistema a usar a versão compatível.
+    # Define variáveis globais para garantir que o Cordova veja o Gradle certo
     env:
       CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
-      JAVA_HOME_17_X64: "/usr/lib/jvm/temurin-17-jdk-amd64"
+      JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
 
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. CONFIGURAÇÃO INICIAL ---
+      # --- 1. CONFIGURAÇÃO DE AMBIENTE (MANUAL E FORÇADA) ---
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🔨 Instalar Gradle 8.7 (Manual)
+        run: |
+          # Baixa o Gradle 8.7 na marra para não usar o 9.2 do sistema
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          
+          # Adiciona ao PATH do sistema para este job
+          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
+          
+          # Verifica se funcionou (tem que mostrar 8.7)
+          $PWD/gradle-8.7/bin/gradle -v
+
+      - name: 🛠️ Setup Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
+          npm install -g cordova
+
+      # --- 2. CONFIGURAÇÃO DO PROJETO ---
       - name: 🧐 Lendo Configurações
         id: config
         run: |
@@ -52,41 +75,16 @@ jobs:
           echo "APP_VER=$APP_VER" >> $GITHUB_ENV
           echo "HAS_ICON=$HAS_ICON" >> $GITHUB_ENV
 
-      # --- 2. DISCORD INÍCIO (AVISO) ---
       - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Fábrica Bot 🤖\",
-            \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-            \"content\": \"@everyone\",
-            \"embeds\": [{
-              \"title\": \"🚧 Iniciando Produção\",
-              \"description\": \"Criando: **${{ env.APP_NAME }}**\nID: \`${{ env.APP_ID }}\`\",
-              \"color\": 16776960,
-              \"fields\": [
-                { \"name\": \"Versão\", \"value\": \"${{ env.APP_VER }}\", \"inline\": true },
-                { \"name\": \"Ícone\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true }
-              ],
-              \"footer\": { \"text\": \"Run #${{ github.run_number }} • V37 Fix Gradle\" }
-            }]
-          }" \
+          -d "{\"embeds\":[{\"title\":\"🏭 Iniciando Produção V38\",\"description\":\"App: **${{ env.APP_NAME }}**\nGradle: 8.7 (Forçado)\",\"color\":16776960}]}" \
           $DISCORD_WEBHOOK
 
-      - name: ☕ Setup Ambiente
-        uses: actions/setup-java@v3
-        with: { distribution: 'temurin', java-version: '17' }
-
-      - name: 🛠️ Setup Android
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
-          npm install -g cordova
-
-      # --- 3. CONSTRUÇÃO DO PROJETO ---
+      # --- 3. CRIAÇÃO DO APP ---
       - name: 🏗️ Criando App
         run: |
           cordova create app-temp com.temp.id "TempName"
@@ -99,7 +97,7 @@ jobs:
           sed -i "s/id=\"[^\"]*\"/id=\"${{ env.APP_ID }}\"/g" config.xml
           sed -i "s/version=\"[^\"]*\"/version=\"${{ env.APP_VER }}\"/g" config.xml
           
-          # Permissões de arquivo
+          # Permissões
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
@@ -141,9 +139,8 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          INSTALLED_PLUGINS="Básicos"
-
           if [ -f "../features.json" ]; then
+            # Lê todos os plugins marcados
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
@@ -155,43 +152,38 @@ jobs:
             USE_TOAST=$(jq -r '.toast' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Vibra"; fi
-            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Cam"; fi
-            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, GPS"; fi
-            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Bat"; fi
-            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Full"; fi
-            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Luz"; fi
-            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Toast"; fi
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Wake"; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, File"; fi
-            if [ "$USE_MIC" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Mic"; fi
+            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
+            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
+            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
+            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
+            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
+            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
+            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
+            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
+            if [ "$USE_MIC" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
           fi
-          
-          echo "PLUGINS_LIST=$INSTALLED_PLUGINS" >> $GITHUB_ENV
 
           echo "📱 Adicionando Plataforma..."
           cordova platform add android@12.0.0
           
           echo "🏗️ Forçando Prepare..."
           cordova prepare android || true
-          
-          echo "⏳ Aguardando sistema (10s)..."
           sleep 10
           
-          # FIX: Reinstala dependências internas se a pasta existir
+          # Fix API.js
           if [ -d "platforms/android/cordova" ]; then
-             echo "🚑 Reparando API Cordova (npm install)..."
+             echo "🚑 Reparando API Cordova..."
              cd platforms/android
              npm install --production --no-save
              cd ../..
-          else
-             echo "⚠️ Pasta cordova não encontrada. Tentando seguir..."
           fi
 
       - name: 🔨 Substituição de Ícones (Força Bruta)
         run: |
           cd app-temp
           if [ -f "icon.png" ]; then
+             echo "👊 Esmagando ícones padrão..."
              RES="platforms/android/app/src/main/res"
              if [ -d "$RES" ]; then
                  for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
@@ -202,92 +194,73 @@ jobs:
              fi
           fi
 
-      - name: 🚑 Fix Gradle Scripts
+      - name: 🚑 Fix Gradle (Cirurgia)
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
-              # Corrige plugins antigos
+              echo "🔧 Aplicando Fix de Compatibilidade..."
+              
+              # 1. Troca 'compile' por 'implementation' (Essencial para plugins antigos)
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # Força versão 33 do SDK para evitar erro compileSdkVersion
+              # 2. Força versão 33 do SDK (Evita erro compileSdkVersion)
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
               echo "android.useAndroidX=true" >> platforms/android/gradle.properties
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
+              
+              # 3. FIX CRÍTICO V38: Forçar Gradle 8.7 no wrapper do projeto
+              if [ -f "platforms/android/gradle/wrapper/gradle-wrapper.properties" ]; then
+                  echo "🛑 Bloqueando Gradle 9 no projeto..."
+                  sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-all.zip|g' platforms/android/gradle/wrapper/gradle-wrapper.properties
+              fi
           fi
 
       - name: 📱 Build APK
         run: |
           cd app-temp
-          rm -rf ~/.gradle/caches/
-          echo "🚀 Compilando..."
-          # Adicionei argumentos para reforçar o Gradle 8.7
+          # NÃO limpar cache para aproveitar o Gradle 8.7 que instalamos
+          
+          echo "🚀 Compilando com Gradle Forçado..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "STATUS_BUILD=FALHA" >> $GITHUB_ENV
+            echo "❌ ERRO: APK não encontrado!"
             exit 1
           else
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
-            echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
           fi
 
       - name: 🚀 Release GitHub
-        if: success()
         uses: softprops/action-gh-release@v1
+        if: success()
         with:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
           body: |
             ✅ **App Pronto!**
-            
             📱 **Nome:** ${{ env.APP_NAME }}
-            🆔 **ID:** `${{ env.APP_ID }}`
             
-            📥 **COMO BAIXAR:**
+            📥 **BAIXAR AGORA:**
             Clique no arquivo `.apk` listado abaixo em **Assets**.
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      # --- 5. LOG FINAL (DISCORD COM DOWNLOAD) ---
-      - name: 🔔 Discord (Relatório Final)
+      - name: 🔔 Discord (Fim)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           STATUS: ${{ job.status }}
         run: |
           if [ "$STATUS" == "success" ]; then
-            COLOR=5763712
-            TITLE="✅ SUCESSO"
-            CONTENT="@everyone 🎉 **APK PRONTO!**"
+            COLOR=5763712; TITLE="✅ SUCESSO"; CONTENT="@everyone 🎉 **APK PRONTO!**"
           else
-            COLOR=15548997
-            TITLE="❌ FALHA"
-            CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
+            COLOR=15548997; TITLE="❌ FALHA"; CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
           fi
-          
           DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
-          LOG_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Fábrica Bot 🤖\",
-            \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-            \"content\": \"$CONTENT\",
-            \"embeds\": [{
-              \"title\": \"$TITLE\",
-              \"color\": $COLOR,
-              \"fields\": [
-                { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                { \"name\": \"📥 Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": false },
-                { \"name\": \"📄 Logs\", \"value\": \"[Ver Erro]($LOG_LINK)\", \"inline\": true }
-              ],
-              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-            }]
-          }" \
-          $DISCORD_WEBHOOK
+          curl -H "Content-Type: application/json" -d "{\"content\": \"$CONTENT\", \"embeds\": [{ \"title\": \"$TITLE\", \"color\": $COLOR, \"fields\": [ { \"name\": \"App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true }, { \"name\": \"Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": false } ] }]}" $DISCORD_WEBHOOK
