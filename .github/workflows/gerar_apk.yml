@@ -1,4 +1,4 @@
-name: Fábrica Turbo V35 (Fix API Build + Full Discord Logs) 🚀
+name: Fábrica Turbo V36 (Fix Build & Discord) 🚀
 
 on:
   push:
@@ -11,12 +11,12 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. LEITURA E CONFIGURAÇÃO ---
+      # --- 1. CONFIGURAÇÃO INICIAL ---
       - name: 🧐 Lendo Configurações
         id: config
         run: |
@@ -37,7 +37,6 @@ jobs:
              if [ ! -z "$XML_NAME" ]; then APP_NAME=$XML_NAME; fi
           fi
           
-          # Verifica ícone na pasta www
           ICON_SOURCE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
           if [ -n "$ICON_SOURCE" ]; then HAS_ICON="✅ Sim"; fi
           
@@ -46,8 +45,8 @@ jobs:
           echo "APP_VER=$APP_VER" >> $GITHUB_ENV
           echo "HAS_ICON=$HAS_ICON" >> $GITHUB_ENV
 
-      # --- LOG DE INÍCIO (DETALHADO) ---
-      - name: 🔔 Discord Admin (Início)
+      # --- 2. DISCORD INÍCIO (AVISO) ---
+      - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -56,31 +55,30 @@ jobs:
           -d "{
             \"username\": \"Fábrica Bot 🤖\",
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-            \"content\": \"@everyone 🏭 **Nova produção iniciada!**\",
             \"embeds\": [{
               \"title\": \"🚧 Iniciando Produção\",
+              \"description\": \"Criando: **${{ env.APP_NAME }}**\nID: \`${{ env.APP_ID }}\`\",
               \"color\": 16776960,
               \"fields\": [
-                { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                { \"name\": \"🆔 ID\", \"value\": \"\`${{ env.APP_ID }}\`\", \"inline\": true },
-                { \"name\": \"🔢 Versão\", \"value\": \"\`${{ env.APP_VER }}\`\", \"inline\": true },
-                { \"name\": \"🖼️ Ícone?\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true }
-              ]
+                { \"name\": \"Versão\", \"value\": \"${{ env.APP_VER }}\", \"inline\": true },
+                { \"name\": \"Ícone\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true }
+              ],
+              \"footer\": { \"text\": \"Run #${{ github.run_number }}\" }
             }]
           }" \
           $DISCORD_WEBHOOK
 
-      - name: ☕ Setup Java & Gradle
+      - name: ☕ Setup Ambiente
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🛠️ Setup Android SDK
+      - name: 🛠️ Setup Android
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 2. CRIAÇÃO E CONFIGURAÇÃO ---
+      # --- 3. CONSTRUÇÃO DO PROJETO ---
       - name: 🏗️ Criando App
         run: |
           cordova create app-temp com.temp.id "TempName"
@@ -88,12 +86,12 @@ jobs:
           cp -r www/* app-temp/www/
           cd app-temp
           
-          # Força Nome, ID e Versão
+          # Configurações do config.xml
           sed -i "s|<name>.*</name>|<name>${{ env.APP_NAME }}</name>|g" config.xml
           sed -i "s/id=\"[^\"]*\"/id=\"${{ env.APP_ID }}\"/g" config.xml
           sed -i "s/version=\"[^\"]*\"/version=\"${{ env.APP_VER }}\"/g" config.xml
           
-          # Permissões
+          # Permissões de arquivo
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
@@ -120,7 +118,7 @@ jobs:
              sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
           fi
 
-      - name: 🔌 Instalando Plugins (Com Lista para Log)
+      - name: 🔌 Instalando Plugins e Plataforma
         run: |
           cd app-temp
           
@@ -149,49 +147,53 @@ jobs:
             USE_TOAST=$(jq -r '.toast' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Vibração"; fi
-            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Câmera"; fi
+            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Vibra"; fi
+            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Cam"; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, GPS"; fi
-            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Bateria"; fi
-            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Tela Cheia"; fi
-            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Lanterna"; fi
+            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Bat"; fi
+            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Full"; fi
+            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Luz"; fi
             if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Toast"; fi
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Insomnia"; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Arquivos"; fi
-            
-            if [ "$USE_MIC" = "true" ]; then 
-               cordova plugin add cordova-plugin-media cordova-plugin-media-capture
-               INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Microfone"
-            fi
+            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Wake"; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, File"; fi
+            if [ "$USE_MIC" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Mic"; fi
           fi
           
-          # Salva lista para o Discord
           echo "PLUGINS_LIST=$INSTALLED_PLUGINS" >> $GITHUB_ENV
 
-          echo "📱 Gerando Plataforma Android..."
+          echo "📱 Adicionando Plataforma..."
           cordova platform add android@12.0.0
           
-          # --- CORREÇÃO DO ERRO 'Could not load API' ---
-          echo "🚑 Reinstalando dependências internas do Android (Fix Api.js)..."
-          cd platforms/android
-          npm install
-          cd ../..
+          # FIX: Força criação das pastas antes de tentar corrigir
+          echo "🏗️ Forçando Prepare..."
+          cordova prepare android || true
           
-          echo "🔨 Preparando..."
-          cordova prepare android
+          echo "⏳ Aguardando sistema (10s)..."
+          sleep 10
+          
+          # FIX: Reinstala dependências internas se a pasta existir
+          if [ -d "platforms/android/cordova" ]; then
+             echo "🚑 Reparando API Cordova..."
+             cd platforms/android
+             npm install --production --no-save
+             cd ../..
+          else
+             echo "⚠️ Pasta cordova não encontrada. Tentando seguir..."
+          fi
 
-      # --- 3. FORÇA BRUTA (ÍCONES NUCLEARES) ---
-      - name: 🔨 Substituição Física de Ícones
+      - name: 🔨 Substituição de Ícones (Força Bruta)
         run: |
           cd app-temp
           if [ -f "icon.png" ]; then
-             echo "👊 Esmagando ícones padrão..."
              RES="platforms/android/app/src/main/res"
-             for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
-                 mkdir -p "$RES/$folder"
-                 cp icon.png "$RES/$folder/ic_launcher.png"
-                 cp icon.png "$RES/$folder/icon.png"
-             done
+             # Só tenta copiar se a pasta res existir
+             if [ -d "$RES" ]; then
+                 for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
+                     mkdir -p "$RES/$folder"
+                     cp icon.png "$RES/$folder/ic_launcher.png"
+                     cp icon.png "$RES/$folder/icon.png"
+                 done
+             fi
           fi
 
       - name: 🚑 Fix Gradle
@@ -200,6 +202,7 @@ jobs:
           if [ -d "platforms/android" ]; then
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
+              # Força SDK 33
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
@@ -242,35 +245,34 @@ jobs:
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # --- LOG FINAL DETALHADO (DISCORD) ---
-      - name: 🔔 Discord Admin (Relatório Final)
+      
+      # --- 5. LOG FINAL (DISCORD COM DOWNLOAD) ---
+      - name: 🔔 Discord (Relatório Final)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           STATUS: ${{ job.status }}
         run: |
-          if [ "$STATUS" == "success" ]; then
-            COLOR=5763712
-            TITLE="✅ Build Concluído com Sucesso"
-            DESC="O APK foi gerado e está pronto para download."
-          else
-            COLOR=15548997
-            TITLE="❌ Falha no Build"
-            DESC="Ocorreu um erro crítico. Verifique os logs do GitHub."
-          fi
-          
           DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
           LOG_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          if [ "$STATUS" == "success" ]; then
+            COLOR=5763712
+            TITLE="✅ SUCESSO"
+            CONTENT="@everyone 🎉 **${{ env.APP_NAME }}** está pronto!"
+          else
+            COLOR=15548997
+            TITLE="❌ FALHA"
+            CONTENT="@everyone ⚠️ Erro na produção de **${{ env.APP_NAME }}**"
+          fi
           
           curl -H "Content-Type: application/json" \
           -d "{
             \"username\": \"Fábrica Bot 🤖\",
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-            \"content\": \"@everyone\",
+            \"content\": \"$CONTENT\",
             \"embeds\": [{
               \"title\": \"$TITLE\",
-              \"description\": \"$DESC\",
               \"color\": $COLOR,
               \"fields\": [
                 { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
