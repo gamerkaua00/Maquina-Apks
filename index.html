@@ -205,11 +205,15 @@
                 if (buildPendente) {
                     showView('view-editor');
                     const logBox = document.getElementById('status-log');
-                    logBox.classList.remove('hidden');
-                    logBox.innerHTML = '<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1 font-bold">> Retomando...</div>';
+                    if (logBox) {
+                        logBox.classList.remove('hidden');
+                        logBox.innerHTML = '<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1 font-bold">> Retomando...</div>';
+                    }
                     monitorar(token, (msg, err) => {
-                        logBox.innerHTML += `<div class="${err?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1">> ${msg}</div>`;
-                        logBox.scrollTop = logBox.scrollHeight;
+                        if (logBox) {
+                            logBox.innerHTML += `<div class="${err?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1">> ${msg}</div>`;
+                            logBox.scrollTop = logBox.scrollHeight;
+                        }
                     });
                 }
             } else {
@@ -258,6 +262,7 @@
         // --- DASHBOARD LOGIC (LOJA DE APPS) ---
         function renderAppsList() {
             const list = document.getElementById('apps-list');
+            if(!list) return;
             list.innerHTML = '';
             
             if (MEUS_APPS.length === 0) {
@@ -274,11 +279,11 @@
 
         // --- FUNÇÕES EDITOR ---
         function novoApp() {
-            // Limpa tudo
-            document.getElementById('edit-id').value = '';
-            document.getElementById('app-name').value = '';
-            document.getElementById('app-pkg').value = '';
-            document.getElementById('app-ver').value = '1.0.0';
+            // Limpa tudo com verificações de segurança
+            const editId = document.getElementById('edit-id'); if(editId) editId.value = '';
+            const appName = document.getElementById('app-name'); if(appName) appName.value = '';
+            const appPkg = document.getElementById('app-pkg'); if(appPkg) appPkg.value = '';
+            const appVer = document.getElementById('app-ver'); if(appVer) appVer.value = '1.0.0';
             
             // Limpa inputs file
             ['app-icon', 'app-index', 'app-splash'].forEach(id => {
@@ -296,12 +301,14 @@
             document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
             
             // Reset botões
-            document.getElementById('status-log').classList.add('hidden');
-            document.getElementById('btn-download').classList.add('hidden');
-            document.getElementById('btn-backup').classList.add('hidden');
-            document.getElementById('btn-build').classList.remove('hidden');
+            const statusLog = document.getElementById('status-log'); if(statusLog) statusLog.classList.add('hidden');
+            const btnDownload = document.getElementById('btn-download'); if(btnDownload) btnDownload.classList.add('hidden');
+            const btnBackup = document.getElementById('btn-backup'); if(btnBackup) btnBackup.classList.add('hidden');
+            const btnBuild = document.getElementById('btn-build'); if(btnBuild) btnBuild.classList.remove('hidden');
             
-            document.getElementById('editor-title').innerText = "Novo Projeto";
+            const editorTitle = document.getElementById('editor-title');
+            if(editorTitle) editorTitle.innerText = "Novo Projeto";
+            
             showView('view-editor');
         }
 
@@ -309,11 +316,13 @@
             const app = MEUS_APPS.find(x => x.id === id);
             if(!app) return;
             
-            document.getElementById('edit-id').value = app.id;
-            document.getElementById('app-name').value = app.name;
-            document.getElementById('app-pkg').value = app.pkg || '';
-            document.getElementById('app-ver').value = app.ver || '1.0.0';
-            document.getElementById('editor-title').innerText = app.name;
+            const editId = document.getElementById('edit-id'); if(editId) editId.value = app.id;
+            const appName = document.getElementById('app-name'); if(appName) appName.value = app.name;
+            const appPkg = document.getElementById('app-pkg'); if(appPkg) appPkg.value = app.pkg || '';
+            const appVer = document.getElementById('app-ver'); if(appVer) appVer.value = app.ver || '1.0.0';
+            
+            const editorTitle = document.getElementById('editor-title');
+            if(editorTitle) editorTitle.innerText = app.name;
             
             // Limpa file inputs
             ['app-icon', 'app-index', 'app-splash'].forEach(id => {
@@ -328,15 +337,15 @@
                 }
             }
             
-            // Mostra dots se tiver dados salvos
-            if(app.iconData) document.getElementById('icon-dot').classList.remove('hidden');
-            else document.getElementById('icon-dot').classList.add('hidden');
+            // Mostra dots
+            const iconDot = document.getElementById('icon-dot');
+            if(iconDot) { if(app.iconData) iconDot.classList.remove('hidden'); else iconDot.classList.add('hidden'); }
             
-            if(app.indexData) document.getElementById('index-dot').classList.remove('hidden');
-            else document.getElementById('index-dot').classList.add('hidden');
+            const indexDot = document.getElementById('index-dot');
+            if(indexDot) { if(app.indexData) indexDot.classList.remove('hidden'); else indexDot.classList.add('hidden'); }
             
-            if(app.splashData) document.getElementById('splash-dot').classList.remove('hidden');
-            else document.getElementById('splash-dot').classList.add('hidden');
+            const splashDot = document.getElementById('splash-dot');
+            if(splashDot) { if(app.splashData) splashDot.classList.remove('hidden'); else splashDot.classList.add('hidden'); }
             
             showView('view-editor');
         }
@@ -353,21 +362,27 @@
 
         // --- SAVE & BUILD ---
         async function save(url = null) {
-            const name = document.getElementById('app-name').value;
-            if(!name) return alert("Dê um nome!");
+            const nameEl = document.getElementById('app-name');
+            const name = nameEl ? nameEl.value : null;
+            
+            if(!name) return alert("Dê um nome ao app!");
             
             const idInput = document.getElementById('edit-id');
             const iconFile = document.getElementById('app-icon').files[0];
             const indexFile = document.getElementById('app-index').files[0];
             const splashFile = document.getElementById('app-splash').files[0];
+            
+            const pkgInput = document.getElementById('app-pkg');
+            const verInput = document.getElementById('app-ver');
 
             let app = idInput.value ? MEUS_APPS.find(x => x.id == idInput.value) : null;
             if(!app) { app = {id: Date.now()}; MEUS_APPS.push(app); }
 
             app.name = name;
             app.date = Date.now();
-            app.pkg = document.getElementById('app-pkg').value;
-            app.ver = document.getElementById('app-ver').value;
+            app.pkg = pkgInput ? pkgInput.value : '';
+            app.ver = verInput ? verInput.value : '1.0.0';
+            
             if(url) app.lastDownloadUrl = url;
             
             app.features = {};
@@ -381,25 +396,39 @@
             if(idx >= 0) MEUS_APPS[idx] = app; else MEUS_APPS.push(app);
             
             localStorage.setItem('ma', JSON.stringify(MEUS_APPS));
+            
             if(!url) { alert("✅ Salvo!"); voltarDashboard(); }
         }
 
         const logger = (m, e) => {
             const b = document.getElementById('status-log');
+            if(!b) return;
             const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
             b.innerHTML += `<div class="${e?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1 font-mono leading-tight"><span class="text-gray-500 text-[9px]">[${t}]</span> ${m}</div>`;
             b.scrollTop = b.scrollHeight;
         };
 
         async function build() {
-            const t=localStorage.getItem('gt'); const n=document.getElementById('app-name').value;
-            const fh=document.getElementById('app-index').files[0]; const fi=document.getElementById('app-icon').files[0]; const fs=document.getElementById('app-splash').files[0];
-            const id=document.getElementById('edit-id').value; let a=id?APPS.find(x=>x.id==id):{};
+            const t=localStorage.getItem('gt'); 
+            const nameEl = document.getElementById('app-name');
+            const n = nameEl ? nameEl.value : "SemNome";
+            
+            const fh=document.getElementById('app-index').files[0]; 
+            const fi=document.getElementById('app-icon').files[0]; 
+            const fs=document.getElementById('app-splash').files[0];
+            
+            const idInput = document.getElementById('edit-id');
+            const id = idInput ? idInput.value : null;
+            
+            let a = id ? MEUS_APPS.find(x => x.id == id) : {};
             
             let h=fh?await b64(fh):a.html; let i=fi?await b64(fi):a.icon; let s=fs?await b64(fs):a.splash;
             if(!h)return alert("Falta Index!");
 
-            const ft={packageId:document.getElementById('app-pkg').value, version:document.getElementById('app-ver').value};
+            const pkgInput = document.getElementById('app-pkg');
+            const verInput = document.getElementById('app-ver');
+            const ft={packageId: pkgInput ? pkgInput.value : '', version: verInput ? verInput.value : '1.0.0'};
+            
             document.querySelectorAll('input[type=checkbox]').forEach(c => { 
                 const key = c.id.replace('c-', '');
                 const map = {notif:'notification',vib:'vibration',cam:'camera',gps:'geolocation',full:'fullscreen',flash:'flashlight',mic:'microphone',ins:'insomnia',file:'file',clip:'clipboard',net:'network',bar:'statusbar',toast:'toast'};
@@ -407,8 +436,16 @@
             });
 
             const btn=document.getElementById('btn-build'); 
-            document.getElementById('status-log').classList.remove('hidden'); document.getElementById('status-log').innerHTML='';
-            btn.disabled=true; btn.innerHTML='ENVIANDO...';
+            const logBox=document.getElementById('status-log');
+            
+            if(logBox) {
+                logBox.classList.remove('hidden'); 
+                logBox.innerHTML='';
+            }
+            if(btn) {
+                btn.disabled=true; 
+                btn.innerHTML='ENVIANDO...';
+            }
 
             try {
                 logger("🚀 Upload Arquivos...");
@@ -424,13 +461,13 @@
                 
                 if(!id){ 
                     const newId = Date.now(); 
-                    document.getElementById('edit-id').value = newId; 
+                    if(idInput) idInput.value = newId; 
                     await save(null); 
                 } else await save(null);
                 
                 localStorage.setItem('bp', '1');
                 monitor(t);
-            } catch(e){ logger(e.message,1); btn.disabled=false; btn.innerHTML="ERRO"; }
+            } catch(e){ logger(e.message,1); if(btn){btn.disabled=false; btn.innerHTML="ERRO";} }
         }
 
         // --- API GITHUB ---
@@ -452,7 +489,9 @@
 
         // --- MONITOR ---
         async function monitor(t){
-            const btn=document.getElementById('btn-build'); btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing');
+            const btn=document.getElementById('btn-build'); 
+            if(btn) { btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing'); }
+            
             let att=0;
             const i=setInterval(async()=>{
                 att++;
@@ -462,13 +501,15 @@
                     if(d.workflow_runs?.[0]){
                         const run=d.workflow_runs[0];
                         if(run.status==="completed"){
-                            clearInterval(i); btn.classList.remove('processing'); localStorage.removeItem('bp');
+                            clearInterval(i); 
+                            if(btn) btn.classList.remove('processing'); 
+                            localStorage.removeItem('bp');
                             if(run.conclusion==="success"){ logger("✨ SUCESSO! Pegando link..."); await link(t); }
-                            else{ logger("❌ Falha no Build.",1); btn.disabled=false; btn.innerHTML="FALHA"; }
+                            else{ logger("❌ Falha no Build.",1); if(btn){btn.disabled=false; btn.innerHTML="FALHA";} }
                         } else { if(att%3===0) logger(`🔨 Trabalhando... [${run.status}]`); }
                     }
                 }catch(e){}
-                if(att>60){clearInterval(i); logger("Tempo esgotado.",1); btn.disabled=false; btn.innerHTML="TIMEOUT";}
+                if(att>60){clearInterval(i); logger("Tempo esgotado.",1); if(btn){btn.disabled=false; btn.innerHTML="TIMEOUT";} }
             },10000);
         }
 
@@ -481,19 +522,21 @@
                 const turbo=(match && match[1] && !match[1].includes("Verifique"))?match[1]:null;
                 const direct=d.assets?.[0]?.browser_download_url;
 
-                document.getElementById('btn-build').classList.add('hidden');
+                const btnBuild = document.getElementById('btn-build');
+                if(btnBuild) btnBuild.classList.add('hidden');
+                
                 const btnDown=document.getElementById('btn-download');
                 const btnBackup=document.getElementById('btn-backup');
 
-                if(turbo){
+                if(turbo && btnDown){
                     btnDown.href=turbo; btnDown.classList.remove('hidden'); btnDown.innerHTML=`<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`; logger("⚡ Link Turbo"); save(turbo);
-                } else if(direct){
+                } else if(direct && btnDown){
                     btnDown.href=direct; btnDown.classList.remove('hidden'); btnDown.innerHTML=`<i class="fab fa-github text-lg"></i> BAIXAR (GITHUB)`; logger("✅ Link Direto"); save(direct);
                 }
 
-                if(url){
+                if(url && btnBackup){
                     btnBackup.href=url; btnBackup.classList.remove('hidden');
-                    if(!turbo && !direct){
+                    if(!turbo && !direct && btnDown){
                          btnDown.classList.add('hidden');
                          btnBackup.classList.remove('hidden','mt-3','bg-gray-800');
                          btnBackup.classList.add('bg-blue-600','text-white','py-4');
