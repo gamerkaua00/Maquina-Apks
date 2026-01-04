@@ -1,4 +1,4 @@
-name: Fábrica Turbo V34 (Fix API.js + Discord Ping) 🚀
+name: Fábrica Turbo V35 (Fix API Build + Full Discord Logs) 🚀
 
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
           echo "APP_VER=$APP_VER" >> $GITHUB_ENV
           echo "HAS_ICON=$HAS_ICON" >> $GITHUB_ENV
 
-      # --- LOG DE INÍCIO (COM PING) ---
+      # --- LOG DE INÍCIO (DETALHADO) ---
       - name: 🔔 Discord Admin (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
@@ -58,9 +58,14 @@ jobs:
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
             \"content\": \"@everyone 🏭 **Nova produção iniciada!**\",
             \"embeds\": [{
-              \"title\": \"🚧 Construindo: ${{ env.APP_NAME }}\",
-              \"description\": \"ID: \`${{ env.APP_ID }}\`\nVersão: \`${{ env.APP_VER }}\`\",
-              \"color\": 16776960
+              \"title\": \"🚧 Iniciando Produção\",
+              \"color\": 16776960,
+              \"fields\": [
+                { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
+                { \"name\": \"🆔 ID\", \"value\": \"\`${{ env.APP_ID }}\`\", \"inline\": true },
+                { \"name\": \"🔢 Versão\", \"value\": \"\`${{ env.APP_VER }}\`\", \"inline\": true },
+                { \"name\": \"🖼️ Ícone?\", \"value\": \"${{ env.HAS_ICON }}\", \"inline\": true }
+              ]
             }]
           }" \
           $DISCORD_WEBHOOK
@@ -78,22 +83,14 @@ jobs:
       # --- 2. CRIAÇÃO E CONFIGURAÇÃO ---
       - name: 🏗️ Criando App
         run: |
-          # Cria projeto base
           cordova create app-temp com.temp.id "TempName"
-          
-          # Copia site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
-          
           cd app-temp
           
-          # 1. FORÇA O NOME
+          # Força Nome, ID e Versão
           sed -i "s|<name>.*</name>|<name>${{ env.APP_NAME }}</name>|g" config.xml
-          
-          # 2. FORÇA O ID
           sed -i "s/id=\"[^\"]*\"/id=\"${{ env.APP_ID }}\"/g" config.xml
-          
-          # 3. FORÇA A VERSÃO
           sed -i "s/version=\"[^\"]*\"/version=\"${{ env.APP_VER }}\"/g" config.xml
           
           # Permissões
@@ -101,25 +98,20 @@ jobs:
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      - name: 🎨 Configurando Ícone (Pré-Build)
+      - name: 🎨 Configurando Ícone
         run: |
           cd app-temp
-          # Procura ícone na pasta www copiada
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
-          
-          # Remove configurações antigas
           sed -i '/<icon/d' config.xml
           
           if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone encontrado! Configurando..."
+            echo "🔥 Ícone encontrado!"
             cp "$ICON_FILE" ./icon.png
-            # Injeta no XML
             sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
           else
-            echo "⚠️ Sem ícone. Usando padrão."
+            echo "⚠️ Sem ícone."
           fi
           
-          # Splash
           SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
           if [ -n "$SPLASH_FILE" ]; then
              cp "$SPLASH_FILE" ./splash.png
@@ -128,11 +120,10 @@ jobs:
              sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
           fi
 
-      - name: 🔌 Instalando Plugins (Ordem Segura)
+      - name: 🔌 Instalando Plugins (Com Lista para Log)
         run: |
           cd app-temp
           
-          echo "🔌 Preparando Plugins..."
           # Plugins Base
           cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
@@ -144,7 +135,8 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Plugins Opcionais
+          INSTALLED_PLUGINS="Básicos"
+
           if [ -f "../features.json" ]; then
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
@@ -157,48 +149,43 @@ jobs:
             USE_TOAST=$(jq -r '.toast' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
-            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
-            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
-            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
-            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
-            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
-            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
-            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
+            if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Vibração"; fi
+            if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Câmera"; fi
+            if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, GPS"; fi
+            if [ "$USE_BATTERY" = "true" ]; then cordova plugin add cordova-plugin-battery-status; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Bateria"; fi
+            if [ "$USE_FULL" = "true" ]; then cordova plugin add cordova-plugin-fullscreen; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Tela Cheia"; fi
+            if [ "$USE_FLASH" = "true" ]; then cordova plugin add cordova-plugin-flashlight; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Lanterna"; fi
+            if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Toast"; fi
+            if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Insomnia"; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Arquivos"; fi
             
             if [ "$USE_MIC" = "true" ]; then 
                cordova plugin add cordova-plugin-media cordova-plugin-media-capture
+               INSTALLED_PLUGINS="$INSTALLED_PLUGINS, Microfone"
             fi
           fi
+          
+          # Salva lista para o Discord
+          echo "PLUGINS_LIST=$INSTALLED_PLUGINS" >> $GITHUB_ENV
 
           echo "📱 Gerando Plataforma Android..."
           cordova platform add android@12.0.0
           
-          echo "🔨 Preparando arquivos finais..."
-          cordova prepare android
-
-      # --- NOVO: REPARO DE API.JS E NODE_MODULES ---
-      - name: 🚑 Fix API Cordova (Reanimação)
-        run: |
-          cd app-temp
-          echo "🔧 Verificando integridade da plataforma..."
+          # --- CORREÇÃO DO ERRO 'Could not load API' ---
+          echo "🚑 Reinstalando dependências internas do Android (Fix Api.js)..."
+          cd platforms/android
+          npm install
+          cd ../..
           
-          if [ -d "platforms/android/cordova" ]; then
-              cd platforms/android/cordova
-              echo "📦 Reinstalando dependências internas do Android..."
-              npm install --production --no-save
-              echo "✅ Dependências restauradas."
-          else
-              echo "❌ ERRO: Pasta cordova não encontrada. O build vai falhar."
-          fi
+          echo "🔨 Preparando..."
+          cordova prepare android
 
       # --- 3. FORÇA BRUTA (ÍCONES NUCLEARES) ---
       - name: 🔨 Substituição Física de Ícones
         run: |
           cd app-temp
           if [ -f "icon.png" ]; then
-             echo "👊 Esmagando ícones padrão do Android..."
+             echo "👊 Esmagando ícones padrão..."
              RES="platforms/android/app/src/main/res"
              for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
                  mkdir -p "$RES/$folder"
@@ -207,17 +194,12 @@ jobs:
              done
           fi
 
-      - name: 🚑 Fix Gradle & Config
+      - name: 🚑 Fix Gradle
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
-              # Fix Compile/Implementation
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # Garante ID no AndroidManifest
-              sed -i 's/package="com.temp.id"/package="${{ env.APP_ID }}"/g' platforms/android/app/src/main/AndroidManifest.xml || true
-              
-              # Força versão SDK 33
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
@@ -228,9 +210,7 @@ jobs:
       - name: 📱 Build APK
         run: |
           cd app-temp
-          # Limpa cache do Gradle local para evitar corrupção
           rm -rf ~/.gradle/caches/
-          
           echo "🚀 Compilando..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
@@ -252,7 +232,8 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
           body: |
-            ✅ **Seu App está pronto!**
+            ✅ **App Pronto!**
+            
             📱 **Nome:** ${{ env.APP_NAME }}
             🆔 **ID:** `${{ env.APP_ID }}`
             
@@ -262,7 +243,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- LOG DE FIM TURBINADO (DISCORD COM PING) ---
+      # --- LOG FINAL DETALHADO (DISCORD) ---
       - name: 🔔 Discord Admin (Relatório Final)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
@@ -271,27 +252,32 @@ jobs:
         run: |
           if [ "$STATUS" == "success" ]; then
             COLOR=5763712
-            TITLE="✅ SUCESSO"
-            CONTENT="@everyone 🎉 **APK PRONTO!**"
+            TITLE="✅ Build Concluído com Sucesso"
+            DESC="O APK foi gerado e está pronto para download."
           else
             COLOR=15548997
-            TITLE="❌ FALHA"
-            CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
+            TITLE="❌ Falha no Build"
+            DESC="Ocorreu um erro crítico. Verifique os logs do GitHub."
           fi
           
           DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+          LOG_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
           curl -H "Content-Type: application/json" \
           -d "{
             \"username\": \"Fábrica Bot 🤖\",
             \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-            \"content\": \"$CONTENT\",
+            \"content\": \"@everyone\",
             \"embeds\": [{
               \"title\": \"$TITLE\",
+              \"description\": \"$DESC\",
               \"color\": $COLOR,
               \"fields\": [
                 { \"name\": \"📱 App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                { \"name\": \"📥 Download\", \"value\": \"[Clique para Baixar]($DL_LINK)\", \"inline\": false }
+                { \"name\": \"🆔 ID\", \"value\": \"\`${{ env.APP_ID }}\`\", \"inline\": true },
+                { \"name\": \"🔌 Plugins\", \"value\": \"${{ env.PLUGINS_LIST }}\", \"inline\": false },
+                { \"name\": \"📥 Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": true },
+                { \"name\": \"📄 Logs\", \"value\": \"[Ver Erro]($LOG_LINK)\", \"inline\": true }
               ],
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }]
