@@ -1,4 +1,4 @@
-name: Fábrica Turbo V19 (Fix Prepare Structure) 🚀
+name: Fábrica Turbo V21 (Estável - Sem Plugins Quebrados) 🚀
 
 on:
   push:
@@ -15,17 +15,6 @@ jobs:
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
-
-      - name: ⚡ Cache Gradle & NPM
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.npm
-          key: ${{ runner.os }}-gradle-v9-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-v9-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -69,18 +58,20 @@ jobs:
             sed -i '/<widget/a \    <icon src="res_icon.png" />' config.xml
           fi
           
-          # Injeção de Permissões
+          # Injeção de Permissões Básicas
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      # --- PASSO ÚNICO: INSTALA, PREPARA E CORRIGE (GARANTE A ORDEM) ---
-      - name: ⚙️ Configuração Total do Android
+      - name: 🔌 Instalando Plugins (Apenas os Estáveis)
         run: |
           cd app-temp
           
-          # 1. Instala Plugins
-          cordova plugin remove cordova-plugin-whitelist || true
+          echo "📱 Adicionando Android..."
+          cordova platform add android@12.0.0
+          
+          echo "🔌 Instalando Plugins..."
+          # Plugins que SABEMOS que funcionam e não quebram o build
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -90,8 +81,8 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
+          # Leitura do features.json
           if [ -f "../features.json" ]; then
-            USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
@@ -106,9 +97,9 @@ jobs:
             USE_STATUSBAR=$(jq -r '.statusbar' ../features.json)
             USE_CLIPBOARD=$(jq -r '.clipboard' ../features.json)
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
-            USE_FILE=$(jq -r '.file' ../features.json)
 
-            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification; fi
+            # NOTA: O plugin de notificação foi REMOVIDO propositalmente para evitar erros.
+            
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -122,45 +113,14 @@ jobs:
             if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
             if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
+            
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
           fi
 
-          echo "📱 Adicionando Plataforma Android..."
-          cordova platform add android@12.0.0
-          
-          echo "🏗️ Forçando criação da estrutura de pastas (Prepare)..."
-          cordova prepare android
-          
-          # Delay de segurança para o sistema de arquivos
-          sleep 5
-          
-          echo "🚑 Aplicando correções no Gradle..."
-          if [ -d "platforms/android" ]; then
-              # 1. Corrige 'compile' para 'implementation' em TODOS os arquivos .gradle
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/debugCompile/debugImplementation/g' {} +
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/releaseCompile/releaseImplementation/g' {} +
-              
-              # 2. Cria o arquivo gradle.properties para forçar SDK 33
-              echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
-              echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
-              echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
-              echo "android.useAndroidX=true" >> platforms/android/gradle.properties
-              echo "android.enableJetifier=true" >> platforms/android/gradle.properties
-              
-              echo "✅ Correções e Configurações aplicadas com sucesso."
-          else
-              echo "❌ ERRO CRÍTICO: Pasta platforms/android ainda não existe!"
-              ls -la
-              exit 1
-          fi
-
-      - name: 🏷️ Detectando Nome
+      - name: 🏷️ Detectando Nome e ID
         id: get_name
         run: |
           cd app-temp
@@ -177,6 +137,10 @@ jobs:
           rm -rf ~/.gradle/caches/
 
       - name: 📱 Compilando APK
+        env:
+          ORG_GRADLE_PROJECT_cdvCompileSdkVersion: 33
+          ORG_GRADLE_PROJECT_cdvTargetSdkVersion: 33
+          ORG_GRADLE_PROJECT_cdvMinSdkVersion: 24
         run: |
           cd app-temp
           echo "🚀 Iniciando Build..."
@@ -236,12 +200,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 🔔 Notificar Discord
-        if: success() && env.DISCORD_WEBHOOK != ''
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"✅ **APK PRONTO!**\n📱 App: ${{ env.APP_NAME }}\n📥 Download: ${{ env.LINK_MIRROR }}\"}" \
-          $DISCORD_WEBHOOK
+      - name: 📤 Backup no Actions
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: APK-Debug-Backup
+          path: ${{ env.APK_FINAL }}
+
 
