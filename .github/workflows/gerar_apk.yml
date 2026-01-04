@@ -1,9 +1,11 @@
-name: Fábrica Turbo V42 (Fix Syntax & Discord & Gradle) 🚀
+name: Fábrica Turbo V43 (Nuclear Fix + Discord Admin) 🚀
 
 on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch:
+  repository_dispatch:
+    types: [build_app] # Preparado para integração com Bots de Discord no futuro
 
 permissions:
   contents: write
@@ -12,38 +14,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # --- FIX CRÍTICO: FORÇAR GRADLE 8.7 ---
-    # O Gradle 9 quebra o Cordova. Estas variáveis forçam o uso da versão compatível.
     env:
       CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
-      JAVA_HOME_17_X64: "/usr/lib/jvm/temurin-17-jdk-amd64"
+      JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
 
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. SETUP DE AMBIENTE ---
-      - name: ☕ Setup Java & Gradle
-        uses: actions/setup-java@v3
-        with: { distribution: 'temurin', java-version: '17' }
-
-      # ADICIONADO: Instalação explícita do Gradle 8.7 para garantir
-      - name: 🛠️ Setup Gradle 8.7 Manual
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
-
-      - name: 🛠️ Setup Android SDK
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
-          npm install -g cordova
-
-      # --- 2. PREPARAÇÃO DE DADOS ---
-      - name: 🧠 Processando Dados
+      # --- 1. CONFIGURAÇÃO DE VARIÁVEIS ---
+      - name: 🧠 Processando Dados (Python Seguro)
         id: dados
         run: |
-          # Script Python externo é mais seguro que inline para processar JSON
+          # Lê o JSON e define variáveis de ambiente de forma segura
           cat <<EOF > ler_dados.py
           import json, os
           
@@ -55,72 +38,96 @@ jobs:
               except:
                   return default
           
+          appid = get_val('packageId', 'com.fabrica.app')
+          appver = get_val('version', '1.0.0')
+          
+          # Escreve no GITHUB_ENV
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={get_val('packageId', 'com.fabrica.app')}\n")
-              f.write(f"APP_VER={get_val('version', '1.0.0')}\n")
-              f.write(f"APP_NAME=App Turbo\n") 
+              f.write(f"APP_ID={appid}\n")
+              f.write(f"APP_VER={appver}\n")
           EOF
           python3 ler_dados.py
           
-          # Sobrescreve nome se houver config.xml
+          # Nome vem do XML ou padrão
+          APP_NAME="App Turbo"
           if [ -f config.xml ]; then
              NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-             if [ ! -z "$NAME" ]; then echo "APP_NAME=$NAME" >> $GITHUB_ENV; fi
+             if [ ! -z "$NAME" ]; then APP_NAME="$NAME"; fi
           fi
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
-      # --- NOTIFICAÇÃO INICIAL (CURL SIMPLIFICADO) ---
+      # --- 2. NOTIFICAÇÃO INICIAL (DISCORD RICO) ---
       - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          # Usando curl com User-Agent para evitar bloqueio 403 e erro de sintaxe YAML
-          curl -H "Content-Type: application/json" \
-               -H "User-Agent: Mozilla/5.0" \
-               -d "{
-                 \"username\": \"Fábrica Admin 🛡️\",
-                 \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-                 \"embeds\": [{
-                   \"title\": \"🟡 Iniciando Build: ${{ env.APP_NAME }}\",
-                   \"description\": \"🆔 \`${{ env.APP_ID }}\`\n🔢 v${{ env.APP_VER }}\",
-                   \"color\": 16776960
-                 }]
-               }" \
-               "$DISCORD_WEBHOOK"
+          # Script Python para enviar Embed rico com @everyone
+          cat <<EOF > notify_start.py
+          import os, json, urllib.request
+          
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          if not webhook: exit(0)
+          
+          data = {
+            "username": "Fábrica Bot 🤖",
+            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
+            "content": "@everyone 🏭 **Nova ordem de produção recebida!**",
+            "embeds": [{
+              "title": "⚙️ Iniciando Compilação",
+              "color": 16776960, # Amarelo
+              "fields": [
+                {"name": "📱 App", "value": "${{ env.APP_NAME }}", "inline": True},
+                {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
+                {"name": "🔢 Versão", "value": "${{ env.APP_VER }}", "inline": True},
+                {"name": "👤 Autor", "value": "${{ github.actor }}", "inline": True}
+              ],
+              "footer": {"text": "Fábrica V43 Enterprise"}
+            }]
+          }
+          
+          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          try:
+              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
+              urllib.request.urlopen(req)
+          except Exception as e:
+              print(f"Erro Discord: {e}")
+          EOF
+          python3 notify_start.py
 
-      # --- 3. CRIAÇÃO DO PROJETO ---
-      - name: 🏗️ Criando Estrutura
+      # --- 3. SETUP DE AMBIENTE ---
+      - name: ☕ Setup Java & Gradle
+        uses: actions/setup-java@v3
+        with: { distribution: 'temurin', java-version: '17' }
+
+      - name: 🛠️ Setup Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
+          npm install -g cordova
+
+      # --- 4. CRIAÇÃO E CONFIGURAÇÃO (NUCLEAR FIX) ---
+      - name: 🏗️ Criando App (ID Garantido)
         run: |
           echo "Criando projeto com ID: ${{ env.APP_ID }}"
           cordova create app-temp ${{ env.APP_ID }} "${{ env.APP_NAME }}"
           
-          # Limpa www padrão e copia o do usuário
+          # Copia site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
-      # --- 4. MANIPULAÇÃO XML ---
-      - name: 🔧 Configuração Cirúrgica (XML)
+      - name: 🔧 Reconstrução do XML (Python)
         run: |
           cd app-temp
           
-          # Prepara ícone se existir
-          HAS_ICON="false"
-          ICON_SRC=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
-          if [ -n "$ICON_SRC" ]; then
-             cp "$ICON_SRC" res_icon.png
-             HAS_ICON="true"
-          fi
-          
-          # Prepara Splash
-          HAS_SPLASH="false"
-          SPLASH_SRC=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
-          if [ -n "$SPLASH_SRC" ]; then
-             cp "$SPLASH_SRC" res_splash.png
-             HAS_SPLASH="true"
+          # Se o usuário tinha config.xml, copiamos mas FORÇAMOS o ID e Versão depois
+          if [ -f "../config.xml" ]; then
+             cp ../config.xml .
           fi
 
-          # Script Python para editar XML (Sem problemas de indentação do YAML)
-          cat <<EOF > edit_xml.py
+          # Script Python para editar o XML com precisão cirúrgica
+          # Isso garante que o ID e Versão sejam os do Painel, ignorando o arquivo antigo
+          cat <<EOF > fix_config.py
           import xml.etree.ElementTree as ET
           import os
           
@@ -131,44 +138,48 @@ jobs:
               tree = ET.parse('config.xml')
               root = tree.getroot()
               
-              # 1. Força ID e Versão
-              root.set('id', os.environ.get('APP_ID', 'com.error.id'))
-              root.set('version', os.environ.get('APP_VER', '1.0.0'))
+              # FORÇA ID E VERSÃO
+              root.set('id', '${{ env.APP_ID }}')
+              root.set('version', '${{ env.APP_VER }}')
               
-              # 2. Força Nome
+              # FORÇA NOME
               for name in root.findall('{http://www.w3.org/ns/widgets}name'):
-                  name.text = os.environ.get('APP_NAME', 'App Turbo')
-              
-              # 3. Adiciona Ícone
-              if "$HAS_ICON" == "true":
+                  name.text = '${{ env.APP_NAME }}'
+                  
+              # CONFIGURA ÍCONE (Se existir na pasta www)
+              if os.path.exists('www/icon.png'):
+                  # Remove antigos
                   for icon in root.findall('{http://www.w3.org/ns/widgets}icon'): root.remove(icon)
+                  # Adiciona novo
                   icon = ET.SubElement(root, '{http://www.w3.org/ns/widgets}icon')
-                  icon.set('src', 'res_icon.png')
-              
-              # 4. Adiciona Splash
-              if "$HAS_SPLASH" == "true":
-                  splash = ET.SubElement(root, '{http://www.w3.org/ns/widgets}splash')
-                  splash.set('src', 'res_splash.png')
-                  ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference', {'name': 'ShowSplashScreen', 'value': 'true'})
-                  ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference', {'name': 'SplashScreenDelay', 'value': '3000'})
+                  icon.set('src', 'www/icon.png')
+                  print("🔥 Ícone configurado no XML")
 
-              # 5. Permissões
-              perms = [
-                  ('AndroidPersistentFileLocation', 'Compatibility'),
-                  ('AllowFileAccess', 'true'),
-                  ('requestLegacyExternalStorage', 'true')
-              ]
-              for p in perms:
-                  ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference', {'name': p[0], 'value': p[1]})
+              # PERMISSÕES DE ARQUIVO (Destravar)
+              perms = {
+                  'AndroidPersistentFileLocation': 'Compatibility',
+                  'AllowFileAccess': 'true',
+                  'requestLegacyExternalStorage': 'true'
+              }
+              for k, v in perms.items():
+                  found = False
+                  for pref in root.findall('{http://www.w3.org/ns/widgets}preference'):
+                      if pref.get('name') == k:
+                          pref.set('value', v)
+                          found = True
+                  if not found:
+                      new_pref = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
+                      new_pref.set('name', k)
+                      new_pref.set('value', v)
 
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-              print("✅ XML Editado")
+              print("✅ Config.xml reconstruído com sucesso!")
           except Exception as e:
-              print(f"❌ Erro XML: {e}")
+              print(f"❌ Erro ao editar XML: {e}")
               exit(1)
           EOF
           
-          python3 edit_xml.py
+          python3 fix_config.py
 
       # --- 5. PLUGINS ---
       - name: 🔌 Instalando Plugins
@@ -176,6 +187,7 @@ jobs:
           cd app-temp
           cordova platform add android@12.0.0
           
+          # Plugins Essenciais
           cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
@@ -187,7 +199,7 @@ jobs:
           cordova plugin add cordova-plugin-androidx-adapter
 
           if [ -f "../features.json" ]; then
-             # Usando condicionais bash simples para evitar complexidade
+             # Leitura simplificada e instalação condicional
              if [ "$(jq -r '.vibration' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-vibration; fi
              if [ "$(jq -r '.camera' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-camera; fi
              if [ "$(jq -r '.geolocation' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -220,7 +232,6 @@ jobs:
           rm -rf ~/.gradle/caches/
           
           echo "🚀 Compilando..."
-          # Adicionado -PcdvCompileSdkVersion=33 para reforçar a versão do SDK
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
@@ -254,45 +265,67 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      # --- LOG FINAL (CURL SIMPLIFICADO) ---
-      - name: 🔔 Discord (Fim)
+      # --- 5. LOG FINAL (DISCORD COM DOWNLOAD) ---
+      - name: 🔔 Discord Admin (Relatório Final)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           STATUS: ${{ job.status }}
         run: |
-          # Define variaveis de bash para usar no JSON
-          if [ "$STATUS" == "success" ]; then
-            COLOR=5763712
-            TITLE="✅ SUCESSO"
-            CONTENT="@everyone 🎉 **APK PRONTO!**"
-            DESC="Download disponível na Release."
-          else
-            COLOR=15548997
-            TITLE="❌ FALHA"
-            CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
-            DESC="Verifique os logs."
-          fi
+          cat <<EOF > notify_final.py
+          import os, json, urllib.request
           
-          DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
-          LOG_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          status = os.environ.get('STATUS')
+          apk_name = os.environ.get('APK_FINAL', 'App')
           
-          # Envia via CURL com User-Agent e JSON montado cuidadosamente
-          curl -H "Content-Type: application/json" \
-               -H "User-Agent: Mozilla/5.0" \
-               -d "{
-                 \"username\": \"Fábrica Bot 🤖\",
-                 \"avatar_url\": \"https://img.icons8.com/fluency/96/robot-2.png\",
-                 \"content\": \"$CONTENT\",
-                 \"embeds\": [{
-                   \"title\": \"$TITLE\",
-                   \"description\": \"$DESC\",
-                   \"color\": $COLOR,
-                   \"fields\": [
-                     { \"name\": \"App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true },
-                     { \"name\": \"Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": false },
-                     { \"name\": \"Logs\", \"value\": \"[Ver Logs]($LOG_LINK)\", \"inline\": false }
-                   ]
-                 }]
-               }" \
-               "$DISCORD_WEBHOOK"
+          if status == 'success':
+              color = 5763712
+              title = "✅ SUCESSO: Build Finalizado"
+              desc = "O APK foi gerado e publicado na aba Releases."
+              
+              repo = "${{ github.repository }}"
+              tag = "v${{ github.run_number }}"
+              filename = os.environ.get('APK_FINAL')
+              dl_link = f"https://github.com/{repo}/releases/download/{tag}/{filename}"
+              page_link = f"https://github.com/{repo}/releases/tag/{tag}"
+              content = "@everyone 🎉 **O APK está pronto!**"
+              
+              fields = [
+                  {"name": "📱 App", "value": "${{ env.APP_NAME }}", "inline": True},
+                  {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
+                  {"name": "📥 Download Direto", "value": f"[Baixar .apk]({dl_link})", "inline": False},
+                  {"name": "📄 Página de Download", "value": f"[Ver Release]({page_link})", "inline": False}
+              ]
+          else:
+              color = 15548997
+              title = "❌ FALHA CRÍTICA"
+              desc = "O processo de build encontrou um erro."
+              content = "@everyone ⚠️ **Erro na produção!**"
+              fields = [
+                  {"name": "Logs", "value": f"[Ver Console](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"}
+              ]
+          
+          data = {
+            "username": "Fábrica Admin 🛡️",
+            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
+            "content": content,
+            "embeds": [{
+              "title": title,
+              "description": desc,
+              "color": color,
+              "fields": fields,
+              "footer": {"text": "Sistema V43 Enterprise"},
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            }]
+          }
+          
+          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          try:
+            req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
+            urllib.request.urlopen(req)
+          except Exception as e:
+            print(f"Erro Discord: {e}")
+          EOF
+          
+          python3 notify_final.py
