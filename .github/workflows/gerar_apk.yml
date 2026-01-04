@@ -1,4 +1,4 @@
-name: Fábrica Turbo V22 (Icon Fix + Estabilidade) 🚀
+name: Fábrica Enterprise V24 (Full Plugins + Splash) 🚀
 
 on:
   push:
@@ -16,6 +16,7 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
+      # --- 1. CONFIGURAÇÃO DE AMBIENTE ---
       - name: ⚡ Cache Gradle & NPM
         uses: actions/cache@v3
         with:
@@ -23,9 +24,9 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.npm
-          key: ${{ runner.os }}-gradle-v22-${{ github.run_id }}
+          key: ${{ runner.os }}-gradle-v24-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-gradle-v22-
+            ${{ runner.os }}-gradle-v24-
 
       - name: ☕ Configurando Java 17
         uses: actions/setup-java@v3
@@ -47,45 +48,50 @@ jobs:
         run: |
           npm install -g cordova
 
+      # --- 2. CRIAÇÃO DO APP ---
       - name: 🏗️ Criando a Base do App
         run: |
-          cordova create app-temp com.kaua.app "Seu App Turbo"
+          cordova create app-temp com.kaua.app "Seu App Enterprise"
+          
+          # Limpa o exemplo padrão e copia o site do usuário
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
+          # Copia o config.xml se existir
           if [ -f config.xml ]; then 
             echo "📄 Config.xml encontrado! Aplicando..."
             cp config.xml app-temp/
           fi
 
-      - name: 🎨 Configurando Ícone (Modo Forçado)
+      - name: 🎨 Configurando Ícone e Splash
         run: |
           cd app-temp
           
-          # 1. Procura o arquivo de imagem
+          # --- ÍCONE ---
           ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
-          
           if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone encontrado: $ICON_FILE"
-            # Copia para a raiz com nome padrão
+            echo "🔥 Ícone encontrado!"
             cp "$ICON_FILE" ./icon.png
-            
-            # 2. Limpa configurações antigas de ícone no XML
             sed -i '/<icon/d' config.xml
-            
-            # 3. INJEÇÃO AGRESSIVA: Adiciona o ícone global E para Android especificamente
-            # Injeta após a tag <name>
-            sed -i '/<\/name>/a \    <icon src="icon.png" />' config.xml
-            
-            # Se já tiver plataforma android definida, injeta lá dentro também
-            if grep -q '<platform name="android">' config.xml; then
-                # Adiciona ícone para todas as densidades (aponta pro mesmo arquivo, o Android se vira pra redimensionar)
-                sed -i '/<platform name="android">/a \        <icon src="icon.png" density="ldpi" />\n        <icon src="icon.png" density="mdpi" />\n        <icon src="icon.png" density="hdpi" />\n        <icon src="icon.png" density="xhdpi" />\n        <icon src="icon.png" density="xxhdpi" />\n        <icon src="icon.png" density="xxxhdpi" />' config.xml
-            fi
-            
-            echo "✅ Ícone configurado no XML."
-          else
-            echo "⚠️ Nenhum ícone personalizado encontrado."
+            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
+          fi
+          
+          # --- SPLASH SCREEN (NOVO) ---
+          # Procura por splash.png na pasta www
+          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
+          if [ -n "$SPLASH_FILE" ]; then
+             echo "🌊 Splash Screen encontrada!"
+             cp "$SPLASH_FILE" ./splash.png
+             
+             # Remove tags antigas e injeta as novas
+             sed -i '/<splash/d' config.xml
+             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
+             
+             # Configurações de exibição do Splash
+             sed -i '/<widget/a \    <preference name="SplashScreenDelay" value="3000" />' config.xml
+             sed -i '/<widget/a \    <preference name="SplashScreen" value="screen" />' config.xml
+             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
+             sed -i '/<widget/a \    <preference name="FadeSplashScreen" value="true" />' config.xml
           fi
           
           # Injeção de Permissões de Arquivo
@@ -93,14 +99,18 @@ jobs:
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
+      # --- 3. INSTALAÇÃO DE PLUGINS ---
       - name: 🔌 Instalando Plugins e Plataforma
         run: |
           cd app-temp
           
-          echo "📱 Adicionando Android..."
+          # Adiciona plataforma Android 12 (Estável)
           cordova platform add android@12.0.0
           
-          # Plugins Estáveis
+          # Remove plugin conflitante
+          cordova plugin remove cordova-plugin-whitelist || true
+          
+          # --- PLUGINS BASE ---
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-dialogs
@@ -110,9 +120,10 @@ jobs:
           cordova plugin add cordova-plugin-filepath
           cordova plugin add cordova-plugin-androidx-adapter
 
-          # Leitura do features.json
+          # --- PLUGINS OPCIONAIS (Lê do features.json) ---
           if [ -f "../features.json" ]; then
-            # (Mantendo a lógica simples e robusta)
+            echo "📄 Lendo configurações..."
+            USE_NOTIF=$(jq -r '.notification' ../features.json)
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
@@ -129,6 +140,8 @@ jobs:
             USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
 
+            # Instalação condicional
+            if [ "$USE_NOTIF" = "true" ]; then cordova plugin add cordova-plugin-local-notification; fi
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
             if [ "$USE_GPS" = "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
@@ -142,22 +155,49 @@ jobs:
             if [ "$USE_STATUSBAR" = "true" ]; then cordova plugin add cordova-plugin-statusbar; fi
             if [ "$USE_CLIPBOARD" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
             if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
-            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file; fi
+            if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
             
             if [ "$USE_MIC" = "true" ]; then
                cordova plugin add cordova-plugin-media
                cordova plugin add cordova-plugin-media-capture
             fi
           fi
+          
+          # Prepara arquivos para correção
+          cordova prepare android
 
-      - name: 🏷️ Detectando Nome e ID
+      # --- 4. CORREÇÃO DE ERROS (GRADLE) ---
+      - name: 🚑 Reparando Scripts do Gradle
+        run: |
+          cd app-temp
+          echo "🔧 Iniciando reparo cirúrgico..."
+          
+          if [ -d "platforms/android" ]; then
+              # Substitui 'compile' por 'implementation' (Correção do Gradle 8)
+              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
+              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile(/implementation(/g' {} +
+              find platforms/android -name "*.gradle" -type f -exec sed -i 's/debugCompile /debugImplementation /g' {} +
+              
+              # Força versão 33 do SDK
+              echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
+              echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
+              echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
+              echo "android.useAndroidX=true" >> platforms/android/gradle.properties
+              echo "android.enableJetifier=true" >> platforms/android/gradle.properties
+              
+              echo "✅ Reparos concluídos."
+          else
+              echo "⚠️ Pasta platforms/android não encontrada. Continuando..."
+          fi
+
+      - name: 🏷️ Detectando Nome
         id: get_name
         run: |
           cd app-temp
           APP_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
           
-          # Gera ID único baseado no nome
+          # Gera ID único para não substituir apps diferentes no celular
           SAFE_ID=$(echo "$APP_NAME" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g' | tr '[:upper:]' '[:lower:]' | sed 's/\.\.\././g')
           NEW_ID="com.kaua.app.$SAFE_ID"
           sed -i "s/id=\"[^\"]*\"/id=\"$NEW_ID\"/" config.xml
@@ -167,15 +207,12 @@ jobs:
           cd app-temp
           rm -rf ~/.gradle/caches/
 
+      # --- 5. BUILD ---
       - name: 📱 Compilando APK
-        env:
-          ORG_GRADLE_PROJECT_cdvCompileSdkVersion: 33
-          ORG_GRADLE_PROJECT_cdvTargetSdkVersion: 33
-          ORG_GRADLE_PROJECT_cdvMinSdkVersion: 24
         run: |
           cd app-temp
           echo "🚀 Iniciando Build..."
-          cordova build android --debug --packageType=apk
+          cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
@@ -187,37 +224,8 @@ jobs:
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
           fi
 
-      - name: 📤 Upload Turbo (4x Mirrors)
-        id: upload_fast
-        run: |
-          APK="${{ env.APK_FINAL }}"
-          LINK=""
-          
-          # 1. Litterbox
-          if [ -z "$LINK" ]; then
-             RESP=$(curl -s -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || echo "FAIL")
-             if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
-          fi
-          
-          # 2. 0x0.st
-          if [ -z "$LINK" ]; then
-             RESP=$(curl -s -F "file=@$APK" https://0x0.st || echo "FAIL")
-             if [[ "$RESP" == http* ]]; then LINK=$RESP; fi
-          fi
-          
-          # 3. File.io
-          if [ -z "$LINK" ]; then
-             RESP=$(curl -s -F "file=@$APK" https://file.io || echo "FAIL")
-             LINK=$(echo $RESP | grep -o '"link":"[^"]*' | cut -d'"' -f4)
-          fi
-
-          if [[ "$LINK" == http* ]]; then
-             echo "LINK_MIRROR=$LINK" >> $GITHUB_ENV
-          else
-             echo "LINK_MIRROR=Verifique o Assets abaixo" >> $GITHUB_ENV
-          fi
-
-      - name: 🚀 Criar Release
+      # --- 6. ENTREGA (RELEASE OFICIAL) ---
+      - name: 🚀 Criar Release no GitHub
         uses: softprops/action-gh-release@v1
         if: success()
         with:
@@ -225,19 +233,11 @@ jobs:
           name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
           body: |
             ✅ **Seu App está pronto!**
+            
             📱 **Nome:** ${{ env.APP_NAME }}
+            🛠️ **Versão:** v${{ github.run_number }}
             
-            ⬇️ **LINK TURBO:** ${{ env.LINK_MIRROR }}
-            
-            _(Backup: Assets do GitHub abaixo)_
+            📥 **Clique no arquivo abaixo em 'Assets' para baixar.**
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 📤 Backup no Actions
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: APK-Debug-Backup
-          path: ${{ env.APK_FINAL }}
-
