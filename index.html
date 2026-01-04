@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica Turbo V8</title>
+    <title>Fábrica Turbo V9</title>
     
-    <!-- Configuração PWA -->
+    <!-- PWA Config -->
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/robot-2.png">
-    
-    <!-- Manifesto Embutido -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgVjgiLAogICJzaG9ydF9uYW1lIjogIkZhYnJpY2EiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJpY29ucyI6IFt7InNyYyI6Imh0dHBzOi8vaW1nLmljb25zOC5jb20vZmx1ZW5jeS8xOTIvcm9ib3QtMi5wbmciLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhYnJpY2EgVjkiLAogICJzaG9ydF9uYW1lIjogIkZhYnJpY2EiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJpY29ucyI6IFt7InNyYyI6Imh0dHBzOi8vaW1nLmljb25zOC5jb20vZmx1ZW5jeS8xOTIvcm9ib3QtMi5wbmciLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -31,6 +29,36 @@
         .scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .scroll::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
+    
+    <script>
+        // --- FUNÇÕES UTILITÁRIAS CARREGADAS ANTES ---
+        function showView(targetId) {
+            const views = ['view-login', 'view-dashboard', 'view-editor'];
+            
+            // Esconde todas as views
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden-view');
+            });
+
+            // Mostra a view alvo (com proteção contra null)
+            const target = document.getElementById(targetId);
+            if (target) {
+                target.classList.remove('hidden-view');
+            } else {
+                console.error(`Erro Crítico: Tela '${targetId}' não encontrada no HTML.`);
+                // Fallback de segurança: tenta ir pro login
+                if(targetId !== 'view-login') showView('view-login');
+            }
+        }
+
+        function updateFileStatus(input, dotId) {
+            if (input.files.length > 0) {
+                const dot = document.getElementById(dotId);
+                if(dot) dot.classList.remove('hidden');
+            }
+        }
+    </script>
 </head>
 
 <body class="flex flex-col h-[100dvh]">
@@ -45,7 +73,7 @@
     <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 hidden-view scroll fade-in">
         <div class="glass p-8 rounded-3xl w-full max-w-md text-center shadow-2xl border-t-4 border-blue-500">
             <i class="fas fa-robot text-5xl text-blue-500 mb-4 block"></i>
-            <h1 class="text-2xl font-bold mb-2">Fábrica V8</h1>
+            <h1 class="text-2xl font-bold mb-2">Fábrica V9</h1>
             <p class="text-gray-400 text-sm mb-6">Acesso Seguro</p>
             
             <input type="password" id="input-token" placeholder="Cole seu Token GitHub" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-center text-green-400 focus:border-green-500 outline-none mb-4 text-sm font-mono shadow-inner">
@@ -56,18 +84,17 @@
     </div>
 
     <!-- TELA 2: DASHBOARD -->
-    <div id="view-dash" class="flex-1 flex flex-col hidden-view h-full">
+    <div id="view-dashboard" class="flex-1 flex flex-col hidden-view h-full">
         <div class="p-5 shrink-0 flex justify-between items-end border-b border-gray-800 bg-black/40 backdrop-blur-md pt-8">
             <div><h1 class="text-xl font-bold text-blue-400">Meus Apps</h1><p class="text-gray-500 text-xs">Gerenciador Pro</p></div>
             <button onclick="logout()" class="text-gray-500 hover:text-white transition p-2"><i class="fas fa-sign-out-alt"></i></button>
         </div>
         <div id="apps-list" class="grid grid-cols-2 gap-3 p-4 scroll flex-1 pb-32 content-start"></div>
-        <!-- BOTÃO NOVO APP (CORRIGIDO) -->
         <button onclick="novoApp()" class="fixed bottom-8 right-6 w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-center text-white text-2xl z-50 hover:scale-105 active:scale-90 transition border border-white/20"><i class="fas fa-plus"></i></button>
     </div>
 
     <!-- TELA 3: EDITOR -->
-    <div id="view-edit" class="flex-1 flex flex-col hidden-view h-full bg-black relative">
+    <div id="view-editor" class="flex-1 flex flex-col hidden-view h-full bg-black relative">
         <div class="p-4 shrink-0 flex items-center border-b border-gray-800 bg-gray-900/90 z-20 shadow-lg pt-6">
             <button onclick="voltarDashboard()" class="p-2 mr-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg transition active:scale-90 border border-gray-700"><i class="fas fa-chevron-left"></i></button>
             <h2 id="editor-title" class="text-lg font-bold">Novo App</h2>
@@ -78,10 +105,10 @@
 
             <!-- Identidade -->
             <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800 space-y-3">
-                <input type="text" id="app-name" placeholder="Nome (Ex: Minha Loja)" class="w-full bg-black/60 border border-gray-700 rounded-lg p-3 text-white font-bold outline-none focus:border-blue-500">
+                <input type="text" id="app-name" placeholder="Nome (Ex: Minha Loja)" class="w-full bg-black/60 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none mt-1 font-bold shadow-inner placeholder-gray-700 transition">
                 <div class="flex gap-2">
-                    <input type="text" id="app-pkg" placeholder="ID (com.loja)" class="w-2/3 bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-gray-300 outline-none">
-                    <input type="text" id="app-ver" placeholder="1.0.0" class="w-1/3 bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-center text-gray-300 outline-none">
+                    <input type="text" id="app-pkg" placeholder="ID (com.loja)" class="w-2/3 bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-gray-300 outline-none mt-1">
+                    <input type="text" id="app-ver" placeholder="1.0.0" class="w-1/3 bg-black/60 border border-gray-700 rounded-lg p-2 text-xs font-mono text-center text-gray-300 outline-none mt-1">
                 </div>
             </div>
 
@@ -128,8 +155,8 @@
 
         <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-4 z-30 shadow-2xl">
             <div class="max-w-xl mx-auto grid grid-cols-3 gap-3">
-                <button onclick="save()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
-                <button id="btn-build" onclick="build()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
+                <button onclick="salvarRascunho()" class="bg-gray-800 text-gray-300 font-bold py-3.5 rounded-xl text-xs hover:bg-gray-700 transition active:scale-95 border border-gray-700">SALVAR</button>
+                <button id="btn-build" onclick="fabricarApp()" class="col-span-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs hover:scale-[1.02] transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"><i class="fas fa-hammer"></i> <span>FABRICAR APK</span></button>
             </div>
             <a id="btn-dl" href="#" target="_blank" class="hidden mt-3 w-full bg-green-600 text-white font-bold py-3 rounded-xl text-center text-xs block shadow-lg transition transform active:scale-95"><i class="fas fa-download mr-1"></i> BAIXAR (TURBO)</a>
             <a id="btn-backup" href="#" target="_blank" class="hidden mt-3 w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-xl text-center text-xs block shadow-lg border border-gray-700"><i class="fab fa-github mr-1"></i> PÁGINA DO GITHUB</a>
@@ -137,114 +164,250 @@
     </div>
 
     <script>
-        const CFG={u:"gamerkaua00",r:"Maquina-Apks"}; 
-        let APPS=JSON.parse(localStorage.getItem('ma')||'[]');
-        const dot=(i,d)=>document.getElementById(d).classList.toggle('hidden',!i.files.length);
-        const $=(i)=>document.getElementById(i);
+        // CONFIGURAÇÕES GLOBAIS
+        const GITHUB_USER = "gamerkaua00";
+        const GITHUB_REPO = "Maquina-Apks";
+        let MEUS_APPS = JSON.parse(localStorage.getItem('ma') || '[]');
 
-        // PWA
-        if('serviceWorker'in navigator && (location.protocol==='https:'||location.protocol==='http:')) navigator.serviceWorker.register('sw.js').catch(()=>{});
-        let defP; window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();defP=e;$('pwa-install-bar').classList.remove('hidden');$('pwa-install-bar').classList.add('flex')});
-        async function instalarPWA(){if(defP){defP.prompt();const{outcome}=await defP.userChoice;if(outcome==='accepted')$('pwa-install-bar').classList.add('hidden');defP=null}}
+        // --- SISTEMA PWA ---
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+            navigator.serviceWorker.register('sw.js').catch(console.error);
+        }
 
-        // AUTH
-        window.onload=()=>{
-            const t=localStorage.getItem('gt'); 
-            const bp=localStorage.getItem('bp');
-            if(t){
-                show('view-dash'); list();
-                if(bp){
-                    show('view-edit'); $('status-log').classList.remove('hidden');
-                    monitor(t);
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwa-install-bar').classList.remove('hidden');
+            document.getElementById('pwa-install-bar').classList.add('flex');
+        });
+
+        async function instalarPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('pwa-install-bar').classList.add('hidden');
                 }
-            }else show('view-login');
+                deferredPrompt = null;
+            }
+        }
+
+        // --- AUTH & INIT ---
+        window.onload = () => {
+            const token = localStorage.getItem('gt');
+            const buildPendente = localStorage.getItem('bp');
+            if (token) { 
+                showView('view-dashboard'); 
+                renderAppsList(); 
+                
+                // Sistema de Resgate de Build
+                if (buildPendente) {
+                    showView('view-editor');
+                    const logBox = document.getElementById('status-log');
+                    logBox.classList.remove('hidden');
+                    logBox.innerHTML = '<div class="text-yellow-400 border-b border-gray-800 pb-1 mb-1 font-bold">> Retomando...</div>';
+                    monitorar(token, (msg, err) => {
+                        logBox.innerHTML += `<div class="${err?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1">> ${msg}</div>`;
+                        logBox.scrollTop = logBox.scrollHeight;
+                    });
+                }
+            } else {
+                showView('view-login');
+            }
         };
 
-        function salvarToken(){ const t=$('input-token').value.trim(); if(t.startsWith('ghp_')){localStorage.setItem('gt',t);show('view-dash');list();}else alert("Token inválido! (ghp_...)"); }
-        function logout(){ if(confirm("Sair?")){localStorage.removeItem('gt');location.reload();} }
-        function resetarDados(){ if(confirm("Apagar todos os dados locais?")){localStorage.clear();location.reload();} }
-        function show(id){ ['view-login','view-dash','view-edit'].forEach(v=>$(v).classList.add('hidden-view')); $(id).classList.remove('hidden-view'); }
-        function voltarDashboard(){ localStorage.removeItem('bp'); show('view-dash'); list(); }
+        function salvarToken() {
+            const t = document.getElementById('input-token').value.trim();
+            if (t.startsWith('ghp_')) {
+                localStorage.setItem('gt', t);
+                showView('view-dashboard');
+                renderAppsList();
+            } else alert("Token inválido! Deve começar com ghp_");
+        }
 
-        // DASHBOARD
-        function list(){
-            const l=$('apps-list'); l.innerHTML='';
-            if(!APPS.length) l.innerHTML='<div class="col-span-2 text-center py-10 text-gray-700 opacity-60">Nenhum projeto.</div>';
-            APPS.forEach(a=>{
-                const i=a.icon||'https://img.icons8.com/fluency/48/android-os.png';
-                const b=a.url?`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-2 left-2 bg-green-600 text-white text-[9px] px-2 py-1 rounded shadow z-10">BAIXAR</a>`:'';
-                l.innerHTML+=`<div onclick="edit(${a.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition"><div class="flex flex-col items-center"><img src="${i}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${a.name}</h3><div class="text-[9px] text-gray-500">${a.ver||'v1.0'}</div></div>${b}<button onclick="event.stopPropagation();del(${a.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
+        function logout() {
+            if(confirm("Tem certeza que deseja sair?")) {
+                localStorage.removeItem('gt');
+                location.reload();
+            }
+        }
+
+        function resetarDados() {
+            if(confirm("Isso apagará TODOS os apps salvos e o token. Continuar?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function showView(id) {
+            ['view-login', 'view-dashboard', 'view-editor'].forEach(v => {
+                const el = document.getElementById(v);
+                if(el) el.classList.add('hidden-view');
+            });
+            const target = document.getElementById(id);
+            if(target) target.classList.remove('hidden-view');
+        }
+
+        function voltarDashboard() { 
+            localStorage.removeItem('bp'); 
+            showView('view-dashboard'); 
+            renderAppsList(); 
+        }
+
+        // --- DASHBOARD LOGIC (LOJA DE APPS) ---
+        function renderAppsList() {
+            const list = document.getElementById('apps-list');
+            list.innerHTML = '';
+            
+            if (MEUS_APPS.length === 0) {
+                list.innerHTML = `<div class="col-span-2 text-center py-20 text-gray-700 opacity-60"><i class="fas fa-ghost text-5xl mb-3"></i><br>Nenhum projeto.</div>`;
+                return;
+            }
+
+            MEUS_APPS.forEach(app => {
+                const icon = app.iconData ? `data:image/png;base64,${app.iconData}` : 'https://img.icons8.com/fluency/48/android-os.png';
+                let btn = app.lastDownloadUrl ? `<a href="${app.lastDownloadUrl}" target="_blank" onclick="event.stopPropagation()" class="absolute bottom-3 left-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1.5 rounded-full shadow-lg font-bold z-10 flex items-center active:scale-95 transition border border-white/10"><i class="fas fa-download mr-1"></i> BAIXAR</a>` : '';
+                list.innerHTML += `<div onclick="openApp(${app.id})" class="bg-gray-900 rounded-xl p-3 relative group border border-gray-800 hover:border-blue-500 transition"><div class="flex flex-col items-center"><img src="${icon}" class="w-10 h-10 mb-2 rounded bg-black object-contain"><h3 class="font-bold text-xs truncate w-full text-center">${app.name}</h3><div class="text-[9px] text-gray-500">${app.ver||'v1.0'}</div></div>${btn}<button onclick="event.stopPropagation();del(${app.id})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
             });
         }
 
-        // FIX: Função novoApp agora limpa TUDO corretamente
-        function novo(){ 
-            $('edit-id').value=''; 
-            $('app-name').value=''; 
-            $('app-pkg').value=''; 
-            $('app-ver').value='1.0.0'; 
+        // --- FUNÇÕES EDITOR ---
+        function novoApp() {
+            // Limpa tudo
+            document.getElementById('edit-id').value = '';
+            document.getElementById('app-name').value = '';
+            document.getElementById('app-pkg').value = '';
+            document.getElementById('app-ver').value = '1.0.0';
             
-            // Limpa inputs de arquivo
-            ['f-icon','f-index','f-splash'].forEach(i=>$(i).value=''); 
+            // Limpa inputs file
+            ['f-icon', 'f-index', 'f-splash'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = '';
+            });
             
-            // Esconde indicadores visuais
-            ['d-icon','d-index','d-splash','status-log','btn-dl','btn-backup'].forEach(i=>$(i).classList.add('hidden')); 
+            // Esconde dots
+            ['icon-dot', 'index-dot', 'splash-dot'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden');
+            });
             
-            // Reseta checkboxes
-            document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false); 
+            // Uncheck all
+            document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
             
-            $('btn-build').classList.remove('hidden'); 
-            $('editor-title').innerText = "Novo Projeto";
+            // Reset botões
+            document.getElementById('status-log').classList.add('hidden');
+            document.getElementById('btn-download').classList.add('hidden');
+            document.getElementById('btn-backup').classList.add('hidden');
+            document.getElementById('btn-build').classList.remove('hidden');
             
-            show('view-edit');
+            document.getElementById('editor-title').innerText = "Novo Projeto";
+            showView('view-editor');
         }
 
-        function edit(id){
-            const a=APPS.find(x=>x.id===id); if(!a)return;
-            $('edit-id').value=a.id; $('app-name').value=a.name; $('app-pkg').value=a.pkg||''; $('app-ver').value=a.ver||'1.0.0';
-            $('editor-title').innerText = a.name;
-            if(a.feat) for(let k in a.feat) if($('c-'+k)) $('c-'+k).checked=a.feat[k];
-            if(a.icon)$('d-icon').classList.remove('hidden'); else $('d-icon').classList.add('hidden');
-            if(a.html)$('d-index').classList.remove('hidden'); else $('d-index').classList.add('hidden');
-            if(a.splash)$('d-splash').classList.remove('hidden'); else $('d-splash').classList.add('hidden');
-            show('view-edit');
+        function openApp(id) {
+            const app = MEUS_APPS.find(x => x.id === id);
+            if(!app) return;
+            
+            document.getElementById('edit-id').value = app.id;
+            document.getElementById('app-name').value = app.name;
+            document.getElementById('app-pkg').value = app.pkg || '';
+            document.getElementById('app-ver').value = app.ver || '1.0.0';
+            document.getElementById('editor-title').innerText = app.name;
+            
+            // Limpa file inputs
+            ['f-icon', 'f-index', 'f-splash'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = '';
+            });
+
+            if(app.features) {
+                for (let k in app.features) {
+                    const el = document.getElementById('c-'+k);
+                    if(el) el.checked = app.features[k];
+                }
+            }
+            
+            // Mostra dots se tiver dados salvos
+            if(app.iconData) document.getElementById('icon-dot').classList.remove('hidden');
+            else document.getElementById('icon-dot').classList.add('hidden');
+            
+            if(app.indexData) document.getElementById('index-dot').classList.remove('hidden');
+            else document.getElementById('index-dot').classList.add('hidden');
+            
+            if(app.splashData) document.getElementById('splash-dot').classList.remove('hidden');
+            else document.getElementById('splash-dot').classList.add('hidden');
+            
+            showView('view-editor');
         }
 
-        function del(id){ if(confirm("Apagar?")){ APPS=APPS.filter(x=>x.id!==id); localStorage.setItem('ma',JSON.stringify(APPS)); list(); } }
+        function del(id) {
+            if(confirm("Apagar?")) {
+                MEUS_APPS = MEUS_APPS.filter(x => x.id !== id);
+                localStorage.setItem('ma', JSON.stringify(MEUS_APPS));
+                renderAppsList();
+            }
+        }
+
         const b64 = f => new Promise((r,j)=>{const d=new FileReader();d.readAsDataURL(f);d.onload=()=>r(d.result.split(',')[1]);d.onerror=j;});
 
-        // BUILD
-        async function save(url){
-            const n=$('app-name').value; if(!n) return alert("Nome?");
-            const id=$('edit-id').value; const fi=$('f-icon').files[0]; const fh=$('f-index').files[0]; const fs=$('f-splash').files[0];
-            let a=id?APPS.find(x=>x.id==id):null; if(!a){a={id:Date.now()};APPS.push(a);}
-            a.name=n; a.date=Date.now(); a.pkg=$('app-pkg').value; a.ver=$('app-ver').value;
-            if(url) a.url=url;
-            a.feat={}; document.querySelectorAll('input[type=checkbox]').forEach(c=>a.feat[c.id.replace('c-','')] = c.checked);
-            if(fi)a.icon=await b64(fi); if(fh)a.html=await b64(fh); if(fs)a.splash=await b64(fs);
-            const idx=APPS.findIndex(x=>x.id===a.id); if(idx>=0)APPS[idx]=a; else APPS.push(a);
-            localStorage.setItem('ma',JSON.stringify(APPS));
-            if(!url){alert("Salvo!"); dash();}
+        // --- SAVE & BUILD ---
+        async function save(url = null) {
+            const name = document.getElementById('app-name').value;
+            if(!name) return alert("Dê um nome!");
+            
+            const idInput = document.getElementById('edit-id');
+            const iconFile = document.getElementById('f-icon').files[0];
+            const indexFile = document.getElementById('f-index').files[0];
+            const splashFile = document.getElementById('f-splash').files[0];
+
+            let app = idInput.value ? MEUS_APPS.find(x => x.id == idInput.value) : null;
+            if(!app) { app = {id: Date.now()}; MEUS_APPS.push(app); }
+
+            app.name = name;
+            app.date = Date.now();
+            app.pkg = document.getElementById('app-pkg').value;
+            app.ver = document.getElementById('app-ver').value;
+            if(url) app.lastDownloadUrl = url;
+            
+            app.features = {};
+            document.querySelectorAll('input[type=checkbox]').forEach(c => app.features[c.id.replace('c-','')] = c.checked);
+
+            if(iconFile) app.iconData = await b64(iconFile);
+            if(indexFile) app.indexData = await b64(indexFile);
+            if(splashFile) app.splashData = await b64(splashFile);
+
+            const idx = MEUS_APPS.findIndex(x => x.id === app.id);
+            if(idx >= 0) MEUS_APPS[idx] = app; else MEUS_APPS.push(app);
+            
+            localStorage.setItem('ma', JSON.stringify(MEUS_APPS));
+            if(!url) { alert("✅ Salvo!"); voltarDashboard(); }
         }
 
-        const logger=(m,e)=>{const b=$('status-log');b.innerHTML+=`<div class="${e?'text-red-400':'text-green-400'}">> ${m}</div>`;b.scrollTop=b.scrollHeight;};
+        const logger = (m, e) => {
+            const b = document.getElementById('status-log');
+            const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
+            b.innerHTML += `<div class="${e?'text-red-400':'text-green-400'} border-b border-gray-800 pb-1 mb-1 font-mono leading-tight"><span class="text-gray-500 text-[9px]">[${t}]</span> ${m}</div>`;
+            b.scrollTop = b.scrollHeight;
+        };
 
-        async function build(){
-            const t=localStorage.getItem('gt'); const n=$('app-name').value;
-            const fh=$('f-index').files[0]; const fi=$('f-icon').files[0]; const fs=$('f-splash').files[0];
-            const id=$('edit-id').value; let a=id?APPS.find(x=>x.id==id):{};
+        async function build() {
+            const t=localStorage.getItem('gt'); const n=document.getElementById('app-name').value;
+            const fh=document.getElementById('f-index').files[0]; const fi=document.getElementById('f-icon').files[0]; const fs=document.getElementById('f-splash').files[0];
+            const id=document.getElementById('edit-id').value; let a=id?APPS.find(x=>x.id==id):{};
             
             let h=fh?await b64(fh):a.html; let i=fi?await b64(fi):a.icon; let s=fs?await b64(fs):a.splash;
             if(!h)return alert("Falta Index!");
 
-            const ft={packageId:$('app-pkg').value, version:$('app-ver').value};
-            document.querySelectorAll('input[type=checkbox]').forEach(c=>{ 
-                const key = c.id.replace('c-','');
+            const ft={packageId:document.getElementById('app-pkg').value, version:document.getElementById('app-ver').value};
+            document.querySelectorAll('input[type=checkbox]').forEach(c => { 
+                const key = c.id.replace('c-', '');
                 const map = {notif:'notification',vib:'vibration',cam:'camera',gps:'geolocation',full:'fullscreen',flash:'flashlight',mic:'microphone',ins:'insomnia',file:'file',clip:'clipboard',net:'network',bar:'statusbar',toast:'toast'};
                 ft[map[key]||key] = c.checked; 
             });
 
-            const btn=$('btn-build'); $('status-log').classList.remove('hidden'); $('status-log').innerHTML='';
+            const btn=document.getElementById('btn-build'); 
+            document.getElementById('status-log').classList.remove('hidden'); document.getElementById('status-log').innerHTML='';
             btn.disabled=true; btn.innerHTML='ENVIANDO...';
 
             try {
@@ -257,17 +420,27 @@
                 logger("⚡ Disparando Fábrica...");
                 await cfg(t,n);
                 
-                if(!id){ $('edit-id').value=Date.now(); await save(); } else await save();
-                localStorage.setItem('bp','1');
+                logger("✅ INICIADO! Aguarde...");
+                
+                if(!id){ 
+                    const newId = Date.now(); 
+                    document.getElementById('edit-id').value = newId; 
+                    await save(null); 
+                } else await save(null);
+                
+                localStorage.setItem('bp', '1');
                 monitor(t);
             } catch(e){ logger(e.message,1); btn.disabled=false; btn.innerHTML="ERRO"; }
         }
 
+        // --- API GITHUB ---
         async function up(t,p,c,m){
             const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${p}`; let s=null;
             try{const r=await fetch(u,{headers:{Authorization:`token ${t}`}});if(r.ok)s=(await r.json()).sha;}catch(e){}
-            await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:m,content:c,sha:s,branch:"main"})});
+            const res=await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:m,content:c,sha:s,branch:"main"})});
+            if(!res.ok) throw new Error("Erro upload "+p);
         }
+
         async function cfg(t,n){
             const u=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/config.xml`;
             const r=await fetch(u,{headers:{Authorization:`token ${t}`}});
@@ -277,8 +450,9 @@
             await fetch(u,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify({message:"Trig:"+n,content:btoa(unescape(encodeURIComponent(nc))),sha:s,branch:"main"})});
         }
 
+        // --- MONITOR ---
         async function monitor(t){
-            const btn=$('btn-build'); btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing');
+            const btn=document.getElementById('btn-build'); btn.innerHTML="FABRICANDO... (3 min)"; btn.classList.add('processing');
             let att=0;
             const i=setInterval(async()=>{
                 att++;
@@ -289,36 +463,45 @@
                         const run=d.workflow_runs[0];
                         if(run.status==="completed"){
                             clearInterval(i); btn.classList.remove('processing'); localStorage.removeItem('bp');
-                            if(run.conclusion==="success"){ logger("SUCESSO!"); await link(t); }
-                            else{ logger("FALHOU",1); btn.disabled=false; btn.innerHTML="FALHA"; }
+                            if(run.conclusion==="success"){ logger("✨ SUCESSO! Pegando link..."); await link(t); }
+                            else{ logger("❌ Falha no Build.",1); btn.disabled=false; btn.innerHTML="FALHA"; }
                         } else { if(att%3===0) logger(`🔨 Trabalhando... [${run.status}]`); }
                     }
                 }catch(e){}
-                if(att>60){clearInterval(i); logger("Timeout",1); btn.disabled=false; btn.innerHTML="TIMEOUT";}
+                if(att>60){clearInterval(i); logger("Tempo esgotado.",1); btn.disabled=false; btn.innerHTML="TIMEOUT";}
             },10000);
         }
 
         async function link(t){
-            try {
+            try{
                 const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`,{headers:{Authorization:`token ${t}`}});
                 const d=await r.json();
-                const url = d.html_url;
-                const direct = d.assets?.[0]?.browser_download_url;
-                const match = d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
-                const turbo = (match && match[1] && !match[1].includes("Verifique")) ? match[1] : null;
+                const url=d.html_url; 
+                const match=d.body.match(/MIRROR_LINK: (https?:\/\/[^\s]+)/);
+                const turbo=(match && match[1] && !match[1].includes("Verifique"))?match[1]:null;
+                const direct=d.assets?.[0]?.browser_download_url;
 
-                $('btn-build').classList.add('hidden');
-                
-                // Botão Principal (Turbo ou Direto)
-                if(turbo) { $('btn-dl').href=turbo; $('btn-dl').classList.remove('hidden'); }
-                else if(direct) { $('btn-dl').href=direct; $('btn-dl').classList.remove('hidden'); $('btn-dl').innerHTML="BAIXAR (GITHUB)"; }
-                
-                // Botão Backup (Sempre aparece)
-                if(url) { $('btn-bk').href=url; $('btn-bk').classList.remove('hidden'); }
+                document.getElementById('btn-build').classList.add('hidden');
+                const btnDown=document.getElementById('btn-download');
+                const btnBackup=document.getElementById('btn-backup');
 
-                logger("LINKS PRONTOS!");
-                save(turbo || direct || url);
-            } catch(e){ logger("Erro link.", true); }
+                if(turbo){
+                    btnDown.href=turbo; btnDown.classList.remove('hidden'); btnDown.innerHTML=`<i class="fas fa-bolt text-lg"></i> BAIXAR (TURBO)`; logger("⚡ Link Turbo"); save(turbo);
+                } else if(direct){
+                    btnDown.href=direct; btnDown.classList.remove('hidden'); btnDown.innerHTML=`<i class="fab fa-github text-lg"></i> BAIXAR (GITHUB)`; logger("✅ Link Direto"); save(direct);
+                }
+
+                if(url){
+                    btnBackup.href=url; btnBackup.classList.remove('hidden');
+                    if(!turbo && !direct){
+                         btnDown.classList.add('hidden');
+                         btnBackup.classList.remove('hidden','mt-3','bg-gray-800');
+                         btnBackup.classList.add('bg-blue-600','text-white','py-4');
+                         btnBackup.innerHTML=`<i class="fab fa-github text-xl"></i> ABRIR PÁGINA`;
+                         logger("💡 Página disponível"); save(url);
+                    }
+                }
+            }catch(e){logger("Erro link.",1);}
         }
     </script>
 </body>
