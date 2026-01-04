@@ -1,4 +1,4 @@
-name: Fábrica Turbo V38 (Gradle Force Downgrade) 🚀
+name: Fábrica Turbo V39 (Genesis ID + Python Discord) 🚀
 
 on:
   push:
@@ -12,7 +12,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # Define variáveis globais para garantir que o Cordova veja o Gradle certo
     env:
       CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
       JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
@@ -21,24 +20,81 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. CONFIGURAÇÃO DE AMBIENTE (MANUAL E FORÇADA) ---
+      # --- 1. LEITURA "GENESIS" (Lê antes de criar) ---
+      - name: 🧠 Ler Configurações Iniciais
+        id: genesis
+        run: |
+          # Valores Padrão
+          ID="com.kaua.app"
+          NAME="App Turbo"
+          VER="1.0.0"
+          
+          # Lê do JSON se existir
+          if [ -f "features.json" ]; then
+             J_ID=$(jq -r '.packageId // empty' features.json)
+             J_VER=$(jq -r '.version // empty' features.json)
+             if [ ! -z "$J_ID" ]; then ID=$J_ID; fi
+             if [ ! -z "$J_VER" ]; then VER=$J_VER; fi
+          fi
+          
+          # Lê Nome do config.xml antigo (se houver) para manter compatibilidade
+          if [ -f "config.xml" ]; then
+             X_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
+             if [ ! -z "$X_NAME" ]; then NAME=$X_NAME; fi
+          fi
+          
+          echo "GEN_ID=$ID" >> $GITHUB_ENV
+          echo "GEN_NAME=$NAME" >> $GITHUB_ENV
+          echo "GEN_VER=$VER" >> $GITHUB_ENV
+          
+          echo "✅ Configuração Genesis Carregada:"
+          echo "ID: $ID | Nome: $NAME | Versão: $VER"
+
+      # --- 2. NOTIFICAÇÃO PYTHON (RICA E DETALHADA) ---
+      - name: 🔔 Discord (Python Script)
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          # Cria um script Python temporário para mandar o Embed bonito
+          cat <<EOF > notify.py
+          import os, json, urllib.request
+          
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          if not webhook: exit(0)
+          
+          data = {
+            "username": "Fábrica V39 🤖",
+            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
+            "embeds": [{
+              "title": "🏭 Início da Fabricação",
+              "color": 16776960, # Amarelo
+              "fields": [
+                {"name": "📱 Aplicativo", "value": "${{ env.GEN_NAME }}", "inline": True},
+                {"name": "🆔 Package ID", "value": "\`${{ env.GEN_ID }}\`", "inline": True},
+                {"name": "🔢 Versão", "value": "${{ env.GEN_VER }}", "inline": True},
+                {"name": "👤 Autor", "value": "${{ github.actor }}", "inline": True}
+              ],
+              "footer": {"text": "Nova arquitetura Genesis aplicada"}
+            }]
+          }
+          
+          req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
+          urllib.request.urlopen(req)
+          EOF
+          
+          python3 notify.py
+
+      # --- SETUP AMBIENTE ---
       - name: ☕ Setup Java 17
         uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+        with: { distribution: 'temurin', java-version: '17' }
 
       - name: 🔨 Instalar Gradle 8.7 (Manual)
         run: |
-          # Baixa o Gradle 8.7 na marra para não usar o 9.2 do sistema
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
-          
-          # Adiciona ao PATH do sistema para este job
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
-          
-          # Verifica se funcionou (tem que mostrar 8.7)
-          $PWD/gradle-8.7/bin/gradle -v
 
       - name: 🛠️ Setup Android SDK
         run: |
@@ -46,85 +102,28 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 2. CONFIGURAÇÃO DO PROJETO ---
-      - name: 🧐 Lendo Configurações
-        id: config
+      # --- 3. CRIAÇÃO COM ID REAL ---
+      - name: 🏗️ Criando App (ID Nativo)
         run: |
-          APP_NAME="App Turbo"
-          APP_ID="com.kaua.app"
-          APP_VER="1.0.0"
-          HAS_ICON="❌ Não"
+          echo "🚀 Criando projeto já com o ID: ${{ env.GEN_ID }}"
           
-          if [ -f "features.json" ]; then
-            JSON_ID=$(jq -r '.packageId // empty' features.json)
-            JSON_VER=$(jq -r '.version // empty' features.json)
-            if [ ! -z "$JSON_ID" ]; then APP_ID=$JSON_ID; fi
-            if [ ! -z "$JSON_VER" ]; then APP_VER=$JSON_VER; fi
-          fi
-
-          if [ -f "config.xml" ]; then
-             XML_NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-             if [ ! -z "$XML_NAME" ]; then APP_NAME=$XML_NAME; fi
-          fi
+          # AQUI É O PULO DO GATO: O app nasce com o ID certo
+          cordova create app-temp ${{ env.GEN_ID }} "${{ env.GEN_NAME }}"
           
-          ICON_SOURCE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" -o -iname "app-icon.png" \) | head -n 1)
-          if [ -n "$ICON_SOURCE" ]; then HAS_ICON="✅ Sim"; fi
-          
-          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-          echo "APP_ID=$APP_ID" >> $GITHUB_ENV
-          echo "APP_VER=$APP_VER" >> $GITHUB_ENV
-          echo "HAS_ICON=$HAS_ICON" >> $GITHUB_ENV
-
-      - name: 🔔 Discord (Início)
-        if: env.DISCORD_WEBHOOK != ''
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"embeds\":[{\"title\":\"🏭 Iniciando Produção V38\",\"description\":\"App: **${{ env.APP_NAME }}**\nGradle: 8.7 (Forçado)\",\"color\":16776960}]}" \
-          $DISCORD_WEBHOOK
-
-      # --- 3. CRIAÇÃO DO APP ---
-      - name: 🏗️ Criando App
-        run: |
-          cordova create app-temp com.temp.id "TempName"
+          # Copia o site
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
-          cd app-temp
           
-          # Configurações do config.xml
-          sed -i "s|<name>.*</name>|<name>${{ env.APP_NAME }}</name>|g" config.xml
-          sed -i "s/id=\"[^\"]*\"/id=\"${{ env.APP_ID }}\"/g" config.xml
-          sed -i "s/version=\"[^\"]*\"/version=\"${{ env.APP_VER }}\"/g" config.xml
+          cd app-temp
+          # Configura versão no config.xml gerado
+          sed -i "s/version=\"1.0.0\"/version=\"${{ env.GEN_VER }}\"/" config.xml
           
           # Permissões
           sed -i '/<widget/a \    <preference name="AndroidPersistentFileLocation" value="Compatibility" />' config.xml
           sed -i '/<widget/a \    <preference name="AllowFileAccess" value="true" />' config.xml
           sed -i '/<widget/a \    <preference name="requestLegacyExternalStorage" value="true" />' config.xml
 
-      - name: 🎨 Configurando Ícone
-        run: |
-          cd app-temp
-          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
-          sed -i '/<icon/d' config.xml
-          
-          if [ -n "$ICON_FILE" ]; then
-            echo "🔥 Ícone encontrado!"
-            cp "$ICON_FILE" ./icon.png
-            sed -i '/<widget/a \    <icon src="icon.png" />' config.xml
-          else
-            echo "⚠️ Sem ícone."
-          fi
-          
-          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
-          if [ -n "$SPLASH_FILE" ]; then
-             cp "$SPLASH_FILE" ./splash.png
-             sed -i '/<splash/d' config.xml
-             sed -i '/<widget/a \    <splash src="splash.png" />' config.xml
-             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
-          fi
-
-      - name: 🔌 Instalando Plugins e Plataforma
+      - name: 🔌 Plugins e Plataforma
         run: |
           cd app-temp
           
@@ -140,7 +139,6 @@ jobs:
           cordova plugin add cordova-plugin-androidx-adapter
 
           if [ -f "../features.json" ]; then
-            # Lê todos os plugins marcados
             USE_VIBRA=$(jq -r '.vibration' ../features.json)
             USE_CAM=$(jq -r '.camera' ../features.json)
             USE_GPS=$(jq -r '.geolocation' ../features.json)
@@ -151,6 +149,8 @@ jobs:
             USE_INSOMNIA=$(jq -r '.insomnia' ../features.json)
             USE_TOAST=$(jq -r '.toast' ../features.json)
             USE_FILE=$(jq -r '.file' ../features.json)
+            USE_CLIP=$(jq -r '.clipboard' ../features.json)
+            USE_SPLASH=$(jq -r '.splashscreen' ../features.json)
 
             if [ "$USE_VIBRA" = "true" ]; then cordova plugin add cordova-plugin-vibration; fi
             if [ "$USE_CAM" = "true" ]; then cordova plugin add cordova-plugin-camera; fi
@@ -161,6 +161,9 @@ jobs:
             if [ "$USE_TOAST" = "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
             if [ "$USE_INSOMNIA" = "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
             if [ "$USE_FILE" = "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
+            if [ "$USE_CLIP" = "true" ]; then cordova plugin add cordova-plugin-clipboard; fi
+            if [ "$USE_SPLASH" = "true" ]; then cordova plugin add cordova-plugin-splashscreen; fi
+            
             if [ "$USE_MIC" = "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
           fi
 
@@ -169,50 +172,71 @@ jobs:
           
           echo "🏗️ Forçando Prepare..."
           cordova prepare android || true
-          sleep 10
           
-          # Fix API.js
+          # Fix API.js se necessário
           if [ -d "platforms/android/cordova" ]; then
-             echo "🚑 Reparando API Cordova..."
              cd platforms/android
              npm install --production --no-save
              cd ../..
           fi
 
-      - name: 🔨 Substituição de Ícones (Força Bruta)
+      # --- 4. ÍCONE NUCLEAR (SUBSTITUIÇÃO FÍSICA) ---
+      - name: 🔨 Injetar Ícone (Modo Nuclear)
         run: |
           cd app-temp
-          if [ -f "icon.png" ]; then
-             echo "👊 Esmagando ícones padrão..."
+          # Procura ícone em www
+          ICON_FILE=$(find www -maxdepth 1 -type f \( -iname "icon.png" -o -iname "logo.png" \) | head -n 1)
+          
+          if [ -n "$ICON_FILE" ]; then
+             echo "🔥 Ícone encontrado: $ICON_FILE"
+             
+             # Caminho onde o Android guarda os recursos reais
              RES="platforms/android/app/src/main/res"
+             
+             # Se a pasta res existir, vamos substituir TODOS os ícones padrão
              if [ -d "$RES" ]; then
-                 for folder in mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable; do
+                 echo "👊 Substituindo arquivos nativos..."
+                 
+                 # Lista de pastas de densidade
+                 FOLDERS="mipmap-ldpi mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi drawable"
+                 
+                 for folder in $FOLDERS; do
                      mkdir -p "$RES/$folder"
-                     cp icon.png "$RES/$folder/ic_launcher.png"
-                     cp icon.png "$RES/$folder/icon.png"
+                     # Sobrescreve o ícone padrão do Android (ic_launcher)
+                     cp "$ICON_FILE" "$RES/$folder/ic_launcher.png"
+                     # Sobrescreve ícone redondo se existir
+                     cp "$ICON_FILE" "$RES/$folder/ic_launcher_round.png"
                  done
+                 echo "✅ Ícones substituídos com sucesso no sistema de arquivos."
              fi
+          else
+             echo "⚠️ Nenhum ícone encontrado para injeção nuclear."
+          fi
+          
+          # Configura Splash no config.xml se existir
+          SPLASH_FILE=$(find www -maxdepth 1 -type f -iname "splash.png" | head -n 1)
+          if [ -n "$SPLASH_FILE" ]; then
+             cp "$SPLASH_FILE" ./splash.png
+             sed -i '/<platform name="android">/a \        <splash src="splash.png" />' config.xml
+             sed -i '/<widget/a \    <preference name="ShowSplashScreen" value="true" />' config.xml
           fi
 
       - name: 🚑 Fix Gradle (Cirurgia)
         run: |
           cd app-temp
           if [ -d "platforms/android" ]; then
-              echo "🔧 Aplicando Fix de Compatibilidade..."
-              
-              # 1. Troca 'compile' por 'implementation' (Essencial para plugins antigos)
+              # Troca compile por implementation
               find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
               
-              # 2. Força versão 33 do SDK (Evita erro compileSdkVersion)
+              # Força versão 33 do SDK
               echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
               echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
               echo "android.useAndroidX=true" >> platforms/android/gradle.properties
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
               
-              # 3. FIX CRÍTICO V38: Forçar Gradle 8.7 no wrapper do projeto
+              # Bloqueia Gradle 9
               if [ -f "platforms/android/gradle/wrapper/gradle-wrapper.properties" ]; then
-                  echo "🛑 Bloqueando Gradle 9 no projeto..."
                   sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-all.zip|g' platforms/android/gradle/wrapper/gradle-wrapper.properties
               fi
           fi
@@ -220,9 +244,9 @@ jobs:
       - name: 📱 Build APK
         run: |
           cd app-temp
-          # NÃO limpar cache para aproveitar o Gradle 8.7 que instalamos
+          # NÃO limpar cache para aproveitar o Gradle 8.7
           
-          echo "🚀 Compilando com Gradle Forçado..."
+          echo "🚀 Compilando..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
@@ -230,7 +254,8 @@ jobs:
             echo "❌ ERRO: APK não encontrado!"
             exit 1
           else
-            SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
+            # Usa o nome do App para o arquivo (limpa espaços)
+            SAFE_NAME=$(echo "${{ env.GEN_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$SAFE_NAME.apk"
             echo "APK_FINAL=$SAFE_NAME.apk" >> $GITHUB_ENV
           fi
@@ -240,10 +265,11 @@ jobs:
         if: success()
         with:
           tag_name: v${{ github.run_number }}
-          name: "${{ env.APP_NAME }} (v${{ github.run_number }})"
+          name: "${{ env.GEN_NAME }} (v${{ github.run_number }})"
           body: |
             ✅ **App Pronto!**
-            📱 **Nome:** ${{ env.APP_NAME }}
+            📱 **Nome:** ${{ env.GEN_NAME }}
+            🆔 **ID:** `${{ env.GEN_ID }}`
             
             📥 **BAIXAR AGORA:**
             Clique no arquivo `.apk` listado abaixo em **Assets**.
@@ -251,16 +277,45 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 🔔 Discord (Fim)
+      - name: 🔔 Discord (Fim - Python)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           STATUS: ${{ job.status }}
         run: |
-          if [ "$STATUS" == "success" ]; then
-            COLOR=5763712; TITLE="✅ SUCESSO"; CONTENT="@everyone 🎉 **APK PRONTO!**"
-          else
-            COLOR=15548997; TITLE="❌ FALHA"; CONTENT="@everyone ⚠️ **Erro na Fábrica!**"
-          fi
-          DL_LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
-          curl -H "Content-Type: application/json" -d "{\"content\": \"$CONTENT\", \"embeds\": [{ \"title\": \"$TITLE\", \"color\": $COLOR, \"fields\": [ { \"name\": \"App\", \"value\": \"${{ env.APP_NAME }}\", \"inline\": true }, { \"name\": \"Download\", \"value\": \"[Baixar APK]($DL_LINK)\", \"inline\": false } ] }]}" $DISCORD_WEBHOOK
+          cat <<EOF > notify_end.py
+          import os, json, urllib.request
+          
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          status = os.environ.get('STATUS')
+          apk_name = os.environ.get('APK_FINAL', 'App')
+          
+          color = 5763712 if status == 'success' else 15548997
+          title = "✅ Sucesso!" if status == 'success' else "❌ Falha na Fábrica"
+          
+          repo = "${{ github.repository }}"
+          run_id = "${{ github.run_number }}"
+          dl_link = f"https://github.com/{repo}/releases/tag/v{run_id}"
+          
+          desc = f"O APK **{apk_name}** foi gerado." if status == 'success' else "Ocorreu um erro no processo."
+          
+          data = {
+            "username": "Fábrica Bot 🤖",
+            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
+            "embeds": [{
+              "title": title,
+              "description": desc,
+              "color": color,
+              "fields": [
+                {"name": "📥 Download", "value": f"[Baixar APK]({dl_link})", "inline": True},
+                {"name": "📄 Logs", "value": f"[Ver Console](${{ github.server_url }}/{repo}/actions/runs/${{ github.run_id }})", "inline": True}
+              ]
+            }]
+          }
+          
+          if webhook:
+              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
+              urllib.request.urlopen(req)
+          EOF
+          
+          python3 notify_end.py
