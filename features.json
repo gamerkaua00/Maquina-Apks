@@ -1,1 +1,1 @@
-{"notification":false,"vibration":false,"camera":false,"geolocation":false,"orientation":false,"battery":false,"fullscreen":true,"flashlight":false,"microphone":false,"insomnia":true,"browser":false,"file":true}
+{"packageId":"com.Eletronica.app","version":"1.0.0","notification":false,"camera":false,"geolocation":false,"fullscreen":true,"vibration":false,"microphone":false,"flashlight":false,"file":false,"clipboard":false,"network":false,"bat":false,"statusbar":false,"browser":false,"toast":false,"insomnia":true,"splashscreen":false}
