@@ -3,53 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica V13</title>
+    <title>Fábrica V14 (Pro)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>body{background:#000;color:#fff;font-family:sans-serif}.hidden{display:none!important}</style>
+    <style>
+        body{background:#050505;color:#fff;font-family:sans-serif; -webkit-tap-highlight-color: transparent;}
+        .hidden{display:none!important}
+        .checkbox:checked + div { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+    </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen overflow-hidden">
 
     <div id="view-login" class="flex-1 flex items-center justify-center p-6">
-        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
-            <i class="fas fa-robot text-4xl text-blue-500 mb-4"></i>
-            <h1 class="text-xl font-bold mb-4">Acesso V13</h1>
-            <input type="password" id="tkn" placeholder="Token GitHub (ghp_...)" class="w-full bg-black border border-gray-700 rounded p-3 text-center text-blue-400 mb-4">
-            <button onclick="login()" class="w-full bg-blue-600 font-bold py-3 rounded">ENTRAR</button>
+        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800 shadow-2xl">
+            <i class="fas fa-layer-group text-4xl text-green-500 mb-4"></i>
+            <h1 class="text-xl font-bold mb-4">Painel V14</h1>
+            <input type="password" id="tkn" placeholder="Token GitHub (ghp_...)" class="w-full bg-black border border-gray-700 rounded p-3 text-center text-green-500 mb-4 outline-none focus:border-green-500">
+            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-500 font-bold py-3 rounded transition">ENTRAR</button>
         </div>
     </div>
 
-    <div id="view-editor" class="hidden flex-1 flex flex-col h-full">
-        <div class="p-4 bg-gray-900 border-b border-gray-800 flex justify-between">
-            <span class="font-bold text-blue-400">Criador de App</span>
-            <button onclick="logout()" class="text-red-500 text-xs">SAIR</button>
+    <div id="view-editor" class="hidden flex-1 flex flex-col h-full bg-black">
+        <div class="p-4 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg">
+            <span class="font-bold text-green-400"><i class="fas fa-hammer mr-2"></i>Criador Pro</span>
+            <button onclick="logout()" class="text-red-500 text-xs uppercase font-bold px-2">Sair</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            <input type="text" id="name" placeholder="Nome do App" class="w-full bg-gray-900 p-3 rounded border border-gray-700 text-white">
-            <div class="flex gap-2">
-                <input type="text" id="pkg" placeholder="com.seu.app" class="w-2/3 bg-gray-900 p-3 rounded border border-gray-700 text-gray-300">
-                <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-gray-900 p-3 rounded border border-gray-700 text-center text-gray-300">
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 pb-20">
+            <div class="space-y-2">
+                <label class="text-xs text-gray-500 font-bold uppercase ml-1">Identidade</label>
+                <input type="text" id="name" placeholder="Nome do App" class="w-full bg-gray-900 p-3 rounded-lg border border-gray-800 text-white focus:border-green-500 outline-none transition">
+                <div class="flex gap-2">
+                    <input type="text" id="pkg" placeholder="com.seu.app" class="w-2/3 bg-gray-900 p-3 rounded-lg border border-gray-800 text-gray-300 text-sm focus:border-green-500 outline-none transition">
+                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-gray-900 p-3 rounded-lg border border-gray-800 text-center text-gray-300 text-sm focus:border-green-500 outline-none transition">
+                </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="$('f-icon').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700"><i class="fas fa-image"></i><span class="text-[9px] mt-1">ÍCONE</span></button>
-                <button onclick="$('f-splash').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700"><i class="fas fa-mobile"></i><span class="text-[9px] mt-1">SPLASH</span></button>
-                <button onclick="$('f-index').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700"><i class="fas fa-code"></i><span class="text-[9px] mt-1">INDEX</span></button>
+            <div class="space-y-2">
+                <label class="text-xs text-gray-500 font-bold uppercase ml-1">Arquivos</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <div onclick="$('f-index').click()" class="bg-gray-900 h-24 rounded-lg border border-gray-800 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition group relative">
+                        <i class="fas fa-code text-2xl text-gray-600 group-hover:text-blue-500 mb-1"></i><span class="text-[9px] text-gray-500 font-bold">INDEX</span>
+                        <div id="dot-index" class="hidden absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
+                    </div>
+                    <div onclick="$('f-icon').click()" class="bg-gray-900 h-24 rounded-lg border border-gray-800 flex flex-col items-center justify-center cursor-pointer hover:border-yellow-500 transition group relative overflow-hidden">
+                        <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover opacity-50 hidden">
+                        <i class="fas fa-image text-2xl text-gray-600 group-hover:text-yellow-500 mb-1 relative z-10"></i><span class="text-[9px] text-gray-500 font-bold relative z-10">ÍCONE</span>
+                    </div>
+                    <div onclick="$('f-splash').click()" class="bg-gray-900 h-24 rounded-lg border border-gray-800 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition group relative overflow-hidden">
+                         <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover opacity-50 hidden">
+                        <i class="fas fa-mobile text-2xl text-gray-600 group-hover:text-purple-500 mb-1 relative z-10"></i><span class="text-[9px] text-gray-500 font-bold relative z-10">SPLASH</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs text-gray-500 font-bold uppercase ml-1">Permissões & Plugins</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-notif" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-bell text-xs mb-1"></i><span class="text-[8px] font-bold">NOTIF</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-file" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-folder text-xs mb-1"></i><span class="text-[8px] font-bold">ARQUIVOS</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-cam" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-camera text-xs mb-1"></i><span class="text-[8px] font-bold">CÂMERA</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-geo" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-map-marker-alt text-xs mb-1"></i><span class="text-[8px] font-bold">GPS</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-vib" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-wave-square text-xs mb-1"></i><span class="text-[8px] font-bold">VIBRAR</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-full" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-expand text-xs mb-1"></i><span class="text-[8px] font-bold">FULL</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-mic" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-microphone text-xs mb-1"></i><span class="text-[8px] font-bold">MIC</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="checkbox" id="c-wake" class="checkbox hidden">
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg h-14 flex flex-col items-center justify-center transition hover:bg-gray-800">
+                            <i class="fas fa-sun text-xs mb-1"></i><span class="text-[8px] font-bold">ACORDADO</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="logs" class="bg-black border border-gray-800 p-2 text-[10px] h-24 overflow-auto font-mono text-green-400 rounded-lg shadow-inner">
+                > Pronto para fabricar...
             </div>
             
-            <div class="text-xs text-center text-gray-500" id="file-status">Nenhum arquivo selecionado</div>
-
-            <input type="file" id="f-icon" accept="image/png" class="hidden" onchange="upStat()">
-            <input type="file" id="f-splash" accept="image/png" class="hidden" onchange="upStat()">
-            <input type="file" id="f-index" accept=".html" class="hidden" onchange="upStat()">
-
-            <div id="logs" class="bg-black border border-gray-800 p-2 text-[10px] h-32 overflow-auto font-mono text-green-400"></div>
+            <input type="file" id="f-index" accept=".html" class="hidden" onchange="preview(this, null, 'dot-index')">
+            <input type="file" id="f-icon" accept="image/png" class="hidden" onchange="preview(this, 'prev-icon', null)">
+            <input type="file" id="f-splash" accept="image/png" class="hidden" onchange="preview(this, 'prev-splash', null)">
         </div>
 
-        <div class="p-4 bg-gray-900 border-t border-gray-800">
-            <button id="btn-go" onclick="build()" class="w-full bg-green-600 font-bold py-4 rounded shadow-lg text-white">FABRICAR AGORA</button>
-            <a id="btn-dl" href="#" target="_blank" class="hidden w-full bg-blue-600 font-bold py-4 rounded shadow-lg text-white text-center block mt-2">BAIXAR APK</a>
+        <div class="p-4 bg-gray-900 border-t border-gray-800 shadow-[0_-5px_15px_rgba(0,0,0,0.5)] z-20">
+            <button id="btn-go" onclick="build()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 font-bold py-4 rounded-xl shadow-lg text-white transform active:scale-95 transition flex items-center justify-center gap-2">
+                <i class="fas fa-cogs"></i> FABRICAR V55
+            </button>
+            <a id="btn-dl" href="#" target="_blank" class="hidden w-full bg-blue-600 font-bold py-4 rounded-xl shadow-lg text-white text-center block mt-2 animate-bounce">
+                <i class="fas fa-download mr-2"></i>BAIXAR APK
+            </a>
         </div>
     </div>
 
@@ -60,7 +137,17 @@
         
         function login() { if($('tkn').value.startsWith('ghp_')) { localStorage.setItem('tk', $('tkn').value); $('view-login').classList.add('hidden'); $('view-editor').classList.remove('hidden'); } else alert('Token Inválido'); }
         function logout() { localStorage.removeItem('tk'); location.reload(); }
-        function upStat() { $('file-status').innerText = `Icon: ${$('f-icon').files.length}, Splash: ${$('f-splash').files.length}, Index: ${$('f-index').files.length}`; }
+        
+        function preview(input, imgId, dotId) {
+            if(input.files && input.files[0]) {
+                if(imgId) {
+                    const reader = new FileReader();
+                    reader.onload = e => { $(imgId).src = e.target.result; $(imgId).classList.remove('hidden'); }
+                    reader.readAsDataURL(input.files[0]);
+                }
+                if(dotId) $(dotId).classList.remove('hidden');
+            }
+        }
 
         const toB64 = f => new Promise((r,j) => { const rd = new FileReader(); rd.readAsDataURL(f); rd.onload = () => r(rd.result.split(',')[1]); rd.onerror = j; });
 
@@ -74,10 +161,10 @@
         }
 
         async function build() {
-            const btn = $('btn-go'); btn.disabled = true; btn.innerText = "ENVIANDO...";
+            const btn = $('btn-go'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ENVIANDO...';
             try {
-                const name = $('name').value || "App";
-                const pkg = $('pkg').value || "com.app";
+                const name = $('name').value || "App V55";
+                const pkg = $('pkg').value || "com.app.v55";
                 const ver = $('ver').value || "1.0.0";
 
                 const fIdx = $('f-index').files[0];
@@ -88,17 +175,28 @@
 
                 log("1/4 Upload Index...");
                 await upload("www/index.html", await toB64(fIdx), "Up Index");
+                if(fIco) await upload("www/icon.png", await toB64(fIco), "Up Icon");
+                if(fSpl) await upload("www/splash.png", await toB64(fSpl), "Up Splash");
 
-                if(fIco) { log("2/4 Upload Icon..."); await upload("www/icon.png", await toB64(fIco), "Up Icon"); }
-                if(fSpl) { log("3/4 Upload Splash..."); await upload("www/splash.png", await toB64(fSpl), "Up Splash"); }
-
-                log("4/4 Disparando Fábrica...");
-                const feat = { appName: name, packageId: pkg, version: ver };
-                // Safe B64 for UTF8
+                log("4/4 Configurando...");
+                
+                // --- MAPEAR CHECKBOXES ---
+                const feat = { 
+                    appName: name, packageId: pkg, version: ver,
+                    notification: $('c-notif').checked,
+                    file: $('c-file').checked,
+                    camera: $('c-cam').checked,
+                    geolocation: $('c-geo').checked,
+                    vibration: $('c-vib').checked,
+                    fullscreen: $('c-full').checked,
+                    microphone: $('c-mic').checked,
+                    insomnia: $('c-wake').checked
+                };
+                
                 const json = btoa(unescape(encodeURIComponent(JSON.stringify(feat))));
                 await upload("features.json", json, `Build: ${name}`);
 
-                btn.innerText = "FABRICANDO... (Veja Discord)";
+                btn.innerHTML = "FABRICANDO... (Aguarde)";
                 monitor();
             } catch(e) { log("Erro: " + e); btn.disabled = false; btn.innerText = "ERRO"; }
         }
@@ -114,7 +212,7 @@
                 if(run && run.status === "completed") {
                     clearInterval(int);
                     if(run.conclusion === "success") {
-                        log("SUCESSO!");
+                        log("✅ SUCESSO!");
                         const rel = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`, {headers:{Authorization:`token ${t}`}});
                         const rd = await rel.json();
                         if(rd.assets && rd.assets[0]) {
@@ -122,7 +220,7 @@
                             $('btn-dl').classList.remove('hidden');
                             $('btn-go').classList.add('hidden');
                         }
-                    } else { log("FALHA NA FÁBRICA!"); $('btn-go').innerText = "TENTAR DNV"; $('btn-go').disabled = false; }
+                    } else { log("❌ FALHA NO GITHUB!"); $('btn-go').innerText = "TENTAR DNV"; $('btn-go').disabled = false; }
                 } else log(`Processando... [${i}s]`);
             }, 5000);
         }
