@@ -1,4 +1,4 @@
-name: Fábrica Turbo V57 (Version Fix) 🧬
+name: Fábrica Turbo V58 (Ultimate) 💎
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v3
 
       # --- 1. DADOS ---
-      - name: 🧹 Ler Dados
+      - name: 🧠 Processar Configuração
         id: dados
         run: |
           if [ -f package.json ]; then mv package.json package.json.bak; fi
@@ -35,31 +35,34 @@ jobs:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v57')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v58')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V57')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V58')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
           EOF
           python3 ler.py
 
-      # --- 2. DISCORD (PYTHON PURO) ---
-      - name: 🔔 Discord (Início)
+      # --- 2. DISCORD COM AVATAR E PING ---
+      - name: 🔔 Notificação (Start)
         run: |
           cat <<EOF > notify.py
           import os, json, urllib.request
           url = os.environ.get('DISCORD_WEBHOOK')
           if url:
+              # Link direto para o ícone no repo para usar de avatar
+              repo = "${{ github.repository }}"
+              icon_url = f"https://raw.githubusercontent.com/{repo}/main/www/icon.png"
+              
               msg = {
-                  "username": "Fábrica V57",
-                  "content": "@everyone 🧬 **BUILD INICIADO**\n📱 App: ${{ env.APP_NAME }}\n🔢 Versão: ${{ env.APP_VER }}\n🆔 ID: ${{ env.APP_ID }}"
+                  "username": "Fábrica V58",
+                  "avatar_url": icon_url,
+                  "content": "@everyone 🏭 **BUILD INICIADO**\n📱 App: ${{ env.APP_NAME }}\n🔐 Assinatura: Verificando...",
+                  "allowed_mentions": {"parse": ["everyone"]}
               }
               try:
-                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
                   urllib.request.urlopen(req)
-                  print("✅ Discord Notificado!")
-              except Exception as e: print(f"❌ Erro Discord: {e}")
-          else:
-              print("⚠️ Webhook não configurado.")
+              except Exception as e: print(e)
           EOF
           python3 notify.py
 
@@ -73,15 +76,18 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CRIAR APP ---
-      - name: 🏗️ Criando Estrutura
+      # --- 4. CRIAÇÃO E CONFIGURAÇÃO ---
+      - name: 🏗️ Criando App
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
           
           cd app-temp
-          cat <<EOF > edit.py
-          import xml.etree.ElementTree as ET, os
+          # Configura XML e Build.json para Assinatura
+          cat <<EOF > config_builder.py
+          import xml.etree.ElementTree as ET, os, json
+          
+          # 1. XML
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
           try:
               tree = ET.parse('config.xml')
@@ -91,14 +97,10 @@ jobs:
               for n in root.findall('{http://www.w3.org/ns/widgets}name'): n.text = os.environ['APP_NAME']
               
               prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true', 'AndroidInsecureFileModeEnabled': 'true'}
-              
-              # Splash Logic
               if os.environ.get('HAS_SPLASH') == 'True':
-                  prefs['SplashScreenDelay'] = '3000'
-                  prefs['ShowSplashScreen'] = 'true'
+                  prefs['SplashScreenDelay'] = '3000'; prefs['ShowSplashScreen'] = 'true'
               else:
-                  prefs['SplashScreenDelay'] = '0'
-                  prefs['ShowSplashScreen'] = 'false'
+                  prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
 
               for k,v in prefs.items():
                   found = False
@@ -108,19 +110,44 @@ jobs:
                       el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       el.set('name',k); el.set('value',v)
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-          except: exit(1)
+          except: pass
+          
+          # 2. BUILD.JSON (Keystore)
+          try:
+              with open('../features.json') as f: data = json.load(f)
+              signing = data.get('signing')
+              if signing:
+                  print("🔐 Configurando Assinatura...")
+                  build_cfg = {
+                      "android": {
+                          "release": {
+                              "keystore": "www/release.keystore",
+                              "storePassword": signing['storePass'],
+                              "alias": signing['alias'],
+                              "password": signing['aliasPass'],
+                              "keystoreType": ""
+                          }
+                      }
+                  }
+                  with open('build.json', 'w') as f: json.dump(build_cfg, f)
+                  with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_TYPE=--release\n")
+              else:
+                  print("🔓 Modo Debug (Sem Assinatura)")
+                  with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_TYPE=--debug\n")
+          except: 
+              with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_TYPE=--debug\n")
           EOF
-          python3 edit.py
+          python3 config_builder.py
 
       # --- 5. PLATAFORMA ---
-      - name: 🔌 Adicionando Android
+      - name: 🔌 Android
         run: |
           cd app-temp
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
 
       # --- 6. PLUGINS ---
-      - name: 🧩 Instalando Plugins
+      - name: 🧩 Plugins
         run: |
           cd app-temp
           cat <<EOF > plugins.py
@@ -143,89 +170,79 @@ jobs:
           python3 plugins.py
           cordova prepare android
 
-      # --- 7. INJEÇÃO NUCLEAR (ID + VERSÃO + ÍCONES) ---
-      - name: ☢️ Injeção Final (Gradle & Icons)
+      # --- 7. INJEÇÃO FINAL ---
+      - name: ☢️ Injeção Final
         run: |
           cd app-temp
-          
-          # 1. ÍCONES
           ICON="www/icon.png"
           SPLASH="www/splash.png"
+          
+          # Ícones
           if [ -f "$ICON" ]; then
              find platforms/android -name "ic_launcher*.xml" -delete
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
           fi
+          # Splash
           if [ -f "$SPLASH" ]; then
              mkdir -p platforms/android/app/src/main/res/drawable
              cp "$SPLASH" platforms/android/app/src/main/res/drawable/screen.png
           fi
-
-          # 2. GRADLE (ID e VERSÃO)
-          cat <<EOF > inject_gradle.py
-          import re, os
           
+          # Gradle Injections
+          cat <<EOF > inject.py
+          import re, os
           app_id = os.environ['APP_ID']
           ver = os.environ['APP_VER']
-          
-          # Calcula VersionCode (Ex: 1.0.2 -> 10002)
           try:
-              parts = ver.split('.')
-              # Garante 3 partes
-              while len(parts) < 3: parts.append('0')
-              # Fórmula: Maior*10000 + Menor*100 + Patch
-              v_code = int(parts[0])*10000 + int(parts[1])*100 + int(parts[2])
-          except:
-              v_code = 10000 # Fallback
+             p = ver.split('.')
+             code = int(p[0])*10000 + int(p[1])*100 + int(p[2])
+          except: code=10000
           
-          print(f"🔧 Injetando -> ID: {app_id} | Ver: {ver} | Code: {v_code}")
-          
-          # Procura o arquivo
           target = None
-          for root, dirs, files in os.walk("platforms/android"):
-              if "build.gradle" in files and "app" in root:
-                  target = os.path.join(root, "build.gradle")
-                  break
+          for r, d, f in os.walk("platforms/android"):
+              if "build.gradle" in f and "app" in r: target = os.path.join(r, "build.gradle"); break
           
           if target:
-              with open(target, 'r') as f: content = f.read()
-              
-              # Substituições
-              content = re.sub(r'applicationId\s+".*"', f'applicationId "{app_id}"', content)
-              content = re.sub(r'namespace\s+".*"', f'namespace "{app_id}"', content)
-              content = re.sub(r'versionName\s+".*"', f'versionName "{ver}"', content)
-              content = re.sub(r'versionCode\s+\d+', f'versionCode {v_code}', content)
-              
-              with open(target, 'w') as f: f.write(content)
-              print("✅ Gradle Atualizado com Sucesso!")
-          else:
-              print("❌ build.gradle não encontrado!")
-              exit(1)
+              with open(target,'r') as f: c=f.read()
+              c = re.sub(r'applicationId\s+".*"', f'applicationId "{app_id}"', c)
+              c = re.sub(r'namespace\s+".*"', f'namespace "{app_id}"', c)
+              c = re.sub(r'versionCode\s+\d+', f'versionCode {code}', c)
+              with open(target,'w') as f: f.write(c)
           EOF
-          python3 inject_gradle.py
+          python3 inject.py
 
-      # --- 8. BUILD ---
-      - name: 📱 Compilando
+      # --- 8. BUILD DINÂMICO ---
+      - name: 📱 Compilar
         id: build_apk
         run: |
           cd app-temp
           echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           echo "android.enableJetifier=true" >> platforms/android/gradle.properties
-          cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
-          APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
+          # Usa a variável BUILD_TYPE (--debug ou --release)
+          echo "Compilando modo: ${{ env.BUILD_TYPE }}"
+          cordova build android ${{ env.BUILD_TYPE }} --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
+          
+          # Procura qualquer APK gerado
+          APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "*.apk" | head -n 1)
+          
           if [ -z "$APK_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
              SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
-             FINAL="App_${SAFE}_v${{ env.APP_VER }}.apk"
+             # Se for release, adiciona _signed
+             TYPE="Debug"
+             if [[ "${{ env.BUILD_TYPE }}" == *"--release"* ]]; then TYPE="Release"; fi
+             
+             FINAL="App_${SAFE}_v${{ env.APP_VER }}_${TYPE}.apk"
              mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL"
              echo "APK_FINAL=$FINAL" >> $GITHUB_ENV
              echo "STATUS=SUCESSO" >> $GITHUB_ENV
           fi
 
       # --- 9. RELEASE ---
-      - name: 🚀 Publicar
+      - name: 🚀 Release
         uses: softprops/action-gh-release@v1
         if: env.STATUS == 'SUCESSO'
         with:
@@ -234,22 +251,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. DISCORD FIM ---
+      # --- 10. NOTIFICAÇÃO FIM ---
       - name: 🔔 Discord (Fim)
         if: always()
         run: |
           cat <<EOF > notify_end.py
           import os, json, urllib.request
           url = os.environ.get('DISCORD_WEBHOOK')
+          status = os.environ.get('STATUS')
+          repo = "${{ github.repository }}"
+          icon_url = f"https://raw.githubusercontent.com/{repo}/main/www/icon.png"
+          
           if url:
-              status = os.environ.get('STATUS')
               if status == 'SUCESSO':
-                  content = "@everyone ✅ **SUCESSO! APK PRONTO**\n[Baixar Agora](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})"
+                  link = f"https://github.com/{repo}/releases/tag/v${{ github.run_number }}"
+                  msg = {
+                      "username": "Fábrica V58",
+                      "avatar_url": icon_url,
+                      "content": f"@everyone ✅ **SUCESSO!**\n📱 App: ${{ env.APP_NAME }}\n📂 [BAIXAR AGORA]({link})",
+                      "allowed_mentions": {"parse": ["everyone"]}
+                  }
               else:
-                  content = "@everyone ❌ **FALHA NO BUILD**"
-              
+                  msg = {
+                      "username": "Fábrica V58",
+                      "avatar_url": icon_url,
+                      "content": "@everyone ❌ **ERRO CRÍTICO**",
+                      "allowed_mentions": {"parse": ["everyone"]}
+                  }
               try:
-                  req = urllib.request.Request(url, data=json.dumps({"content": content}).encode(), headers={'Content-Type': 'application/json'})
+                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
                   urllib.request.urlopen(req)
               except: pass
           EOF
