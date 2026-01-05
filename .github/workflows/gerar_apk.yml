@@ -1,4 +1,4 @@
-name: Fábrica Turbo V53 (Anti-Duplicate) 🛡️
+name: Fábrica Turbo V55 (Feature Restore) 💎
 
 on:
   push:
@@ -17,79 +17,68 @@ jobs:
     env:
       JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
       CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. LIMPEZA INICIAL ---
-      - name: 🧹 Limpar Ambiente
+      # --- 1. LIMPEZA E DADOS ---
+      - name: 🧹 Limpar e Ler Dados
         id: dados
         run: |
-          # Remove arquivos da raiz para evitar conflito
           if [ -f package.json ]; then mv package.json package.json.bak; fi
           if [ -f config.xml ]; then mv config.xml config.xml.bak; fi
           
-          # Ler JSON
           cat <<EOF > ler.py
           import json, os
           try:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v53')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v55')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V53')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V55')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO (START) ---
+      # --- 2. NOTIFICAÇÃO ---
       - name: 🔔 Discord (Start)
-        if: env.DISCORD_WEBHOOK != ''
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          cat <<EOF > notify_start.py
+          cat <<EOF > notify.py
           import os, json, urllib.request
-          try:
-              webhook = os.environ.get('DISCORD_WEBHOOK')
-              msg = {"content": "@everyone 🏭 **FÁBRICA V53 INICIADA!**\n⚙️ App: ${{ env.APP_NAME }}"}
-              req = urllib.request.Request(webhook, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
-              urllib.request.urlopen(req)
-          except Exception as e: print(f"Erro Discord: {e}")
+          url = os.environ.get('DISCORD_WEBHOOK')
+          if url:
+              try:
+                  msg = {"content": "@everyone 🏭 **FÁBRICA V55 INICIADA**\n📱 App: ${{ env.APP_NAME }}\n⚙️ Configurando Plugins..."}
+                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except: pass
           EOF
-          python3 notify_start.py
+          python3 notify.py
 
-      # --- 3. SETUP FERRAMENTAS ---
+      # --- 3. SETUP ---
       - name: ☕ Setup Java 17
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🛠️ Setup Android Build Tools
+      - name: 🛠️ Setup Android Tools
         run: |
-          # Aceita licenças
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          
-          # Instala ferramentas exatas
-          echo "Instalando Build Tools 33.0.2..."
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
-          
           npm install -g cordova
-          
-          # Força Gradle 8.7
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CRIAÇÃO DO APP ---
+      # --- 4. CRIAÇÃO ---
       - name: 🏗️ Criando App
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
           
           cd app-temp
-          
-          # PYTHON: Configura XML
+          # Configura XML Base
           cat <<EOF > edit.py
           import xml.etree.ElementTree as ET, os
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
@@ -119,34 +108,51 @@ jobs:
           cd app-temp
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
+
+      # --- 6. PLUGINS INTELIGENTES (AQUI ESTÁ A MÁGICA) ---
+      - name: 🧩 Instalando Plugins Selecionados
+        run: |
+          cd app-temp
+          
+          cat <<EOF > plugins.py
+          import json, os, subprocess
+          try:
+              with open('../features.json') as f: d = json.load(f)
+          except: d = {}
+          
+          def install(plugin):
+              print(f"Instalando: {plugin}")
+              subprocess.run(f"cordova plugin add {plugin}", shell=True)
+
+          if d.get('notification'): install("cordova-plugin-x-toast")
+          if d.get('file'): install("cordova-plugin-file-opener2")
+          if d.get('camera'): install("cordova-plugin-camera")
+          if d.get('geolocation'): install("cordova-plugin-geolocation")
+          if d.get('vibration'): install("cordova-plugin-vibration")
+          if d.get('fullscreen'): install("cordova-plugin-fullscreen")
+          if d.get('microphone'): install("cordova-plugin-media cordova-plugin-media-capture")
+          if d.get('insomnia'): install("cordova-plugin-insomnia")
+          
+          # Sempre instala permissões para garantir acesso a arquivos
+          install("cordova-plugin-android-permissions")
+          EOF
+          python3 plugins.py
+
+          # Finaliza preparação
           cordova prepare android
 
-      # --- 6. CORREÇÃO DE ÍCONES (ANTI-DUPLICATE) ---
-      - name: 🎨 Injetando Ícones (Clean & Inject)
+      # --- 7. ÍCONES & GRADLE ---
+      - name: 🎨 Injetando Ícones e ID
         run: |
           cd app-temp
           ICON="www/icon.png"
-          
           if [ -f "$ICON" ]; then
-             echo "🧹 REMOVENDO XMLs DE ÍCONE (EVITAR DUPLICIDADE)..."
-             # Deleta qualquer arquivo XML de ícone gerado pelo Cordova
              find platforms/android -name "ic_launcher.xml" -delete
-             find platforms/android -name "ic_launcher_round.xml" -delete
-             find platforms/android -name "ic_launcher_foreground.xml" -delete
-             find platforms/android -name "ic_launcher_background.xml" -delete
-             
-             echo "✅ INJETANDO PNGs..."
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_foreground.png \;
-          else
-             echo "⚠️ Ícone não encontrado."
           fi
-
-      # --- 7. FIX GRADLE ID ---
-      - name: 💉 Injeção ID
-        run: |
-          cd app-temp
+          
           GRADLE=$(find platforms/android -name "build.gradle" | grep "app/build.gradle" | head -n 1)
           if [ -f "$GRADLE" ]; then
              sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' "$GRADLE"
@@ -166,8 +172,7 @@ jobs:
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           
           if [ -z "$APK_PATH" ]; then
-             echo "STATUS=FALHA" >> $GITHUB_ENV
-             exit 1
+             echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
              SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
              FINAL="App_${SAFE}_v${{ env.APP_VER }}.apk"
@@ -188,22 +193,20 @@ jobs:
 
       # --- 10. NOTIFICAÇÃO FINAL ---
       - name: 🔔 Discord (Fim)
-        if: always() && env.DISCORD_WEBHOOK != ''
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        if: always()
         run: |
           cat <<EOF > notify_end.py
           import os, json, urllib.request
-          try:
-              webhook = os.environ.get('DISCORD_WEBHOOK')
+          url = os.environ.get('DISCORD_WEBHOOK')
+          if url:
               status = os.environ.get('STATUS')
               if status == 'SUCESSO':
-                  msg = {"content": "@everyone ✅ **SUCESSO! APK PRONTO.**\n[Baixar Aqui](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})"}
+                  msg = {"content": "@everyone ✅ **APK PRONTO!**\n[Baixar]({f'https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/releases/tag/v{os.environ.get('GITHUB_RUN_NUMBER')}'})"}
               else:
-                  msg = {"content": "@everyone ❌ **ERRO CRÍTICO.** Verifique os logs."}
-              
-              req = urllib.request.Request(webhook, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
-              urllib.request.urlopen(req)
-          except Exception as e: print(f"Erro Discord: {e}")
+                  msg = {"content": "@everyone ❌ **ERRO.**"}
+              try:
+                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except: pass
           EOF
           python3 notify_end.py
