@@ -3,36 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica V19 Galactic</title>
+    <title>Fábrica V20 Connection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body{background:#050505;color:#fff;font-family:sans-serif}
+        body{background:#020617;color:#fff;font-family:sans-serif}
         .hidden{display:none!important}
-        .tab-active { border-bottom: 2px solid #8b5cf6; color: #8b5cf6; }
-        #code-editor { background: #111; color: #a5b4fc; font-family: monospace; font-size: 11px; white-space: pre; overflow: auto; }
-        /* Checkbox Customizado */
-        .chk:checked + div { background: #4c1d95; border-color: #8b5cf6; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        #code-editor { background: #0f172a; color: #93c5fd; font-family: monospace; font-size: 11px; white-space: pre; overflow: auto; }
+        .chk:checked + div { background: #1e3a8a; border-color: #3b82f6; color: white; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
     <div id="view-login" class="flex-1 flex items-center justify-center p-6 bg-black z-50 absolute inset-0">
         <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800 shadow-2xl">
-            <i class="fas fa-space-shuttle text-5xl text-purple-600 mb-4 animate-bounce"></i>
-            <h1 class="text-xl font-bold mb-4">Fábrica V19</h1>
-            <input type="password" id="tkn" placeholder="Token GitHub" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-purple-400 font-mono">
-            <button onclick="login()" class="w-full bg-purple-700 font-bold py-3 rounded hover:bg-purple-600 transition">DECOLAR</button>
+            <i class="fas fa-satellite-dish text-5xl text-blue-600 mb-4 animate-pulse"></i>
+            <h1 class="text-xl font-bold mb-4">Fábrica V20</h1>
+            <input type="password" id="tkn" placeholder="Token GitHub" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-blue-400 font-mono">
+            <button onclick="login()" class="w-full bg-blue-700 font-bold py-3 rounded hover:bg-blue-600 transition">CONECTAR</button>
         </div>
     </div>
 
     <div id="view-main" class="hidden flex flex-col h-full">
         <div class="p-3 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
-            <div class="font-bold text-purple-500"><i class="fas fa-rocket mr-2"></i>Galactic</div>
+            <div class="font-bold text-blue-500"><i class="fas fa-wifi mr-2"></i>V20 Pro</div>
             <div class="flex gap-4 text-xs font-bold uppercase tracking-widest">
-                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">App</button>
+                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">Editor</button>
                 <button onclick="tab('adv')" id="tab-adv" class="pb-1 text-gray-500">Extras</button>
-                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">Downloads</button>
+                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">Histórico</button>
             </div>
             <button onclick="logout()" class="text-red-500"><i class="fas fa-power-off"></i></button>
         </div>
@@ -41,17 +40,17 @@
             <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
                 <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none placeholder-gray-600 mb-2">
                 <div class="flex gap-2">
-                    <input type="text" id="pkg" placeholder="com.app.v19" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-300">
+                    <input type="text" id="pkg" placeholder="com.app.v20" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-300">
                     <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-center text-gray-300">
                 </div>
             </div>
 
             <div class="relative group">
                 <div class="flex justify-between items-end mb-1">
-                    <label class="text-[10px] font-bold text-gray-500 uppercase">HTML / Site</label>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Código HTML</label>
                     <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-upload"></i> Upload</button>
                 </div>
-                <textarea id="code-editor" class="w-full h-24 p-2 rounded border border-gray-800 focus:border-purple-500 outline-none resize-none" placeholder="<html>...</html>"></textarea>
+                <textarea id="code-editor" class="w-full h-24 p-2 rounded border border-gray-800 focus:border-blue-500 outline-none resize-none" placeholder="<html>...</html>"></textarea>
                 <input type="file" id="f-index" class="hidden" accept=".html" onchange="loadFile(this)">
             </div>
 
@@ -68,11 +67,11 @@
                 <input type="file" id="f-splash" class="hidden" onchange="preview(this,'prev-splash')">
             </div>
 
-            <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-300 select-none">
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIOMETRIA</div></label>
+            <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-400 select-none">
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIO ID</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">SHARE</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">FALA</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-admob" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ADMOB</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-admob" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ADS</div></label>
                 
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-notif" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">NOTIF</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">CAM</div></label>
@@ -82,32 +81,31 @@
         </div>
 
         <div id="content-adv" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-            
             <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1">
-                    <label class="text-[9px] uppercase font-bold text-gray-500">Formato Final</label>
-                    <select id="build-type" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs">
+                    <label class="text-[9px] uppercase font-bold text-gray-500">Formato</label>
+                    <select id="build-type" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none">
                         <option value="apk">APK (Instalar)</option>
-                        <option value="aab">AAB (Play Store)</option>
+                        <option value="aab">AAB (Loja)</option>
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] uppercase font-bold text-gray-500">Orientação</label>
-                    <select id="orient" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs">
+                    <label class="text-[9px] uppercase font-bold text-gray-500">Tela</label>
+                    <select id="orient" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none">
                         <option value="default">Automático</option>
-                        <option value="portrait">Em Pé (Portrait)</option>
-                        <option value="landscape">Deitado (Landscape)</option>
+                        <option value="portrait">Em Pé</option>
+                        <option value="landscape">Deitado</option>
                     </select>
                 </div>
             </div>
 
             <div class="bg-gray-900 border border-gray-800 rounded p-3 space-y-2">
-                <label class="text-[10px] font-bold text-blue-500 uppercase"><i class="fas fa-dollar-sign mr-1"></i>AdMob (Banner)</label>
+                <label class="text-[10px] font-bold text-blue-500 uppercase"><i class="fas fa-dollar-sign mr-1"></i>AdMob Banner ID</label>
                 <input type="text" id="ad-id" placeholder="ca-app-pub-xxxxxxxx/xxxxxxx" class="w-full bg-black p-2 rounded border border-gray-700 text-xs">
             </div>
 
             <div class="bg-gray-900 border border-gray-800 rounded p-3 space-y-2">
-                <label class="text-[10px] font-bold text-yellow-500 uppercase"><i class="fas fa-key mr-1"></i>Keystore</label>
+                <label class="text-[10px] font-bold text-yellow-500 uppercase"><i class="fas fa-key mr-1"></i>Keystore (Assinatura)</label>
                 <input type="file" id="f-key" class="w-full text-[10px] text-gray-500">
                 <div class="grid grid-cols-3 gap-1">
                     <input type="text" id="kp" placeholder="Senha Store" class="bg-black p-1 rounded border border-gray-700 text-[10px]">
@@ -124,8 +122,8 @@
         <div id="logs" class="px-4 py-1 text-[9px] font-mono text-gray-500 h-6 overflow-hidden bg-black border-t border-gray-800"></div>
 
         <div class="p-4 bg-gray-900 border-t border-gray-800 shrink-0">
-            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-purple-700 to-indigo-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
-                <i class="fas fa-rocket"></i> LANÇAR FÁBRICA
+            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-blue-700 to-indigo-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
+                <i class="fas fa-satellite-dish"></i> INICIAR FABRICAÇÃO
             </button>
         </div>
     </div>
@@ -136,13 +134,13 @@
         const log = m => $('logs').innerText = "> " + m;
 
         window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
-        function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Erro'); }
+        function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Errado'); }
         function logout() { localStorage.removeItem('tk'); location.reload(); }
 
         function tab(t) {
             ['editor','adv','history'].forEach(x => {
                 $(`content-${x}`).classList.add('hidden');
-                $(`tab-${x}`).classList.remove('tab-active','text-purple-500');
+                $(`tab-${x}`).classList.remove('tab-active','text-blue-500');
                 $(`tab-${x}`).classList.add('text-gray-500');
             });
             $(`content-${t}`).classList.remove('hidden');
@@ -167,10 +165,10 @@
             const btn=$('btn-build'); btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> ENVIANDO...';
             try {
                 const html=$('code-editor').value;
-                if(!html) throw "Faltou o HTML!";
+                if(!html) throw "Cole seu código HTML!";
 
-                log("Enviando Core...");
-                await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "HTML");
+                log("Enviando Arquivos...");
+                await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "Core HTML");
                 
                 const fIco=$('f-icon').files[0]; if(fIco) await upload("www/icon.png", await toB64(fIco), "Icon");
                 const fSpl=$('f-splash').files[0]; if(fSpl) await upload("www/splash.png", await toB64(fSpl), "Splash");
@@ -182,22 +180,21 @@
                     sign={storePass:$('kp').value, alias:$('ka').value, aliasPass:$('ap').value};
                 }
 
-                log("Configurando Robô...");
+                log("Enviando Configuração...");
                 const feat = {
-                    appName: $('name').value||"AppV19", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
+                    appName: $('name').value||"AppV20", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
                     hasSplash: !!fSpl, signing: sign,
                     outputType: $('build-type').value, orientation: $('orient').value,
                     admobId: $('ad-id').value,
-                    // Plugins
                     biometric: $('c-bio').checked, share: $('c-share').checked, tts: $('c-tts').checked, admob: $('c-admob').checked,
                     notification: $('c-notif').checked, file: $('c-file').checked, camera: $('c-cam').checked,
                     geolocation: $('c-geo').checked, vibration: $('c-vib').checked, fullscreen: $('c-full').checked
                 };
                 
-                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Start Build");
+                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), `Build: ${feat.appName}`);
                 btn.innerHTML='FABRICANDO...'; monitor();
 
-            } catch(e) { alert(e); btn.disabled=false; btn.innerText="DECOLAR"; }
+            } catch(e) { alert(e); btn.disabled=false; btn.innerText="INICIAR"; }
         }
 
         async function monitor() {
@@ -207,9 +204,11 @@
                 const d=await r.json(); const run=d.workflow_runs[0];
                 if(run.status==="completed") {
                     clearInterval(int);
-                    $('btn-build').disabled=false; $('btn-build').innerText="DECOLAR NOVAMENTE";
+                    $('btn-build').disabled=false; $('btn-build').innerText="NOVA FABRICAÇÃO";
                     if(run.conclusion==="success") { tab('history'); alert("✅ SUCESSO! Veja em Downloads."); }
-                    else alert("❌ FALHA!");
+                    else alert("❌ FALHA! Verifique o GitHub.");
+                } else {
+                    log(run.status === "in_progress" ? "O Robô está trabalhando..." : "Aguardando fila...");
                 }
             }, 4000);
         }
@@ -222,7 +221,7 @@
             l.innerHTML = '';
             d.forEach(rel => {
                 const asset = rel.assets[0]; if(!asset) return;
-                l.innerHTML += `<div class="bg-gray-800 p-2 mb-2 rounded flex justify-between items-center border border-gray-700"><div><div class="font-bold text-xs text-purple-400">${rel.name}</div><div class="text-[9px] text-gray-500">${new Date(rel.published_at).toLocaleDateString()}</div></div><a href="${asset.browser_download_url}" class="bg-purple-600 text-white px-3 py-1 rounded text-xs font-bold">BAIXAR</a></div>`;
+                l.innerHTML += `<div class="bg-gray-800 p-2 mb-2 rounded flex justify-between items-center border border-gray-700"><div><div class="font-bold text-xs text-blue-400">${rel.name}</div><div class="text-[9px] text-gray-500">${new Date(rel.published_at).toLocaleDateString()}</div></div><a href="${asset.browser_download_url}" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold">BAIXAR</a></div>`;
             });
         }
     </script>
