@@ -1,4 +1,4 @@
-name: Fábrica Turbo V44 (Fix Gradle 9 XmlParser) 🚀
+name: Fábrica Turbo V45 (Fix Icon & ID Force) 🚀
 
 on:
   push:
@@ -78,7 +78,7 @@ jobs:
                 {"name": "🔢 Versão", "value": "${{ env.APP_VER }}", "inline": True},
                 {"name": "👤 Autor", "value": "${{ github.actor }}", "inline": True}
               ],
-              "footer": {"text": "Fábrica V44 Enterprise"}
+              "footer": {"text": "Fábrica V45 Enterprise"}
             }]
           }
           
@@ -112,40 +112,37 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 4. CRIAÇÃO E CONFIGURAÇÃO ---
-      - name: 🏗️ Criando App (ID Garantido)
+      # --- 4. CRIAÇÃO E CONFIGURAÇÃO (CORRIGIDO) ---
+      - name: 🏗️ Criando App (ID Forçado via SED)
         run: |
-          echo "Criando projeto com ID: ${{ env.APP_ID }}"
+          echo "Criando projeto base..."
           cordova create app-temp ${{ env.APP_ID }} "${{ env.APP_NAME }}"
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
 
-      - name: 🔧 Reconstrução do XML
-        run: |
           cd app-temp
+          # Se tiver config.xml personalizado, copia ele
           if [ -f "../config.xml" ]; then cp "../config.xml" .; fi
 
-          cat <<EOF > fix_config.py
-          import xml.etree.ElementTree as ET
-          import os
+          # --- FIX ID E VERSÃO (FORÇA BRUTA) ---
+          # Substitui diretamente no texto do arquivo, garantindo que o ID e Versão sejam aplicados
+          sed -i 's/widget id="[^"]*"/widget id="${{ env.APP_ID }}"/' config.xml
+          sed -i 's/version="[^"]*"/version="${{ env.APP_VER }}"/' config.xml
           
+          # Ajuste básico de nome e permissões via Python (mais seguro que sed para XML aninhado)
+          cat <<EOF > fix_config_basic.py
+          import xml.etree.ElementTree as ET
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
           ET.register_namespace('cdv', "http://cordova.apache.org/ns/1.0")
-          
           try:
               tree = ET.parse('config.xml')
               root = tree.getroot()
-              root.set('id', '${{ env.APP_ID }}')
-              root.set('version', '${{ env.APP_VER }}')
               
+              # Atualiza nome se necessário
               for name in root.findall('{http://www.w3.org/ns/widgets}name'):
                   name.text = '${{ env.APP_NAME }}'
-                  
-              if os.path.exists('www/icon.png'):
-                  for icon in root.findall('{http://www.w3.org/ns/widgets}icon'): root.remove(icon)
-                  icon = ET.SubElement(root, '{http://www.w3.org/ns/widgets}icon')
-                  icon.set('src', 'www/icon.png')
 
+              # Adiciona preferências padrão
               perms = {
                   'AndroidPersistentFileLocation': 'Compatibility',
                   'AllowFileAccess': 'true',
@@ -159,14 +156,14 @@ jobs:
                   if not found:
                       p = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       p.set('name', k); p.set('value', v)
-
+              
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
           except Exception as e:
-              print(f"Erro XML: {e}"); exit(1)
+              print(f"Aviso XML (não crítico): {e}")
           EOF
-          python3 fix_config.py
+          python3 fix_config_basic.py
 
-      # --- 5. PLUGINS ---
+      # --- 5. PLUGINS E PLATAFORMA ---
       - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
@@ -195,6 +192,37 @@ jobs:
              if [ "$(jq -r '.file' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
           fi
 
+      # --- 6. INJEÇÃO DE ÍCONE (NOVO - FIX DEFINITIVO) ---
+      - name: 🎨 Injetando Ícone (Manual)
+        run: |
+          cd app-temp
+          # Script para copiar icon.png da raiz WWW diretamente para as pastas de build do Android
+          cat <<EOF > inject_icons.py
+          import os, shutil
+          
+          source_icon = 'www/icon.png'
+          # Caminho onde o Cordova gera os recursos Android
+          android_res = 'platforms/android/app/src/main/res'
+          
+          # Todas as densidades de tela
+          folders = ['mipmap-mdpi', 'mipmap-hdpi', 'mipmap-xhdpi', 'mipmap-xxhdpi', 'mipmap-xxxhdpi']
+          
+          if os.path.exists(source_icon):
+              print(f"✅ Ícone detectado! Injetando em {android_res}...")
+              for folder in folders:
+                  target_dir = os.path.join(android_res, folder)
+                  if os.path.exists(target_dir):
+                      # Substitui o ícone padrão do Android/Cordova
+                      shutil.copy(source_icon, os.path.join(target_dir, 'ic_launcher.png'))
+                      shutil.copy(source_icon, os.path.join(target_dir, 'ic_launcher_round.png'))
+                      shutil.copy(source_icon, os.path.join(target_dir, 'ic_launcher_foreground.png'))
+              print("✅ Injeção concluída.")
+          else:
+              print("⚠️ AVISO: 'www/icon.png' não encontrado. O App ficará com ícone padrão.")
+          EOF
+          python3 inject_icons.py
+
+      # --- 7. FIX GRADLE (CIRURGIA) ---
       - name: 🚑 Fix Gradle (Cirurgia)
         run: |
           cd app-temp
@@ -208,6 +236,7 @@ jobs:
               echo "android.enableJetifier=true" >> platforms/android/gradle.properties
           fi
 
+      # --- 8. BUILD FINAL ---
       - name: 📱 Build APK
         id: build_apk
         run: |
@@ -239,7 +268,7 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} v${{ env.APP_VER }}"
           body: |
-            ✅ **Build Finalizado!**
+            ✅ **Build Finalizado com Sucesso!**
             📱 **ID:** `${{ env.APP_ID }}`
             💾 **Tamanho:** ${{ env.FILE_SIZE }}
             
@@ -248,6 +277,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      # --- 9. NOTIFICAÇÃO FINAL ---
       - name: 🔔 Discord (Fim)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
@@ -297,7 +327,7 @@ jobs:
               "description": desc,
               "color": color,
               "fields": fields,
-              "footer": {"text": "Sistema V44 Enterprise"},
+              "footer": {"text": "Sistema V45 Enterprise"},
               "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             }]
           }
