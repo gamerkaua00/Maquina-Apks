@@ -1,4 +1,4 @@
-name: Fábrica Turbo V51 (Clean Slate) 🧹
+name: Fábrica Turbo V52 (Titan Fix) 🛡️
 
 on:
   push:
@@ -16,156 +16,167 @@ jobs:
     
     env:
       JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
+      # Força o Cordova a usar este Gradle, ignorando versões antigas
+      CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
 
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. PREPARAÇÃO E LIMPEZA (CORREÇÃO DE CONFLITO) ---
-      - name: 🧹 Limpar Ambiente e Ler Dados
+      # --- 1. LIMPEZA E DADOS ---
+      - name: 🧹 Limpar Ambiente e Ler JSON
         id: dados
         run: |
-          # 1. Esconde arquivos da raiz que confundem o Cordova
+          # Remove arquivos da raiz que causam conflito
           if [ -f package.json ]; then mv package.json package.json.bak; fi
           if [ -f config.xml ]; then mv config.xml config.xml.bak; fi
-          if [ -d node_modules ]; then rm -rf node_modules; fi
           
-          # 2. Processa o JSON do Painel
+          # Lê o JSON enviado pelo Painel
           cat <<EOF > ler.py
           import json, os
           try:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v51')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.titan')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V51')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App Titan')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO ---
+      # --- 2. NOTIFICAÇÃO DISCORD (PYTHON) ---
       - name: 🔔 Discord (Start)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"@everyone 🧹 **FÁBRICA V51 (MODO LIMPO)**\n\n⚙️ **App:** ${{ env.APP_NAME }}\n🆔 **ID:** \`${{ env.APP_ID }}\`\"}" \
-          $DISCORD_WEBHOOK || true
+          cat <<EOF > notify.py
+          import os, json, urllib.request, sys
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          if not webhook: print("Sem webhook"); sys.exit(0)
+          
+          msg = {
+              "username": "Fábrica Titan 🤖",
+              "content": "@everyone 🏭 **PRODUÇÃO INICIADA (V52)**",
+              "embeds": [{
+                  "title": "⚙️ Processando: ${{ env.APP_NAME }}",
+                  "color": 3447003,
+                  "fields": [
+                      {"name": "ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
+                      {"name": "Versão", "value": "${{ env.APP_VER }}", "inline": True}
+                  ]
+              }]
+          }
+          
+          try:
+              req = urllib.request.Request(webhook, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+              urllib.request.urlopen(req)
+              print("✅ Notificação enviada!")
+          except Exception as e:
+              print(f"❌ Erro Discord: {e}")
+          EOF
+          python3 notify.py
 
-      # --- 3. SETUP AMBIENTE ---
-      - name: ☕ Setup Java & Cordova
+      # --- 3. SETUP COMPLETO (FIX BUILD TOOLS) ---
+      - name: ☕ Setup Java 17
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🛠️ Instalar Ferramentas
+      - name: 🛠️ Setup Android SDK & Build Tools (CRÍTICO)
         run: |
+          # Instala SDK Manager e Licenças
+          echo "Aceitando licenças..."
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          
+          echo "Instalando Build Tools 33.0.2 (Obrigatório)..."
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
+          
+          echo "Instalando Cordova..."
           npm install -g cordova
+
+          # Força Gradle 8.7
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
       # --- 4. CRIAÇÃO DO APP ---
-      - name: 🏗️ Criando App (Ambiente Isolado)
+      - name: 🏗️ Criando App (Isolated)
         run: |
-          echo "Criando projeto Cordova..."
+          echo "Criando projeto..."
           cordova create app-temp ${{ env.APP_ID }} "TempName"
-          
-          # Copia arquivos do usuário (www) para dentro do app
           cp -r www/* app-temp/www/
           
           cd app-temp
           
-          # --- EDIÇÃO XML SEGURA (PYTHON) ---
-          cat <<EOF > edit_xml.py
-          import xml.etree.ElementTree as ET
-          import os
-          
-          app_id = os.environ.get('APP_ID')
-          app_ver = os.environ.get('APP_VER')
-          app_name = os.environ.get('APP_NAME')
+          # PYTHON: Edita XML com segurança
+          cat <<EOF > edit.py
+          import xml.etree.ElementTree as ET, os
           
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
-          
           try:
               tree = ET.parse('config.xml')
               root = tree.getroot()
-              root.set('id', app_id)
-              root.set('version', app_ver)
               
-              for name in root.findall('{http://www.w3.org/ns/widgets}name'):
-                  name.text = app_name
+              root.set('id', os.environ['APP_ID'])
+              root.set('version', os.environ['APP_VER'])
               
-              # Permissões
-              prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true'}
-              for k, v in prefs.items():
+              for n in root.findall('{http://www.w3.org/ns/widgets}name'):
+                  n.text = os.environ['APP_NAME']
+              
+              # Preferências essenciais
+              prefs = {'AndroidPersistentFileLocation':'Compatibility', 'AllowFileAccess':'true', 'AndroidInsecureFileModeEnabled': 'true'}
+              for k,v in prefs.items():
                   found = False
                   for p in root.findall('{http://www.w3.org/ns/widgets}preference'):
-                      if p.get('name') == k: p.set('value', v); found = True
+                      if p.get('name') == k: p.set('value',v); found=True
                   if not found:
-                      new_p = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
-                      new_p.set('name', k); new_p.set('value', v)
-
+                      el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
+                      el.set('name',k); el.set('value',v)
+                      
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-              print("✅ XML Editado com Sucesso!")
+              print("✅ XML Ajustado.")
           except Exception as e:
               print(f"❌ Erro XML: {e}"); exit(1)
           EOF
-          python3 edit_xml.py
+          python3 edit.py
 
       # --- 5. PLATAFORMA ---
       - name: 🔌 Adicionando Android
         run: |
           cd app-temp
-          
-          # Garante que estamos limpos
-          rm -rf platforms/android
-          
-          echo "Adicionando Android..."
+          # Adiciona plataforma
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
           
-          echo "Preparando arquivos..."
+          # Prepara arquivos (cria o build.gradle)
           cordova prepare android
-          
-          # DEBUG: Mostra se a pasta foi criada
-          if [ -d "platforms/android" ]; then
-              echo "✅ Pasta 'platforms/android' criada com sucesso!"
-          else
-              echo "❌ ERRO: Pasta não criada. Listando diretório atual:"
-              ls -la
-              exit 1
-          fi
 
-      # --- 6. ÍCONES (FIND INFALÍVEL) ---
+      # --- 6. INJEÇÃO DE ÍCONES (FIND) ---
       - name: 🎨 Injetando Ícones
         run: |
           cd app-temp
           ICON="www/icon.png"
-          
           if [ -f "$ICON" ]; then
-             echo "✅ Ícone encontrado. Injetando..."
-             # Usa find para achar TODAS as pastas de recurso, garantindo substituição
+             echo "✅ Ícone detectado. Injetando..."
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_foreground.png \;
           else
-             echo "⚠️ 'www/icon.png' não encontrado. App usará ícone padrão."
+             echo "⚠️ Ícone não enviado."
           fi
 
-      # --- 7. INJEÇÃO GRADLE ---
+      # --- 7. INJEÇÃO NO GRADLE (ID FIX) ---
       - name: 💉 Injeção ID no Gradle
         run: |
           cd app-temp
-          # Procura build.gradle em qualquer subpasta
           GRADLE=$(find platforms/android -name "build.gradle" | grep "app/build.gradle" | head -n 1)
           
           if [ -f "$GRADLE" ]; then
-             echo "🔧 Gradle encontrado em: $GRADLE"
+             echo "🔧 Configurando Gradle: $GRADLE"
              sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' "$GRADLE"
              sed -i 's/namespace ".*"/namespace "${{ env.APP_ID }}"/' "$GRADLE"
           else
-             echo "⚠️ build.gradle não achado. Verifique os logs."
+             echo "⚠️ ERRO: build.gradle não encontrado."
           fi
 
       # --- 8. BUILD ---
@@ -173,11 +184,14 @@ jobs:
         id: build_apk
         run: |
           cd app-temp
-          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           
+          # Garante configs no properties
+          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
+          echo "android.enableJetifier=true" >> platforms/android/gradle.properties
+          
+          # Compila
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
-          # Busca o APK onde quer que ele esteja
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           
           if [ -z "$APK_PATH" ]; then
@@ -201,15 +215,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO FINAL ---
+      # --- 10. NOTIFICAÇÃO FINAL (PYTHON) ---
       - name: 🔔 Discord (Fim)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          if [ "${{ env.STATUS }}" == "SUCESSO" ]; then
-             MSG="@everyone ✅ **SUCESSO!**\n📱 App: ${{ env.APP_NAME }}\n📂 [BAIXAR APK](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})"
-          else
-             MSG="@everyone ❌ **ERRO!** Falha na compilação. Verifique os logs."
-          fi
-          curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" $DISCORD_WEBHOOK || true
+          cat <<EOF > notify_end.py
+          import os, json, urllib.request
+          webhook = os.environ.get('DISCORD_WEBHOOK')
+          status = os.environ.get('STATUS')
+          
+          if status == 'SUCESSO':
+              color = 5763712
+              title = "✅ SUCESSO: APK PRONTO"
+              desc = f"App: {os.environ.get('APP_NAME')}\n[Baixar Aqui](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/releases/tag/v{os.environ.get('GITHUB_RUN_NUMBER')})"
+          else:
+              color = 15548997
+              title = "❌ FALHA CRÍTICA"
+              desc = "O build falhou. Verifique os logs do GitHub."
+              
+          msg = {
+              "username": "Fábrica Titan 🤖",
+              "embeds": [{ "title": title, "description": desc, "color": color }]
+          }
+          
+          try:
+              req = urllib.request.Request(webhook, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+              urllib.request.urlopen(req)
+          except: pass
+          EOF
+          python3 notify_end.py
