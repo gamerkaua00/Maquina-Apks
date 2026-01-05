@@ -1,213 +1,107 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fábrica V68 Titan</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body{background:#000;color:#e2e8f0;font-family:sans-serif}
-        .hidden{display:none!important}
-        .tab-active{border-bottom:2px solid #10b981;color:#10b981}
-        #code-editor{background:#111;color:#6ee7b7;font-family:monospace;font-size:11px;white-space:pre;overflow:auto}
-        .chk:checked+div{background:#064e3b;border-color:#10b981;color:#fff}
-    </style>
-</head>
-<body class="flex flex-col h-screen overflow-hidden">
+<script>
+    const CFG = { u: "gamerkaua00", r: "Maquina-Apks" };
+    const $ = id => document.getElementById(id);
+    const log = m => $('logs').innerText = "> " + m;
 
-    <div id="view-login" class="flex-1 flex items-center justify-center p-6 bg-black z-50 absolute inset-0">
-        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
-            <i class="fas fa-robot text-6xl text-emerald-500 mb-4 animate-bounce"></i>
-            <h1 class="text-2xl font-bold mb-4 text-emerald-500">TITAN V68</h1>
-            <input type="password" id="tkn" placeholder="Token GitHub" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-emerald-400 font-mono text-sm">
-            <button onclick="login()" class="w-full bg-emerald-700 font-bold py-3.5 rounded hover:bg-emerald-600 shadow-lg">ENTRAR</button>
-        </div>
-    </div>
+    window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
+    function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Inválido'); }
+    function logout() { localStorage.removeItem('tk'); location.reload(); }
 
-    <div id="view-main" class="hidden flex flex-col h-full">
-        <div class="p-3 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
-            <div class="font-bold text-emerald-500 flex items-center gap-2"><i class="fas fa-shield-alt"></i> V68</div>
-            <div class="flex gap-4 text-xs font-bold uppercase tracking-widest">
-                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">App</button>
-                <button onclick="tab('plugins')" id="tab-plugins" class="pb-1 text-gray-500">Plugins+</button>
-                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">Builds</button>
-            </div>
-            <button onclick="logout()" class="text-gray-500 hover:text-red-500"><i class="fas fa-power-off"></i></button>
-        </div>
+    function tab(t) {
+        ['editor','plugins','history'].forEach(x => { $(`content-${x}`).classList.add('hidden'); $(`tab-${x}`).classList.remove('tab-active','text-emerald-500'); });
+        $(`content-${t}`).classList.remove('hidden'); $(`tab-${t}`).classList.add('tab-active');
+        if(t==='history') loadHistory();
+    }
 
-        <div id="content-editor" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
-                <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none mb-2 placeholder-gray-700">
-                <div class="flex gap-2">
-                    <input type="text" id="pkg" placeholder="com.app.v68" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400">
-                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs text-center text-gray-400">
-                </div>
-            </div>
+    function preview(input, img) { if(input.files[0]){ const r=new FileReader(); r.onload=e=>{ $(img).src=e.target.result; $(img).classList.remove('hidden'); }; r.readAsDataURL(input.files[0]); } }
+    function loadFile(input) { if(input.files[0]){ const r=new FileReader(); r.onload=e=> $('code-editor').value=e.target.result; r.readAsText(input.files[0]); } }
+    const toB64 = f => new Promise((r,j)=>{const d=new FileReader();d.readAsDataURL(f);d.onload=()=>r(d.result.split(',')[1]);d.onerror=j;});
 
-            <div class="relative group">
-                <div class="flex justify-between items-end mb-1">
-                    <label class="text-[10px] font-bold text-gray-500">HTML</label>
-                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-upload mr-1"></i> Carregar</button>
-                </div>
-                <textarea id="code-editor" class="w-full h-32 p-2 rounded border border-gray-800 outline-none resize-none focus:border-emerald-900" placeholder="<html>...</html>"></textarea>
-                <input type="file" id="f-index" class="hidden" accept=".html" onchange="loadFile(this)">
-            </div>
+    async function upload(path, content, msg) {
+        const t=localStorage.getItem('tk');
+        const url=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${path}`;
+        let sha=null; try{const c=await fetch(url,{headers:{Authorization:`token ${t}`}});if(c.ok)sha=(await c.json()).sha;}catch(e){}
+        const body={message:msg,content:content,branch:"main"}; if(sha)body.sha=sha;
+        await fetch(url,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    }
 
-            <div class="grid grid-cols-2 gap-2">
-                <div onclick="$('f-icon').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-emerald-500">
-                    <i class="fas fa-image text-xl text-gray-600 mb-1 group-hover:text-emerald-500"></i><span class="text-[8px] font-bold text-gray-500">ÍCONE</span>
-                    <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover hidden">
-                </div>
-                <div onclick="$('f-splash').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-emerald-500">
-                    <i class="fas fa-mobile text-xl text-gray-600 mb-1 group-hover:text-emerald-500"></i><span class="text-[8px] font-bold text-gray-500">SPLASH</span>
-                    <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover hidden">
-                </div>
-                <input type="file" id="f-icon" class="hidden" accept="image/png" onchange="preview(this,'prev-icon')">
-                <input type="file" id="f-splash" class="hidden" accept="image/png" onchange="preview(this,'prev-splash')">
-            </div>
+    async function build() {
+        const btn=$('btn-build'); 
+        
+        // --- 1. VALIDAÇÃO RIGOROSA DO ID (CORREÇÃO DO ERRO DO ANDROID) ---
+        const pkgInput = $('pkg').value || "com.app.v68";
+        // Regex: Começa com letra, tem ponto no meio, termina com letra/número
+        const idValido = /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$/.test(pkgInput.trim().toLowerCase());
+
+        if (!idValido) {
+            alert("❌ ERRO NO ID!\n\nO ID do pacote deve ter pontos e ser minúsculo.\nCorreto: com.kaua.app\nErrado: AppKaua");
+            $('pkg').focus();
+            $('pkg').style.borderColor = "red";
+            return; // PARA TUDO AQUI
+        }
+        $('pkg').style.borderColor = "#374151"; // Volta a cor normal
+
+        btn.disabled=true; btn.innerText="ENVIANDO...";
+        try {
+            const html=$('code-editor').value;
+            if(!html) throw "Cole o HTML!";
+
+            log("Subindo Core...");
+            await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "Core Update");
+            const fIco=$('f-icon').files[0]; if(fIco) await upload("www/icon.png", await toB64(fIco), "Icon Update");
+            const fSpl=$('f-splash').files[0]; if(fSpl) await upload("www/splash.png", await toB64(fSpl), "Splash Update");
+
+            log("Configurando Bot...");
+            const feat = {
+                appName: $('name').value||"AppV68", 
+                packageId: pkgInput.trim().toLowerCase(), // Envia o ID tratado
+                version: $('ver').value||"1.0.0",
+                hasSplash: !!fSpl, outputType: $('build-type')?.value||'apk', orientation: $('orient').value, admobId: $('ad-id').value,
+                statusBarColor: $('status-color').value,
+                // Plugins
+                notification: $('c-notif').checked, camera: $('c-cam').checked, file: $('c-file').checked,
+                geolocation: $('c-geo').checked, vibration: $('c-vib').checked, microphone: $('c-mic').checked,
+                biometric: $('c-bio').checked, share: $('c-share').checked, tts: $('c-tts').checked,
+                flashlight: $('c-flash').checked, battery: $('c-bat').checked, 
+                // Novos V68
+                brightness: $('c-bright').checked, badge: $('c-badge').checked, email: $('c-email').checked,
+                admob: !!$('ad-id').value
+            };
             
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="text-[9px] font-bold text-gray-500">ORIENTAÇÃO</label>
-                    <select id="orient" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-300">
-                        <option value="default">Auto</option>
-                        <option value="portrait">Em Pé</option>
-                        <option value="landscape">Deitado</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[9px] font-bold text-gray-500">COR BARRA</label>
-                    <input type="color" id="status-color" value="#000000" class="w-full h-8 bg-gray-900 border border-gray-800 rounded cursor-pointer">
-                </div>
-            </div>
-        </div>
+            // O commit message "Build Trigger" é importante
+            await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build Trigger V68");
+            btn.innerText="FABRICANDO..."; monitor();
 
-        <div id="content-plugins" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-            <h3 class="text-[10px] font-bold text-emerald-500 uppercase border-b border-emerald-900/30 pb-1">Essenciais</h3>
-            <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-400 select-none">
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-notif" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">NOTIF</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">CAM</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">FILE</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-geo" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">GPS</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VIB</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-mic" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">MIC</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-flash" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">LUZ</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-bat" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BAT</div></label>
-            </div>
+        } catch(e) { alert(e); btn.disabled=false; btn.innerText="TENTAR DE NOVO"; }
+    }
 
-            <h3 class="text-[10px] font-bold text-emerald-500 uppercase border-b border-emerald-900/30 pb-1 pt-2">Novos V68</h3>
-            <div class="grid grid-cols-3 gap-2 text-[8px] font-bold text-gray-400 select-none">
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-bright" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BRILHO</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-badge" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BADGE</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-email" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">EMAIL</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIOMETRIA</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">FALA TTS</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">SHARE</div></label>
-            </div>
+    async function monitor() {
+        const t=localStorage.getItem('tk');
+        const int = setInterval(async()=>{
+            // Monitora apenas o workflow que foi disparado recentemente
+            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`,{headers:{Authorization:`token ${t}`}});
+            const d=await r.json(); const run=d.workflow_runs[0];
             
-            <div class="mt-4 bg-gray-900 border border-gray-800 rounded p-3">
-                <label class="text-[10px] font-bold text-blue-500 block mb-1">ADMOB (Banner ID)</label>
-                <input type="text" id="ad-id" placeholder="ca-app-pub..." class="w-full bg-black p-2 rounded border border-gray-700 text-xs text-gray-300">
-            </div>
-        </div>
+            if(run.status==="completed") {
+                clearInterval(int);
+                $('btn-build').disabled=false; $('btn-build').innerText="NOVA ORDEM";
+                if(run.conclusion==="success") { tab('history'); alert("✅ SUCESSO!"); }
+                else alert("❌ FALHA! O GitHub encontrou um erro.");
+            } else {
+                log(run.status === "in_progress" ? "O Robô está compilando..." : "Na fila de espera...");
+            }
+        }, 5000); // Aumentei para 5s para evitar flood na API
+    }
 
-        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4"><div id="hist-list" class="text-center text-xs mt-10 text-gray-600">Buscando builds...</div></div>
-        <div id="logs" class="px-4 py-1 text-[9px] font-mono text-gray-500 h-6 overflow-hidden bg-black border-t border-gray-800 truncate"></div>
-
-        <div class="p-4 bg-gray-900 border-t border-gray-800 shrink-0">
-            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-emerald-700 to-emerald-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
-                <i class="fas fa-play"></i> INICIAR V68
-            </button>
-        </div>
-    </div>
-
-    <script>
-        const CFG = { u: "gamerkaua00", r: "Maquina-Apks" };
-        const $ = id => document.getElementById(id);
-        const log = m => $('logs').innerText = "> " + m;
-
-        window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
-        function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Inválido'); }
-        function logout() { localStorage.removeItem('tk'); location.reload(); }
-
-        function tab(t) {
-            ['editor','plugins','history'].forEach(x => { $(`content-${x}`).classList.add('hidden'); $(`tab-${x}`).classList.remove('tab-active','text-emerald-500'); });
-            $(`content-${t}`).classList.remove('hidden'); $(`tab-${t}`).classList.add('tab-active');
-            if(t==='history') loadHistory();
-        }
-
-        function preview(input, img) { if(input.files[0]){ const r=new FileReader(); r.onload=e=>{ $(img).src=e.target.result; $(img).classList.remove('hidden'); }; r.readAsDataURL(input.files[0]); } }
-        function loadFile(input) { if(input.files[0]){ const r=new FileReader(); r.onload=e=> $('code-editor').value=e.target.result; r.readAsText(input.files[0]); } }
-        const toB64 = f => new Promise((r,j)=>{const d=new FileReader();d.readAsDataURL(f);d.onload=()=>r(d.result.split(',')[1]);d.onerror=j;});
-
-        async function upload(path, content, msg) {
-            const t=localStorage.getItem('tk');
-            const url=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${path}`;
-            let sha=null; try{const c=await fetch(url,{headers:{Authorization:`token ${t}`}});if(c.ok)sha=(await c.json()).sha;}catch(e){}
-            const body={message:msg,content:content,branch:"main"}; if(sha)body.sha=sha;
-            await fetch(url,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
-        }
-
-        async function build() {
-            const btn=$('btn-build'); btn.disabled=true; btn.innerText="ENVIANDO...";
-            try {
-                const html=$('code-editor').value;
-                if(!html) throw "Cole o HTML!";
-
-                log("Subindo Core...");
-                await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "Core");
-                const fIco=$('f-icon').files[0]; if(fIco) await upload("www/icon.png", await toB64(fIco), "Icon");
-                const fSpl=$('f-splash').files[0]; if(fSpl) await upload("www/splash.png", await toB64(fSpl), "Splash");
-
-                log("Configurando Bot...");
-                const feat = {
-                    appName: $('name').value||"AppV68", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
-                    hasSplash: !!fSpl, outputType: $('build-type')?.value||'apk', orientation: $('orient').value, admobId: $('ad-id').value,
-                    statusBarColor: $('status-color').value,
-                    // Plugins
-                    notification: $('c-notif').checked, camera: $('c-cam').checked, file: $('c-file').checked,
-                    geolocation: $('c-geo').checked, vibration: $('c-vib').checked, microphone: $('c-mic').checked,
-                    biometric: $('c-bio').checked, share: $('c-share').checked, tts: $('c-tts').checked,
-                    flashlight: $('c-flash').checked, battery: $('c-bat').checked, 
-                    // Novos V68
-                    brightness: $('c-bright').checked, badge: $('c-badge').checked, email: $('c-email').checked,
-                    admob: !!$('ad-id').value
-                };
-                
-                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build V68");
-                btn.innerText="FABRICANDO..."; monitor();
-
-            } catch(e) { alert(e); btn.disabled=false; btn.innerText="TENTAR DE NOVO"; }
-        }
-
-        async function monitor() {
-            const t=localStorage.getItem('tk');
-            const int = setInterval(async()=>{
-                const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`,{headers:{Authorization:`token ${t}`}});
-                const d=await r.json(); const run=d.workflow_runs[0];
-                if(run.status==="completed") {
-                    clearInterval(int);
-                    $('btn-build').disabled=false; $('btn-build').innerText="NOVA ORDEM";
-                    if(run.conclusion==="success") { tab('history'); alert("✅ SUCESSO!"); }
-                    else alert("❌ FALHA! Verifique o GitHub.");
-                } else {
-                    log(run.status === "in_progress" ? "O Robô está trabalhando..." : "Na fila...");
-                }
-            }, 4000);
-        }
-
-        async function loadHistory() {
-            const l=$('hist-list'); l.innerHTML='Carregando...';
-            const t=localStorage.getItem('tk');
-            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases?per_page=5`,{headers:{Authorization:`token ${t}`}});
-            const d=await r.json();
-            l.innerHTML = '';
-            d.forEach(rel => {
-                const asset = rel.assets[0]; if(!asset) return;
-                l.innerHTML += `<div class="bg-gray-800 p-2 mb-2 rounded flex justify-between items-center border border-gray-700"><div><div class="font-bold text-xs text-emerald-400">${rel.name}</div><div class="text-[9px] text-gray-500">${new Date(rel.published_at).toLocaleDateString()}</div></div><a href="${asset.browser_download_url}" class="bg-emerald-700 text-white px-3 py-1 rounded text-xs font-bold">BAIXAR</a></div>`;
-            });
-        }
-    </script>
-</body>
-</html>
+    async function loadHistory() {
+        const l=$('hist-list'); l.innerHTML='Carregando...';
+        const t=localStorage.getItem('tk');
+        const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases?per_page=5`,{headers:{Authorization:`token ${t}`}});
+        const d=await r.json();
+        l.innerHTML = '';
+        d.forEach(rel => {
+            const asset = rel.assets[0]; if(!asset) return;
+            l.innerHTML += `<div class="bg-gray-800 p-2 mb-2 rounded flex justify-between items-center border border-gray-700"><div><div class="font-bold text-xs text-emerald-400">${rel.name}</div><div class="text-[9px] text-gray-500">${new Date(rel.published_at).toLocaleDateString()}</div></div><a href="${asset.browser_download_url}" class="bg-emerald-700 text-white px-3 py-1 rounded text-xs font-bold">BAIXAR</a></div>`;
+        });
+    }
+</script>
