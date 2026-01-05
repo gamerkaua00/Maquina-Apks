@@ -3,64 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fábrica V66 Evolution</title>
+    <title>Fábrica V67 God Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body{background:#000;color:#e5e7eb;font-family:sans-serif}
+        body{background:#020617;color:#e2e8f0;font-family:sans-serif}
         .hidden{display:none!important}
-        .tab-active{border-bottom:2px solid #f59e0b;color:#f59e0b}
-        #code-editor{background:#111;color:#fcd34d;font-family:monospace;font-size:11px;white-space:pre;overflow:auto}
-        .chk:checked+div{background:#451a03;border-color:#f59e0b;color:#fff}
+        .tab-active{border-bottom:2px solid #8b5cf6;color:#8b5cf6}
+        #code-editor{background:#0f172a;color:#a78bfa;font-family:monospace;font-size:11px;white-space:pre;overflow:auto}
+        .chk:checked+div{background:#4c1d95;border-color:#8b5cf6;color:#fff;box-shadow:0 0 10px #8b5cf6}
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
     <div id="view-login" class="flex-1 flex items-center justify-center p-6 bg-black z-50 absolute inset-0">
-        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
-            <i class="fas fa-dna text-6xl text-amber-500 mb-4 animate-pulse"></i>
-            <h1 class="text-xl font-bold mb-4 text-amber-500">V66 EVOLUTION</h1>
-            <input type="password" id="tkn" placeholder="GitHub Token" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-amber-500 font-mono text-sm">
-            <button onclick="login()" class="w-full bg-amber-700 font-bold py-3 rounded hover:bg-amber-600 shadow-lg transition">ENTRAR</button>
+        <div class="bg-gray-900 p-8 rounded-2xl w-full max-w-sm text-center border border-gray-800 shadow-[0_0_50px_rgba(139,92,246,0.2)]">
+            <i class="fas fa-meteor text-6xl text-purple-600 mb-4 animate-spin-slow"></i>
+            <h1 class="text-2xl font-black mb-1 text-purple-500">GOD MODE V67</h1>
+            <p class="text-[10px] text-gray-500 mb-6 uppercase tracking-widest">Sistema Supremo</p>
+            <input type="password" id="tkn" placeholder="GitHub Token" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-purple-400 font-mono text-sm focus:border-purple-500 outline-none">
+            <button onclick="login()" class="w-full bg-purple-700 font-bold py-3.5 rounded hover:bg-purple-600 transition shadow-lg">INICIAR SISTEMA</button>
         </div>
     </div>
 
     <div id="view-main" class="hidden flex flex-col h-full">
-        <div class="p-3 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
-            <div class="font-bold text-amber-500"><i class="fas fa-project-diagram mr-2"></i>V66</div>
-            <div class="flex gap-4 text-xs font-bold uppercase tracking-widest">
-                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">App</button>
-                <button onclick="tab('interface')" id="tab-interface" class="pb-1 text-gray-500">UI/UX</button>
-                <button onclick="tab('plugins')" id="tab-plugins" class="pb-1 text-gray-500">Plugins</button>
+        <div class="p-4 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
+            <div class="font-bold text-purple-500 flex items-center gap-2"><i class="fas fa-crown"></i> V67</div>
+            <div class="flex gap-5 text-xs font-bold uppercase tracking-widest">
+                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1 transition">App</button>
+                <button onclick="tab('mega')" id="tab-mega" class="pb-1 text-gray-500 transition">Plugins+</button>
+                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500 transition">Builds</button>
             </div>
-            <button onclick="logout()" class="text-gray-500 hover:text-red-500"><i class="fas fa-power-off"></i></button>
+            <button onclick="logout()" class="text-gray-500 hover:text-red-500 transition"><i class="fas fa-power-off"></i></button>
         </div>
 
-        <div id="content-editor" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
-                <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none mb-2 placeholder-gray-700">
+        <div id="content-editor" class="flex-1 overflow-y-auto p-5 space-y-5">
+            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <button onclick="template('blank')" class="bg-gray-800 px-3 py-1 rounded text-[9px] border border-gray-700 hover:border-purple-500 whitespace-nowrap">📄 Em Branco</button>
+                <button onclick="template('game')" class="bg-gray-800 px-3 py-1 rounded text-[9px] border border-gray-700 hover:border-purple-500 whitespace-nowrap">🎮 Jogo HTML5</button>
+                <button onclick="template('web')" class="bg-gray-800 px-3 py-1 rounded text-[9px] border border-gray-700 hover:border-purple-500 whitespace-nowrap">🌐 Site Wrapper</button>
+            </div>
+
+            <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800 shadow-inner">
+                <input type="text" id="name" placeholder="Nome do Aplicativo" class="w-full bg-transparent text-xl font-bold outline-none mb-3 placeholder-gray-700 text-purple-100">
                 <div class="flex gap-2">
-                    <input type="text" id="pkg" placeholder="com.app.v66" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400">
-                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs text-center text-gray-400">
+                    <input type="text" id="pkg" placeholder="com.seu.app" class="w-2/3 bg-black/30 p-2.5 rounded border border-gray-700 text-xs font-mono text-gray-400 focus:border-purple-500 outline-none">
+                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2.5 rounded border border-gray-700 text-xs text-center text-gray-400 focus:border-purple-500 outline-none">
                 </div>
             </div>
 
             <div class="relative group">
                 <div class="flex justify-between items-end mb-1">
-                    <label class="text-[10px] font-bold text-gray-500">HTML</label>
-                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-file-code mr-1"></i> Carregar</button>
+                    <label class="text-[10px] font-bold text-gray-500">CÓDIGO FONTE</label>
+                    <div class="flex gap-2">
+                        <button onclick="formatHTML()" class="text-[9px] text-gray-500 hover:text-white"><i class="fas fa-align-left"></i></button>
+                        <button onclick="$('f-index').click()" class="text-[9px] bg-purple-900/30 text-purple-400 px-2 py-1 rounded border border-purple-900/50 hover:bg-purple-900"><i class="fas fa-upload mr-1"></i> Carregar</button>
+                    </div>
                 </div>
-                <textarea id="code-editor" class="w-full h-32 p-2 rounded border border-gray-800 outline-none resize-none focus:border-amber-900" placeholder="<html>...</html>"></textarea>
+                <textarea id="code-editor" class="w-full h-40 p-3 rounded-lg border border-gray-800 outline-none resize-none focus:border-purple-500 transition" placeholder="Cole seu HTML aqui..."></textarea>
                 <input type="file" id="f-index" class="hidden" accept=".html" onchange="loadFile(this)">
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-                <div onclick="$('f-icon').click()" class="bg-gray-900 h-14 rounded border border-gray-800 flex items-center justify-center cursor-pointer relative overflow-hidden group hover:border-amber-500">
-                    <i class="fas fa-image text-xl text-gray-600 mb-1 group-hover:text-amber-500"></i><span class="text-[8px] font-bold text-gray-500">ÍCONE</span>
+            <div class="grid grid-cols-2 gap-3">
+                <div onclick="$('f-icon').click()" class="bg-gray-900 h-20 rounded-xl border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-purple-500 transition">
+                    <i class="fas fa-icons text-2xl text-gray-700 mb-1 group-hover:text-purple-500 transition"></i><span class="text-[9px] font-bold text-gray-500">ÍCONE</span>
                     <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
-                <div onclick="$('f-splash').click()" class="bg-gray-900 h-14 rounded border border-gray-800 flex items-center justify-center cursor-pointer relative overflow-hidden group hover:border-amber-500">
-                    <i class="fas fa-mobile text-xl text-gray-600 mb-1 group-hover:text-amber-500"></i><span class="text-[8px] font-bold text-gray-500">SPLASH</span>
+                <div onclick="$('f-splash').click()" class="bg-gray-900 h-20 rounded-xl border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-purple-500 transition">
+                    <i class="fas fa-bolt text-2xl text-gray-700 mb-1 group-hover:text-purple-500 transition"></i><span class="text-[9px] font-bold text-gray-500">SPLASH</span>
                     <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
                 <input type="file" id="f-icon" class="hidden" accept="image/png" onchange="preview(this,'prev-icon')">
@@ -68,64 +78,46 @@
             </div>
         </div>
 
-        <div id="content-interface" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold text-amber-500 uppercase">Visual & Comportamento</label>
-                
-                <div class="grid grid-cols-2 gap-2 text-[9px] font-bold text-gray-400 select-none">
-                    <label class="cursor-pointer relative"><input type="checkbox" id="c-spinner" class="chk hidden"><div class="p-3 bg-gray-900 rounded border border-gray-800 text-center transition">LOADING SPINNER</div></label>
-                    <label class="cursor-pointer relative"><input type="checkbox" id="c-pull" class="chk hidden"><div class="p-3 bg-gray-900 rounded border border-gray-800 text-center transition">PULL TO REFRESH</div></label>
-                </div>
-
-                <div class="space-y-1 mt-2">
-                    <label class="text-[9px] font-bold text-gray-500">USER AGENT (Identidade do App)</label>
-                    <input type="text" id="u-agent" placeholder="Ex: MeuApp/1.0 (Android)" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs text-gray-300">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <div>
-                        <label class="text-[9px] font-bold text-gray-500">COR STATUS BAR</label>
-                        <input type="color" id="status-color" value="#000000" class="w-full h-8 bg-gray-900 border border-gray-800 rounded cursor-pointer">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-bold text-gray-500">ORIENTAÇÃO</label>
-                        <select id="orient" class="w-full h-8 bg-gray-900 border border-gray-800 rounded text-[10px] text-gray-300 outline-none">
-                            <option value="default">Auto</option>
-                            <option value="portrait">Em Pé</option>
-                            <option value="landscape">Deitado</option>
-                        </select>
-                    </div>
-                </div>
+        <div id="content-mega" class="hidden flex-1 overflow-y-auto p-5 space-y-6">
+            <div class="bg-purple-900/10 p-3 rounded border border-purple-900/30 text-center">
+                <p class="text-[10px] text-purple-300">⚡ O Bot instalará automaticamente 20+ plugins essenciais.</p>
+                <p class="text-[9px] text-gray-500 mt-1">Statusbar, Device, Network, InAppBrowser, Dialogs, Webview...</p>
             </div>
-        </div>
 
-        <div id="content-plugins" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+            <h3 class="text-[10px] font-bold text-gray-500 uppercase">Recursos Extras</h3>
             <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-400 select-none">
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-notif" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">NOTIF</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">CÂMERA</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">FILE</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-geo" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">GPS</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VIB</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-mic" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">MIC</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIO ID</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">SHARE</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">TTS</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-wake" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ACORDADO</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">CAM</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">FILE</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-geo" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">GPS</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">VIB</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-mic" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">MIC</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-flash" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">LUZ</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-bat" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">BAT</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-mot" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">GYRO</div></label>
             </div>
-            
+
+            <h3 class="text-[10px] font-bold text-gray-500 uppercase pt-2">Avançado</h3>
+            <div class="grid grid-cols-3 gap-2 text-[8px] font-bold text-gray-400 select-none">
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">BIOMETRIA</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">FALA (TTS)</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">COMPARTILHAR</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-notif" class="chk hidden"><div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-center transition">NOTIFICAÇÃO</div></label>
+            </div>
+
             <div class="mt-4 bg-gray-900 border border-gray-800 rounded p-3">
-                <label class="text-[10px] font-bold text-amber-500 block mb-1">ADMOB (Banner ID)</label>
-                <input type="text" id="ad-id" placeholder="ca-app-pub..." class="w-full bg-black p-2 rounded border border-gray-700 text-xs text-gray-300">
+                <label class="text-[10px] font-bold text-blue-500 block mb-1">MONETIZAÇÃO (ADMOB)</label>
+                <input type="text" id="ad-id" placeholder="ca-app-pub-..." class="w-full bg-black p-2 rounded border border-gray-700 text-xs text-gray-300">
             </div>
         </div>
+
+        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4"><div id="hist-list" class="text-center text-xs mt-10 text-gray-600">Carregando...</div></div>
 
         <div id="logs" class="px-4 py-1 text-[9px] font-mono text-gray-500 h-6 overflow-hidden bg-black border-t border-gray-800 truncate"></div>
 
         <div class="p-4 bg-gray-900 border-t border-gray-800 shrink-0">
-            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-amber-700 to-amber-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
-                <i class="fas fa-cogs"></i> INICIAR V66
+            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-purple-700 to-indigo-600 font-bold py-4 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
+                <i class="fas fa-meteor"></i> LIBERAR KRAKEN
             </button>
-            <a id="btn-dl" href="#" target="_blank" class="hidden mt-2 w-full bg-blue-600 font-bold py-2 rounded text-center text-xs">BAIXAR ÚLTIMO</a>
         </div>
     </div>
 
@@ -134,13 +126,22 @@
         const $ = id => document.getElementById(id);
         const log = m => $('logs').innerText = "> " + m;
 
-        window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); checkLast(); } };
+        window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
         function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Inválido'); }
         function logout() { localStorage.removeItem('tk'); location.reload(); }
 
         function tab(t) {
-            ['editor','interface','plugins'].forEach(x => { $(`content-${x}`).classList.add('hidden'); $(`tab-${x}`).classList.remove('tab-active','text-amber-500'); });
+            ['editor','mega','history'].forEach(x => { $(`content-${x}`).classList.add('hidden'); $(`tab-${x}`).classList.remove('tab-active','text-purple-500'); });
             $(`content-${t}`).classList.remove('hidden'); $(`tab-${t}`).classList.add('tab-active');
+            if(t==='history') loadHistory();
+        }
+
+        function template(type) {
+            let h = "";
+            if(type=='blank') h = `<!DOCTYPE html>\n<html>\n<head><title>App</title></head>\n<body style="background:#fff; display:flex; justify-content:center; align-items:center; height:100vh;">\n  <h1>Olá Mundo</h1>\n</body>\n</html>`;
+            if(type=='game') h = `<!DOCTYPE html><html><head><style>canvas{background:#eee;display:block;margin:0 auto}</style></head><body><canvas id="c" width="300" height="300"></canvas><script>var c=document.getElementById("c").getContext("2d");c.font="30px Arial";c.fillText("Game Start",50,150);<\/script></body></html>`;
+            if(type=='web') h = `<!DOCTYPE html><html><head><script>window.location.href="https://google.com";<\/script></head><body>Redirecionando...</body></html>`;
+            $('code-editor').value = h;
         }
 
         function preview(input, img) { if(input.files[0]){ const r=new FileReader(); r.onload=e=>{ $(img).src=e.target.result; $(img).classList.remove('hidden'); }; r.readAsDataURL(input.files[0]); } }
@@ -159,7 +160,7 @@
             const btn=$('btn-build'); btn.disabled=true; btn.innerText="ENVIANDO...";
             try {
                 const html=$('code-editor').value;
-                if(!html) throw "Cole o HTML!";
+                if(!html) throw "Código HTML Vazio!";
 
                 log("Subindo Core...");
                 await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "Core");
@@ -168,19 +169,18 @@
 
                 log("Configurando Bot...");
                 const feat = {
-                    appName: $('name').value||"AppV66", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
-                    hasSplash: !!fSpl, orientation: $('orient').value, admobId: $('ad-id').value,
-                    statusBarColor: $('status-color').value, userAgent: $('u-agent').value,
-                    // Interface
-                    spinner: $('c-spinner').checked, pullToRefresh: $('c-pull').checked,
-                    // Plugins
-                    notification: $('c-notif').checked, camera: $('c-cam').checked, file: $('c-file').checked,
-                    geolocation: $('c-geo').checked, vibration: $('c-vib').checked, microphone: $('c-mic').checked,
-                    biometric: $('c-bio').checked, share: $('c-share').checked, tts: $('c-tts').checked,
-                    insomnia: $('c-wake').checked, admob: !!$('ad-id').value
+                    appName: $('name').value||"AppGod", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
+                    hasSplash: !!fSpl, admobId: $('ad-id').value,
+                    // Mega Pack
+                    camera: $('c-cam').checked, file: $('c-file').checked, geolocation: $('c-geo').checked,
+                    vibration: $('c-vib').checked, microphone: $('c-mic').checked, flashlight: $('c-flash').checked,
+                    battery: $('c-bat').checked, motion: $('c-mot').checked,
+                    // Advanced
+                    biometric: $('c-bio').checked, tts: $('c-tts').checked, share: $('c-share').checked,
+                    notification: $('c-notif').checked, admob: !!$('ad-id').value
                 };
                 
-                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build V66");
+                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build V67");
                 btn.innerText="FABRICANDO..."; monitor();
 
             } catch(e) { alert(e); btn.disabled=false; btn.innerText="TENTAR DE NOVO"; }
@@ -193,22 +193,23 @@
                 const d=await r.json(); const run=d.workflow_runs[0];
                 if(run.status==="completed") {
                     clearInterval(int);
-                    $('btn-build').disabled=false; $('btn-build').innerText="NOVA ORDEM";
-                    if(run.conclusion==="success") { alert("✅ SUCESSO!"); checkLast(); }
+                    $('btn-build').disabled=false; $('btn-build').innerText="CRIAR OUTRO";
+                    if(run.conclusion==="success") { tab('history'); alert("✅ SUCESSO!"); }
                     else alert("❌ FALHA! Verifique o GitHub.");
-                } else log("Robô trabalhando...");
+                } else log("Status: " + run.status);
             }, 4000);
         }
 
-        async function checkLast() {
+        async function loadHistory() {
+            const l=$('hist-list'); l.innerHTML='Carregando...';
             const t=localStorage.getItem('tk');
-            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`,{headers:{Authorization:`token ${t}`}});
+            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases?per_page=5`,{headers:{Authorization:`token ${t}`}});
             const d=await r.json();
-            if(d.assets && d.assets[0]) {
-                $('btn-dl').href = d.assets[0].browser_download_url;
-                $('btn-dl').classList.remove('hidden');
-                $('btn-dl').innerText = "BAIXAR: " + d.name;
-            }
+            l.innerHTML = '';
+            d.forEach(rel => {
+                const asset = rel.assets[0]; if(!asset) return;
+                l.innerHTML += `<div class="bg-gray-800 p-3 mb-2 rounded-lg flex justify-between items-center border border-gray-700"><div><div class="font-bold text-xs text-purple-400">${rel.name}</div><div class="text-[9px] text-gray-500">${new Date(rel.published_at).toLocaleDateString()}</div></div><a href="${asset.browser_download_url}" class="bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-purple-600">BAIXAR</a></div>`;
+            });
         }
     </script>
 </body>
