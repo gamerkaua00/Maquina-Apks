@@ -1,4 +1,4 @@
-name: Fábrica Turbo V45 (Fix Icon & ID Force) 🚀
+name: Fábrica Turbo V46 (Sync Panel Fix) 🚀
 
 on:
   push:
@@ -22,10 +22,11 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. CONFIGURAÇÃO DE VARIÁVEIS ---
-      - name: 🧠 Processando Dados (Python Seguro)
+      # --- 1. CONFIGURAÇÃO DE VARIÁVEIS (LENDO DO PAINEL) ---
+      - name: 🧠 Processando Dados
         id: dados
         run: |
+          # Script Python para ler o JSON enviado pelo painel com segurança
           cat <<EOF > ler_dados.py
           import json, os
           
@@ -39,21 +40,16 @@ jobs:
           
           appid = get_val('packageId', 'com.fabrica.app')
           appver = get_val('version', '1.0.0')
+          appname = get_val('appName', 'App Turbo')
           
           with open(os.environ['GITHUB_ENV'], 'a') as f:
               f.write(f"APP_ID={appid}\n")
               f.write(f"APP_VER={appver}\n")
+              f.write(f"APP_NAME={appname}\n")
           EOF
           python3 ler_dados.py
-          
-          APP_NAME="App Turbo"
-          if [ -f config.xml ]; then
-             NAME=$(grep -oP '(?<=<name>).*?(?=</name>)' config.xml)
-             if [ ! -z "$NAME" ]; then APP_NAME="$NAME"; fi
-          fi
-          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
 
-      # --- 2. NOTIFICAÇÃO INICIAL ---
+      # --- 2. NOTIFICAÇÃO ---
       - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
@@ -67,18 +63,14 @@ jobs:
           
           data = {
             "username": "Fábrica Bot 🤖",
-            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
-            "content": "@everyone 🏭 **Nova ordem de produção recebida!**",
+            "content": "@everyone 🏭 **Nova ordem de produção!**",
             "embeds": [{
-              "title": "⚙️ Iniciando Compilação",
+              "title": "⚙️ Compilando: ${{ env.APP_NAME }}",
               "color": 16776960,
               "fields": [
-                {"name": "📱 App", "value": "${{ env.APP_NAME }}", "inline": True},
                 {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
-                {"name": "🔢 Versão", "value": "${{ env.APP_VER }}", "inline": True},
-                {"name": "👤 Autor", "value": "${{ github.actor }}", "inline": True}
-              ],
-              "footer": {"text": "Fábrica V45 Enterprise"}
+                {"name": "🔢 Versão", "value": "${{ env.APP_VER }}", "inline": True}
+              ]
             }]
           }
           
@@ -86,25 +78,20 @@ jobs:
           try:
               req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
               urllib.request.urlopen(req)
-          except Exception as e:
-              print(f"Erro Discord: {e}")
+          except: pass
           EOF
           python3 notify_start.py
 
-      # --- 3. SETUP DE AMBIENTE (FIX GRADLE 9) ---
-      - name: ☕ Setup Java 17
+      # --- 3. SETUP AMBIENTE ---
+      - name: ☕ Setup Java & Gradle
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🔨 Forçar Gradle 8.7 (Downgrade Manual)
+      - name: 🔨 Forçar Gradle 8.7
         run: |
-          echo "Baixando Gradle 8.7 para substituir versão 9 do sistema..."
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
-          
-          # Verifica se funcionou
-          $PWD/gradle-8.7/bin/gradle -v
 
       - name: 🛠️ Setup Android SDK
         run: |
@@ -112,138 +99,93 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
 
-      # --- 4. CRIAÇÃO E CONFIGURAÇÃO (CORRIGIDO) ---
-      - name: 🏗️ Criando App (ID Forçado via SED)
+      # --- 4. CRIAÇÃO E CONFIGURAÇÃO (FORCE FIX) ---
+      - name: 🏗️ Criando App (ID Forçado)
         run: |
-          echo "Criando projeto base..."
-          cordova create app-temp ${{ env.APP_ID }} "${{ env.APP_NAME }}"
+          echo "Criando projeto com ID: ${{ env.APP_ID }}"
+          cordova create app-temp ${{ env.APP_ID }} "AppTempName"
+          
+          # Copia arquivos do site
           rm -rf app-temp/www/*
           cp -r www/* app-temp/www/
-
+          
           cd app-temp
-          # Se tiver config.xml personalizado, copia ele
           if [ -f "../config.xml" ]; then cp "../config.xml" .; fi
 
-          # --- FIX ID E VERSÃO (FORÇA BRUTA) ---
-          # Substitui diretamente no texto do arquivo, garantindo que o ID e Versão sejam aplicados
+          # --- FORÇA BRUTA: ID E VERSÃO ---
           sed -i 's/widget id="[^"]*"/widget id="${{ env.APP_ID }}"/' config.xml
           sed -i 's/version="[^"]*"/version="${{ env.APP_VER }}"/' config.xml
           
-          # Ajuste básico de nome e permissões via Python (mais seguro que sed para XML aninhado)
-          cat <<EOF > fix_config_basic.py
+          # --- PYTHON PARA AJUSTAR NOME (XML SEGURO) ---
+          cat <<EOF > fix_name.py
           import xml.etree.ElementTree as ET
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
-          ET.register_namespace('cdv', "http://cordova.apache.org/ns/1.0")
           try:
               tree = ET.parse('config.xml')
               root = tree.getroot()
-              
-              # Atualiza nome se necessário
               for name in root.findall('{http://www.w3.org/ns/widgets}name'):
                   name.text = '${{ env.APP_NAME }}'
-
-              # Adiciona preferências padrão
-              perms = {
-                  'AndroidPersistentFileLocation': 'Compatibility',
-                  'AllowFileAccess': 'true',
-                  'requestLegacyExternalStorage': 'true'
-              }
+              
+              # Configurações Padrão
+              perms = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true'}
               for k, v in perms.items():
                   found = False
                   for pref in root.findall('{http://www.w3.org/ns/widgets}preference'):
-                      if pref.get('name') == k:
-                          pref.set('value', v); found = True
+                      if pref.get('name') == k: pref.set('value', v); found = True
                   if not found:
                       p = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       p.set('name', k); p.set('value', v)
-              
-              tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-          except Exception as e:
-              print(f"Aviso XML (não crítico): {e}")
-          EOF
-          python3 fix_config_basic.py
 
-      # --- 5. PLUGINS E PLATAFORMA ---
+              tree.write('config.xml', encoding='utf-8', xml_declaration=True)
+          except: pass
+          EOF
+          python3 fix_name.py
+
+      # --- 5. PLUGINS ---
       - name: 🔌 Instalando Plugins
         run: |
           cd app-temp
           cordova platform add android@12.0.0
-          
-          cordova plugin remove cordova-plugin-whitelist || true
           cordova plugin add cordova-plugin-ionic-webview
-          cordova plugin add cordova-plugin-device
-          cordova plugin add cordova-plugin-dialogs
-          cordova plugin add cordova-plugin-android-permissions
-          cordova plugin add cordova-plugin-inappbrowser
-          cordova plugin add cordova-plugin-file
-          cordova plugin add cordova-plugin-filepath
-          cordova plugin add cordova-plugin-androidx-adapter
-
+          
+          # Plugins opcionais baseados no features.json
           if [ -f "../features.json" ]; then
              if [ "$(jq -r '.vibration' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-vibration; fi
              if [ "$(jq -r '.camera' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-camera; fi
              if [ "$(jq -r '.geolocation' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
-             if [ "$(jq -r '.battery' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-battery-status; fi
              if [ "$(jq -r '.fullscreen' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
              if [ "$(jq -r '.flashlight' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
              if [ "$(jq -r '.microphone' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
              if [ "$(jq -r '.insomnia' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
-             if [ "$(jq -r '.toast' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-x-toast; fi
              if [ "$(jq -r '.file' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
           fi
 
-      # --- 6. INJEÇÃO DE ÍCONE (NOVO - FIX DEFINITIVO) ---
-      - name: 🎨 Injetando Ícone (Manual)
+      # --- 6. INJEÇÃO DE ÍCONE (FORCE FIX) ---
+      - name: 🎨 Injetando Ícone
         run: |
           cd app-temp
-          # Script para copiar icon.png da raiz WWW diretamente para as pastas de build do Android
           cat <<EOF > inject_icons.py
           import os, shutil
-          
-          source_icon = 'www/icon.png'
-          # Caminho onde o Cordova gera os recursos Android
-          android_res = 'platforms/android/app/src/main/res'
-          
-          # Todas as densidades de tela
+          source = 'www/icon.png'
+          res = 'platforms/android/app/src/main/res'
           folders = ['mipmap-mdpi', 'mipmap-hdpi', 'mipmap-xhdpi', 'mipmap-xxhdpi', 'mipmap-xxxhdpi']
-          
-          if os.path.exists(source_icon):
-              print(f"✅ Ícone detectado! Injetando em {android_res}...")
-              for folder in folders:
-                  target_dir = os.path.join(android_res, folder)
-                  if os.path.exists(target_dir):
-                      # Substitui o ícone padrão do Android/Cordova
-                      shutil.copy(source_icon, os.path.join(target_dir, 'ic_launcher.png'))
-                      shutil.copy(source_icon, os.path.join(target_dir, 'ic_launcher_round.png'))
-                      shutil.copy(source_icon, os.path.join(target_dir, 'ic_launcher_foreground.png'))
-              print("✅ Injeção concluída.")
+          if os.path.exists(source):
+              print(f"✅ Injetando ícone...")
+              for f in folders:
+                  target = os.path.join(res, f)
+                  if os.path.exists(target):
+                      shutil.copy(source, os.path.join(target, 'ic_launcher.png'))
+                      shutil.copy(source, os.path.join(target, 'ic_launcher_round.png'))
           else:
-              print("⚠️ AVISO: 'www/icon.png' não encontrado. O App ficará com ícone padrão.")
+              print("⚠️ Ícone não encontrado em www/icon.png")
           EOF
           python3 inject_icons.py
 
-      # --- 7. FIX GRADLE (CIRURGIA) ---
-      - name: 🚑 Fix Gradle (Cirurgia)
-        run: |
-          cd app-temp
-          if [ -d "platforms/android" ]; then
-              find platforms/android -name "*.gradle" -type f -exec sed -i 's/compile /implementation /g' {} +
-              
-              echo "cdvCompileSdkVersion=33" >> platforms/android/gradle.properties
-              echo "cdvTargetSdkVersion=33" >> platforms/android/gradle.properties
-              echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
-              echo "android.useAndroidX=true" >> platforms/android/gradle.properties
-              echo "android.enableJetifier=true" >> platforms/android/gradle.properties
-          fi
-
-      # --- 8. BUILD FINAL ---
+      # --- 7. BUILD E RELEASE ---
       - name: 📱 Build APK
         id: build_apk
         run: |
           cd app-temp
-          rm -rf ~/.gradle/caches/
-          
-          echo "🚀 Compilando..."
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
@@ -254,10 +196,7 @@ jobs:
             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
             FINAL_NAME="${SAFE_NAME}_v${{ env.APP_VER }}.apk"
             mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL_NAME"
-            FILE_SIZE=$(ls -lh "$GITHUB_WORKSPACE/$FINAL_NAME" | awk '{print $5}')
-            
             echo "APK_FINAL=$FINAL_NAME" >> $GITHUB_ENV
-            echo "FILE_SIZE=$FILE_SIZE" >> $GITHUB_ENV
             echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
           fi
 
@@ -267,17 +206,10 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} v${{ env.APP_VER }}"
-          body: |
-            ✅ **Build Finalizado com Sucesso!**
-            📱 **ID:** `${{ env.APP_ID }}`
-            💾 **Tamanho:** ${{ env.FILE_SIZE }}
-            
-            📥 **BAIXE O ARQUIVO ABAIXO EM ASSETS**
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      # --- 9. NOTIFICAÇÃO FINAL ---
       - name: 🔔 Discord (Fim)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
@@ -286,58 +218,18 @@ jobs:
         run: |
           cat <<EOF > notify_final.py
           import os, json, urllib.request
-          
           webhook = os.environ.get('DISCORD_WEBHOOK')
           status = os.environ.get('STATUS')
-          apk_name = os.environ.get('APK_FINAL', 'App')
-          
           if status == 'success':
-              color = 5763712
-              title = "✅ SUCESSO: Build Finalizado"
-              desc = "O APK foi gerado e publicado na aba Releases."
-              
-              repo = "${{ github.repository }}"
-              tag = "v${{ github.run_number }}"
-              filename = os.environ.get('APK_FINAL')
-              dl_link = f"https://github.com/{repo}/releases/download/{tag}/{filename}"
-              page_link = f"https://github.com/{repo}/releases/tag/{tag}"
-              content = "@everyone 🎉 **O APK está pronto!**"
-              
-              fields = [
-                  {"name": "📱 App", "value": "${{ env.APP_NAME }}", "inline": True},
-                  {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
-                  {"name": "📥 Download Direto", "value": f"[Baixar .apk]({dl_link})", "inline": False},
-                  {"name": "📄 Página de Download", "value": f"[Ver Release]({page_link})", "inline": False}
-              ]
+              content = "✅ **Sucesso!** APK Disponível na aba Releases."
           else:
-              color = 15548997
-              title = "❌ FALHA CRÍTICA"
-              desc = "O processo de build encontrou um erro."
-              content = "@everyone ⚠️ **Erro na produção!**"
-              fields = [
-                  {"name": "Logs", "value": f"[Ver Console](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"}
-              ]
+              content = "❌ **Falha!** Verifique os logs."
           
-          data = {
-            "username": "Fábrica Admin 🛡️",
-            "avatar_url": "https://img.icons8.com/fluency/96/robot-2.png",
-            "content": content,
-            "embeds": [{
-              "title": title,
-              "description": desc,
-              "color": color,
-              "fields": fields,
-              "footer": {"text": "Sistema V45 Enterprise"},
-              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            }]
-          }
-          
-          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          data = {"content": content}
+          headers = {'Content-Type': 'application/json'}
           try:
             req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
             urllib.request.urlopen(req)
-          except Exception as e:
-            print(f"Erro Discord: {e}")
+          except: pass
           EOF
-          
           python3 notify_final.py
