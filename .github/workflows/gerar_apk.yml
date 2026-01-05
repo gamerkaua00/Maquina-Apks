@@ -1,4 +1,4 @@
-name: Fábrica Turbo V60 (Galactic) 🚀
+name: Fábrica Turbo V62 (Telegram + Discord) 📡
 
 on:
   push:
@@ -17,9 +17,12 @@ jobs:
     env:
       JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      # Segredos do Telegram (Adicione no GitHub Settings)
+      TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
-      - name: 📥 Código
+      - name: 📥 Baixar
         uses: actions/checkout@v3
 
       # --- 1. DADOS ---
@@ -35,27 +38,40 @@ jobs:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v60')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v62')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V60')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V62')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
               f.write(f"OUT_TYPE={d.get('outputType', 'apk')}\n")
               f.write(f"ORIENT={d.get('orientation', 'default')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO (INÍCIO) ---
-      - name: 🔔 Start
+      # --- 2. NOTIFICAÇÃO HÍBRIDA (INÍCIO) ---
+      - name: 🔔 Notificar Início
         run: |
           cat <<EOF > notify.py
-          import os, json, urllib.request
-          url = os.environ.get('DISCORD_WEBHOOK')
-          if url:
-              msg = {"content": "@everyone 🚀 **DECOLANDO V60**\nApp: ${{ env.APP_NAME }}\nTipo: ${{ env.OUT_TYPE }}", "allowed_mentions": {"parse": ["everyone"]}}
+          import os, json, urllib.request, urllib.parse
+          
+          # Discord
+          d_url = os.environ.get('DISCORD_WEBHOOK')
+          if d_url:
               try:
-                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  msg = {"content": "@everyone 📡 **V62 INICIADA**\nApp: ${{ env.APP_NAME }}"}
+                  req = urllib.request.Request(d_url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
                   urllib.request.urlopen(req)
               except: pass
+
+          # Telegram
+          t_token = os.environ.get('TG_TOKEN')
+          t_chat = os.environ.get('TG_CHAT')
+          if t_token and t_chat:
+              try:
+                  text = f"🚀 <b>Fábrica V62 Iniciada</b>\nCriando: ${{ env.APP_NAME }}\nID: <code>${{ env.APP_ID }}</code>"
+                  url = f"https://api.telegram.org/bot{t_token}/sendMessage"
+                  data = urllib.parse.urlencode({"chat_id": t_chat, "text": text, "parse_mode": "HTML"}).encode()
+                  urllib.request.urlopen(url, data=data)
+              except Exception as e: print(f"Erro Telegram: {e}")
           EOF
           python3 notify.py
 
@@ -69,8 +85,8 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CRIAR E CONFIGURAR XML (ORIENTAÇÃO) ---
-      - name: 🏗️ Criar
+      # --- 4. CONFIGURAÇÃO (TOTAL) ---
+      - name: 🏗️ Configurando
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
@@ -88,13 +104,11 @@ jobs:
               
               prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true', 'AndroidInsecureFileModeEnabled': 'true'}
               
-              # Splash
               if os.environ.get('HAS_SPLASH') == 'True':
                   prefs['SplashScreenDelay'] = '3000'; prefs['ShowSplashScreen'] = 'true'
               else:
                   prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
 
-              # Orientação
               orient = os.environ.get('ORIENT', 'default')
               if orient != 'default': prefs['Orientation'] = orient
 
@@ -105,15 +119,23 @@ jobs:
                   if not found:
                       el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       el.set('name',k); el.set('value',v)
+
+              # Acesso Total
+              for tag in root.findall('{http://www.w3.org/ns/widgets}access'): root.remove(tag)
+              for tag in root.findall('{http://www.w3.org/ns/widgets}allow-navigation'): root.remove(tag)
+              
+              ET.SubElement(root, '{http://www.w3.org/ns/widgets}access').set('origin', '*')
+              ET.SubElement(root, '{http://www.w3.org/ns/widgets}allow-navigation').set('href', '*')
+              ET.SubElement(root, '{http://www.w3.org/ns/widgets}allow-intent').set('href', '*')
+
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
           except: pass
           
-          # Keystore Builder
+          # Keystore
           try:
               with open('../features.json') as f: data = json.load(f)
               signing = data.get('signing')
               if signing:
-                  print("🔐 Keystore detectada")
                   cfg = {"android": {"release": {"keystore": "www/release.keystore", "storePassword": signing['storePass'], "alias": signing['alias'], "password": signing['aliasPass'], "keystoreType": ""}}}
                   with open('build.json', 'w') as f: json.dump(cfg, f)
                   with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_FLAGS=--release\n")
@@ -130,7 +152,7 @@ jobs:
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
 
-      # --- 6. PLUGINS (NOVOS) ---
+      # --- 6. PLUGINS ---
       - name: 🧩 Plugins
         run: |
           cd app-temp
@@ -141,7 +163,6 @@ jobs:
           except: d = {}
           def i(p): subprocess.run(f"cordova plugin add {p}", shell=True)
           
-          # Básicos
           if d.get('notification'): i("cordova-plugin-x-toast")
           if d.get('file'): i("cordova-plugin-file-opener2")
           if d.get('camera'): i("cordova-plugin-camera")
@@ -151,13 +172,10 @@ jobs:
           if d.get('microphone'): i("cordova-plugin-media cordova-plugin-media-capture")
           if d.get('insomnia'): i("cordova-plugin-insomnia")
           
-          # Novos V60
           if d.get('biometric'): i("cordova-plugin-fingerprint-aio")
           if d.get('share'): i("cordova-plugin-x-socialsharing")
           if d.get('tts'): i("cordova-plugin-tts")
-          if d.get('admob'): 
-              print("Instalando AdMob...")
-              i(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId', 'ca-app-pub-xxx')}")
+          if d.get('admob'): i(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId', 'ca-app-pub-xxx')}")
               
           i("cordova-plugin-android-permissions")
           EOF
@@ -202,7 +220,7 @@ jobs:
           EOF
           python3 inject.py
 
-      # --- 8. BUILD (AAB ou APK) ---
+      # --- 8. BUILD ---
       - name: 📱 Compilar
         id: build_apk
         run: |
@@ -210,17 +228,12 @@ jobs:
           echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           echo "android.enableJetifier=true" >> platforms/android/gradle.properties
           
-          # Define se é APK ou AAB
           PKG_TYPE="apk"
           if [ "${{ env.OUT_TYPE }}" == "aab" ]; then PKG_TYPE="bundle"; fi
           
-          echo "Compilando: $PKG_TYPE em modo ${{ env.BUILD_FLAGS }}"
-          
           cordova build android ${{ env.BUILD_FLAGS }} --packageType=$PKG_TYPE -- --gradleArg=-PcdvCompileSdkVersion=33
           
-          # Procura o arquivo gerado (apk ou aab)
           FILE_PATH=$(find "$GITHUB_WORKSPACE" -type f \( -name "*.apk" -o -name "*.aab" \) | head -n 1)
-          
           if [ -z "$FILE_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
@@ -242,37 +255,65 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO (QR CODE + FIX) ---
-      - name: 🔔 Discord (QR Code)
+      # --- 10. NOTIFICAÇÃO FINAL (DISCORD + TELEGRAM) ---
+      - name: 🔔 Notificar Fim
         if: always()
         run: |
           cat <<EOF > notify_end.py
-          import os, json, urllib.request
-          url = os.environ.get('DISCORD_WEBHOOK')
+          import os, json, urllib.request, urllib.parse
+          
           status = os.environ.get('STATUS')
           repo = "${{ github.repository }}"
           run_id = "${{ github.run_number }}"
+          app_name = os.environ.get('APP_NAME')
           
-          if url:
+          # Links
+          dl_link = f"https://github.com/{repo}/releases/tag/v{run_id}"
+          
+          # --- DISCORD ---
+          d_url = os.environ.get('DISCORD_WEBHOOK')
+          if d_url:
               if status == 'SUCESSO':
-                  link = f"https://github.com/{repo}/releases/tag/v{run_id}"
-                  # Gera QR Code usando API pública
-                  qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={link}"
-                  
+                  qr = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={dl_link}"
                   embed = {
                       "title": "✅ SUCESSO!",
-                      "description": f"**App:** ${{ env.APP_NAME }}\n**Versão:** ${{ env.APP_VER }}\n[Clique para Baixar]({link})",
+                      "description": f"**{app_name}**\n[Baixar Agora]({dl_link})",
                       "color": 5763712,
-                      "thumbnail": {"url": qr_url},
-                      "footer": {"text": "Aponte a câmera para baixar"}
+                      "thumbnail": {"url": qr}
                   }
-                  msg = {"content": "@everyone APK Pronto!", "embeds": [embed], "allowed_mentions": {"parse": ["everyone"]}}
+                  msg = {"content": "@everyone APK Pronto!", "embeds": [embed]}
               else:
-                  msg = {"content": "@everyone ❌ **FALHA CRÍTICA**", "allowed_mentions": {"parse": ["everyone"]}}
-              
+                  msg = {"content": "@everyone ❌ **ERRO CRÍTICO**"}
               try:
-                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  req = urllib.request.Request(d_url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
                   urllib.request.urlopen(req)
               except: pass
+
+          # --- TELEGRAM ---
+          t_token = os.environ.get('TG_TOKEN')
+          t_chat = os.environ.get('TG_CHAT')
+          if t_token and t_chat:
+              if status == 'SUCESSO':
+                  txt = f"✅ <b>APP PRONTO!</b>\n\n📱 <b>{app_name}</b>\n📥 <a href='{dl_link}'>Clique para Baixar</a>"
+                  
+                  # Tenta enviar o arquivo se existir e for pequeno
+                  try:
+                      fname = os.environ.get('FINAL_FILE')
+                      if fname and os.path.exists(fname) and os.path.getsize(fname) < 50000000: # Max 50MB
+                          import subprocess
+                          subprocess.run(f'curl -F chat_id="{t_chat}" -F document=@"{fname}" -F caption="{txt}" -F parse_mode="HTML" https://api.telegram.org/bot{t_token}/sendDocument', shell=True)
+                      else:
+                          # Envia só texto se falhar ou for grande
+                          url = f"https://api.telegram.org/bot{t_token}/sendMessage"
+                          data = urllib.parse.urlencode({"chat_id": t_chat, "text": txt, "parse_mode": "HTML"}).encode()
+                          urllib.request.urlopen(url, data=data)
+                  except: pass
+              else:
+                   # Erro
+                   try:
+                       url = f"https://api.telegram.org/bot{t_token}/sendMessage"
+                       data = urllib.parse.urlencode({"chat_id": t_chat, "text": "❌ <b>ERRO NA FÁBRICA</b>", "parse_mode": "HTML"}).encode()
+                       urllib.request.urlopen(url, data=data)
+                   except: pass
           EOF
           python3 notify_end.py
