@@ -3,294 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica Turbo V12 (Stable)</title>
-    <meta name="theme-color" content="#000000">
+    <title>Fábrica V13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        body { background: #050505; color: white; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass { background: #111; border: 1px solid #333; }
-        .hidden { display: none !important; }
-        .processing { animation: pulse 1s infinite; border-color: #0f0; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    </style>
+    <style>body{background:#000;color:#fff;font-family:sans-serif}.hidden{display:none!important}</style>
 </head>
-
-<body class="flex flex-col h-screen overflow-hidden">
+<body class="flex flex-col h-screen">
 
     <div id="view-login" class="flex-1 flex items-center justify-center p-6">
-        <div class="glass p-8 rounded-2xl w-full max-w-sm text-center">
-            <i class="fas fa-biohazard text-4xl text-green-500 mb-4"></i>
-            <h1 class="text-xl font-bold mb-4">Acesso Admin</h1>
-            <input type="password" id="input-token" placeholder="Token GitHub (ghp_...)" class="w-full bg-black border border-gray-700 rounded p-3 text-center text-green-500 mb-4 text-sm">
-            <button onclick="login()" class="w-full bg-green-700 text-white font-bold py-3 rounded">ENTRAR</button>
+        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
+            <i class="fas fa-robot text-4xl text-blue-500 mb-4"></i>
+            <h1 class="text-xl font-bold mb-4">Acesso V13</h1>
+            <input type="password" id="tkn" placeholder="Token GitHub (ghp_...)" class="w-full bg-black border border-gray-700 rounded p-3 text-center text-blue-400 mb-4">
+            <button onclick="login()" class="w-full bg-blue-600 font-bold py-3 rounded">ENTRAR</button>
         </div>
     </div>
 
-    <div id="view-dashboard" class="hidden flex-1 flex flex-col h-full">
-        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900">
-            <span class="font-bold text-green-500">Meus Projetos</span>
+    <div id="view-editor" class="hidden flex-1 flex flex-col h-full">
+        <div class="p-4 bg-gray-900 border-b border-gray-800 flex justify-between">
+            <span class="font-bold text-blue-400">Criador de App</span>
             <button onclick="logout()" class="text-red-500 text-xs">SAIR</button>
         </div>
-        <div id="list-apps" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
-        <button onclick="newApp()" class="absolute bottom-6 right-6 w-14 h-14 bg-green-600 rounded-full shadow-lg text-2xl flex items-center justify-center">+</button>
-    </div>
 
-    <div id="view-editor" class="hidden flex-1 flex flex-col h-full bg-black">
-        <div class="p-4 border-b border-gray-800 flex items-center bg-gray-900">
-            <button onclick="show('view-dashboard')" class="mr-4 text-gray-400"><i class="fas fa-arrow-left"></i></button>
-            <span class="font-bold">Editar App</span>
-        </div>
-        
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            <input type="hidden" id="edit-id">
+            <input type="text" id="name" placeholder="Nome do App" class="w-full bg-gray-900 p-3 rounded border border-gray-700 text-white">
+            <div class="flex gap-2">
+                <input type="text" id="pkg" placeholder="com.seu.app" class="w-2/3 bg-gray-900 p-3 rounded border border-gray-700 text-gray-300">
+                <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-gray-900 p-3 rounded border border-gray-700 text-center text-gray-300">
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="$('f-icon').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700"><i class="fas fa-image"></i><span class="text-[9px] mt-1">ÍCONE</span></button>
+                <button onclick="$('f-splash').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700"><i class="fas fa-mobile"></i><span class="text-[9px] mt-1">SPLASH</span></button>
+                <button onclick="$('f-index').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700"><i class="fas fa-code"></i><span class="text-[9px] mt-1">INDEX</span></button>
+            </div>
             
-            <div class="space-y-2">
-                <label class="text-xs text-gray-500 uppercase">Configurações</label>
-                <input type="text" id="app-name" placeholder="Nome do App" class="w-full bg-gray-900 border border-gray-700 p-3 rounded text-white">
-                <div class="flex gap-2">
-                    <input type="text" id="app-pkg" placeholder="com.exemplo.app" class="w-2/3 bg-gray-900 border border-gray-700 p-3 rounded text-gray-300 text-sm">
-                    <input type="text" id="app-ver" placeholder="1.0.0" class="w-1/3 bg-gray-900 border border-gray-700 p-3 rounded text-gray-300 text-sm text-center">
-                </div>
-            </div>
+            <div class="text-xs text-center text-gray-500" id="file-status">Nenhum arquivo selecionado</div>
 
-            <div class="space-y-2">
-                <label class="text-xs text-gray-500 uppercase">Arquivos (Toque para mudar)</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <div onclick="$('f-icon').click()" class="bg-gray-900 h-20 rounded border border-gray-700 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden">
-                        <i class="fas fa-image text-gray-600"></i> <span class="text-[8px] mt-1 text-gray-500">ÍCONE</span>
-                        <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover hidden">
-                    </div>
-                    <div onclick="$('f-splash').click()" class="bg-gray-900 h-20 rounded border border-gray-700 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden">
-                        <i class="fas fa-mobile text-gray-600"></i> <span class="text-[8px] mt-1 text-gray-500">SPLASH</span>
-                        <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover hidden">
-                    </div>
-                    <div onclick="$('f-index').click()" class="bg-gray-900 h-20 rounded border border-gray-700 flex flex-col items-center justify-center cursor-pointer relative">
-                        <i class="fas fa-code text-gray-600"></i> <span class="text-[8px] mt-1 text-gray-500">INDEX.HTML</span>
-                        <div id="check-index" class="hidden absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>
-                    </div>
-                </div>
-                <input type="file" id="f-icon" accept="image/png" class="hidden" onchange="preview(this, 'prev-icon')">
-                <input type="file" id="f-splash" accept="image/png" class="hidden" onchange="preview(this, 'prev-splash')">
-                <input type="file" id="f-index" accept=".html" class="hidden" onchange="$('check-index').classList.remove('hidden')">
-            </div>
+            <input type="file" id="f-icon" accept="image/png" class="hidden" onchange="upStat()">
+            <input type="file" id="f-splash" accept="image/png" class="hidden" onchange="upStat()">
+            <input type="file" id="f-index" accept=".html" class="hidden" onchange="upStat()">
 
-            <div class="bg-gray-900 p-2 rounded text-[10px] font-mono h-24 overflow-auto text-green-500 border border-gray-800" id="logs">
-                > Aguardando comando...
-            </div>
+            <div id="logs" class="bg-black border border-gray-800 p-2 text-[10px] h-32 overflow-auto font-mono text-green-400"></div>
         </div>
 
-        <div class="p-4 border-t border-gray-800 bg-gray-900">
-            <button id="btn-build" onclick="build()" class="w-full bg-blue-600 text-white font-bold py-4 rounded shadow-lg flex justify-center items-center gap-2">
-                <i class="fas fa-hammer"></i> FABRICAR APK
-            </button>
-            <a id="btn-dl" href="#" class="hidden mt-2 w-full bg-green-600 text-white font-bold py-4 rounded text-center block">
-                BAIXAR APK
-            </a>
+        <div class="p-4 bg-gray-900 border-t border-gray-800">
+            <button id="btn-go" onclick="build()" class="w-full bg-green-600 font-bold py-4 rounded shadow-lg text-white">FABRICAR AGORA</button>
+            <a id="btn-dl" href="#" target="_blank" class="hidden w-full bg-blue-600 font-bold py-4 rounded shadow-lg text-white text-center block mt-2">BAIXAR APK</a>
         </div>
     </div>
 
     <script>
-        // CONFIG
-        const USER = "gamerkaua00";
-        const REPO = "Maquina-Apks";
+        const CFG = { u: "gamerkaua00", r: "Maquina-Apks" };
+        const $ = id => document.getElementById(id);
+        const log = m => { const l = $('logs'); l.innerHTML += `<div>> ${m}</div>`; l.scrollTop = l.scrollHeight; };
         
-        let APPS = JSON.parse(localStorage.getItem('apps') || '[]');
-        const $ = (id) => document.getElementById(id);
-        const log = (m) => { const l = $('logs'); l.innerHTML += `<div>> ${m}</div>`; l.scrollTop = l.scrollHeight; }
+        function login() { if($('tkn').value.startsWith('ghp_')) { localStorage.setItem('tk', $('tkn').value); $('view-login').classList.add('hidden'); $('view-editor').classList.remove('hidden'); } else alert('Token Inválido'); }
+        function logout() { localStorage.removeItem('tk'); location.reload(); }
+        function upStat() { $('file-status').innerText = `Icon: ${$('f-icon').files.length}, Splash: ${$('f-splash').files.length}, Index: ${$('f-index').files.length}`; }
 
-        function show(id) {
-            ['view-login','view-dashboard','view-editor'].forEach(v => $(v).classList.add('hidden'));
-            $(id).classList.remove('hidden');
-        }
+        const toB64 = f => new Promise((r,j) => { const rd = new FileReader(); rd.readAsDataURL(f); rd.onload = () => r(rd.result.split(',')[1]); rd.onerror = j; });
 
-        function login() {
-            const t = $('input-token').value;
-            if(t.startsWith('ghp_')) { localStorage.setItem('token', t); renderList(); show('view-dashboard'); }
-            else alert('Token inválido');
-        }
-
-        function logout() { localStorage.removeItem('token'); location.reload(); }
-
-        function renderList() {
-            const l = $('list-apps'); l.innerHTML = '';
-            APPS.forEach(a => {
-                l.innerHTML += `<div onclick="edit(${a.id})" class="bg-gray-900 p-4 rounded border border-gray-800 flex justify-between items-center">
-                    <div><div class="font-bold text-sm">${a.name}</div><div class="text-xs text-gray-500">${a.pkg}</div></div>
-                    <button onclick="event.stopPropagation(); remove(${a.id})" class="text-red-500 px-2">x</button>
-                </div>`;
-            });
-        }
-
-        function newApp() {
-            $('edit-id').value = ''; $('app-name').value = ''; $('app-pkg').value = ''; $('app-ver').value = '1.0.0';
-            $('prev-icon').classList.add('hidden'); $('prev-splash').classList.add('hidden'); $('check-index').classList.add('hidden');
-            $('btn-build').classList.remove('hidden'); $('btn-dl').classList.add('hidden'); $('logs').innerHTML = '';
-            $('f-icon').value = ''; $('f-splash').value = ''; $('f-index').value = '';
-            show('view-editor');
-        }
-
-        function edit(id) {
-            const a = APPS.find(x => x.id == id);
-            if(!a) return;
-            $('edit-id').value = a.id; $('app-name').value = a.name; $('app-pkg').value = a.pkg; $('app-ver').value = a.ver;
-            show('view-editor');
-        }
-
-        function remove(id) { if(confirm('Deletar?')) { APPS = APPS.filter(x => x.id !== id); localStorage.setItem('apps', JSON.stringify(APPS)); renderList(); } }
-
-        function preview(input, imgId) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => { $(imgId).src = e.target.result; $(imgId).classList.remove('hidden'); }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // --- LÓGICA DE BUILD ---
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = error => reject(error);
-        });
-
-        async function uploadFile(path, content, msg) {
-            const token = localStorage.getItem('token');
-            const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${path}`;
-            
-            // Check existing file sha
+        async function upload(path, content, msg) {
+            const t = localStorage.getItem('tk');
+            const url = `https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${path}`;
             let sha = null;
-            try {
-                const check = await fetch(url, { headers: { Authorization: `token ${token}` } });
-                if (check.ok) sha = (await check.json()).sha;
-            } catch(e) {}
-
-            const body = { message: msg, content: content, branch: "main" };
-            if (sha) body.sha = sha;
-
-            const res = await fetch(url, {
-                method: 'PUT',
-                headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            if (!res.ok) throw new Error(`Falha no upload: ${path}`);
+            try { const chk = await fetch(url, {headers:{Authorization:`token ${t}`}}); if(chk.ok) sha = (await chk.json()).sha; } catch(e){}
+            const body = { message: msg, content: content, branch: "main" }; if(sha) body.sha = sha;
+            await fetch(url, { method: 'PUT', headers: {Authorization:`token ${t}`, 'Content-Type':'application/json'}, body: JSON.stringify(body) });
         }
 
         async function build() {
-            const token = localStorage.getItem('token');
-            if (!token) return alert("Faça login novamente");
-
-            const btn = $('btn-build');
-            btn.innerHTML = "ENVIANDO ARQUIVOS..."; btn.disabled = true;
-
+            const btn = $('btn-go'); btn.disabled = true; btn.innerText = "ENVIANDO...";
             try {
-                const name = $('app-name').value || "App";
-                const pkg = $('app-pkg').value || "com.app";
-                const ver = $('app-ver').value || "1.0.0";
-                
-                // Salvar Localmente
-                const id = $('edit-id').value || Date.now();
-                const exists = APPS.find(x => x.id == id);
-                if(exists) { exists.name=name; exists.pkg=pkg; exists.ver=ver; }
-                else { APPS.push({id, name, pkg, ver}); }
-                localStorage.setItem('apps', JSON.stringify(APPS));
+                const name = $('name').value || "App";
+                const pkg = $('pkg').value || "com.app";
+                const ver = $('ver').value || "1.0.0";
 
-                // Arquivos
-                const fIcon = $('f-icon').files[0];
-                const fIndex = $('f-index').files[0];
-                
-                log("Iniciando Uploads...");
-                
-                if(fIndex) {
-                    const b64 = await toBase64(fIndex);
-                    await uploadFile("www/index.html", b64, "Update Index");
-                    log("Index.html enviado!");
-                }
-                
-                if(fIcon) {
-                    const b64 = await toBase64(fIcon);
-                    await uploadFile("www/icon.png", b64, "Update Icon");
-                    log("Ícone enviado!");
-                }
+                const fIdx = $('f-index').files[0];
+                const fIco = $('f-icon').files[0];
+                const fSpl = $('f-splash').files[0];
 
-                // Disparar Bot (Features.json)
-                const config = {
-                    appName: name,
-                    packageId: pkg,
-                    version: ver
-                };
-                
-                // B64 seguro para UTF8
-                const jsonStr = JSON.stringify(config);
-                const jsonB64 = btoa(unescape(encodeURIComponent(jsonStr)));
-                
-                await uploadFile("features.json", jsonB64, `BUILD: ${name}`);
-                log("Ordem de produção enviada!");
-                
-                btn.innerHTML = "FABRICANDO... (AGUARDE NOTIFICAÇÃO)";
-                btn.classList.add('processing');
-                
-                monitorBuild();
+                if(!fIdx) return alert("Index.html é obrigatório!");
 
-            } catch (e) {
-                log("ERRO: " + e.message);
-                btn.innerHTML = "TENTAR NOVAMENTE";
-                btn.disabled = false;
-            }
+                log("1/4 Upload Index...");
+                await upload("www/index.html", await toB64(fIdx), "Up Index");
+
+                if(fIco) { log("2/4 Upload Icon..."); await upload("www/icon.png", await toB64(fIco), "Up Icon"); }
+                if(fSpl) { log("3/4 Upload Splash..."); await upload("www/splash.png", await toB64(fSpl), "Up Splash"); }
+
+                log("4/4 Disparando Fábrica...");
+                const feat = { appName: name, packageId: pkg, version: ver };
+                // Safe B64 for UTF8
+                const json = btoa(unescape(encodeURIComponent(JSON.stringify(feat))));
+                await upload("features.json", json, `Build: ${name}`);
+
+                btn.innerText = "FABRICANDO... (Veja Discord)";
+                monitor();
+            } catch(e) { log("Erro: " + e); btn.disabled = false; btn.innerText = "ERRO"; }
         }
 
-        function monitorBuild() {
-            const token = localStorage.getItem('token');
-            let attempts = 0;
-            const interval = setInterval(async () => {
-                attempts++;
-                try {
-                    const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/actions/runs?per_page=1`, {
-                        headers: { Authorization: `token ${token}` }
-                    });
-                    const data = await res.json();
-                    const run = data.workflow_runs[0];
-                    
-                    if(run && run.status === "completed") {
-                        clearInterval(interval);
-                        $('btn-build').classList.remove('processing');
-                        $('btn-build').classList.add('hidden');
-                        
-                        if(run.conclusion === "success") {
-                            log("SUCESSO! Buscando link...");
-                            getDownloadLink();
-                        } else {
-                            log("FALHA NA FÁBRICA! Veja o Discord.");
-                            $('btn-build').classList.remove('hidden');
-                            $('btn-build').innerHTML = "ERRO FATAL";
+        async function monitor() {
+            const t = localStorage.getItem('tk');
+            let i = 0;
+            const int = setInterval(async () => {
+                i++;
+                const r = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`, {headers:{Authorization:`token ${t}`}});
+                const d = await r.json();
+                const run = d.workflow_runs[0];
+                if(run && run.status === "completed") {
+                    clearInterval(int);
+                    if(run.conclusion === "success") {
+                        log("SUCESSO!");
+                        const rel = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`, {headers:{Authorization:`token ${t}`}});
+                        const rd = await rel.json();
+                        if(rd.assets && rd.assets[0]) {
+                            $('btn-dl').href = rd.assets[0].browser_download_url;
+                            $('btn-dl').classList.remove('hidden');
+                            $('btn-go').classList.add('hidden');
                         }
-                    } else {
-                        if(attempts % 5 === 0) log(`Status: ${run ? run.status : '...'}`);
-                    }
-                } catch(e) {}
-                
-                if(attempts > 120) { clearInterval(interval); log("Tempo esgotado."); }
+                    } else { log("FALHA NA FÁBRICA!"); $('btn-go').innerText = "TENTAR DNV"; $('btn-go').disabled = false; }
+                } else log(`Processando... [${i}s]`);
             }, 5000);
-        }
-
-        async function getDownloadLink() {
-            const token = localStorage.getItem('token');
-            try {
-                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/releases/latest`, {
-                    headers: { Authorization: `token ${token}` }
-                });
-                const data = await res.json();
-                const asset = data.assets[0];
-                if(asset) {
-                    const btn = $('btn-dl');
-                    btn.href = asset.browser_download_url;
-                    btn.classList.remove('hidden');
-                    btn.innerHTML = `BAIXAR ${data.name}`;
-                    log("LINK PRONTO!");
-                }
-            } catch(e) { log("Erro ao pegar link."); }
         }
     </script>
 </body>
