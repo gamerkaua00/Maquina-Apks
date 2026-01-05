@@ -3,113 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fábrica V17</title>
+    <title>Fábrica V18 Ultimate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>body{background:#000;color:#fff;font-family:sans-serif}.hidden{display:none!important}</style>
+    <style>
+        body{background:#0a0a0a;color:#fff;font-family:sans-serif}
+        .hidden{display:none!important}
+        .tab-active { border-bottom: 2px solid #22c55e; color: #22c55e; }
+        /* Editor de Código Simples */
+        #code-editor { background: #111; color: #a5b4fc; font-family: monospace; font-size: 11px; white-space: pre; overflow: auto; }
+    </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <div id="view-login" class="flex-1 flex items-center justify-center p-6">
+    <div id="view-login" class="flex-1 flex items-center justify-center p-6 bg-black z-50 absolute inset-0">
         <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
-            <h1 class="text-xl font-bold mb-4 text-green-500">Acesso V17</h1>
-            <input type="password" id="tkn" placeholder="Token GitHub" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-white">
-            <button onclick="login()" class="w-full bg-green-600 font-bold py-3 rounded">ENTRAR</button>
+            <i class="fas fa-meteor text-4xl text-green-500 mb-4 animate-pulse"></i>
+            <h1 class="text-xl font-bold mb-4">Fábrica V18</h1>
+            <input type="password" id="tkn" placeholder="Token GitHub (ghp_...)" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-green-400">
+            <button onclick="login()" class="w-full bg-green-600 font-bold py-3 rounded hover:bg-green-500 transition">ENTRAR</button>
         </div>
     </div>
 
-    <div id="view-editor" class="hidden flex-1 flex flex-col h-full">
-        <div class="p-4 bg-gray-900 border-b border-gray-800 flex justify-between">
-            <span class="font-bold text-green-400">Criador Pro</span>
-            <button onclick="logout()" class="text-red-500 text-xs">SAIR</button>
+    <div id="view-main" class="hidden flex flex-col h-full">
+        <div class="p-3 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
+            <div class="font-bold text-green-500"><i class="fas fa-industry mr-2"></i>Ultimate</div>
+            <div class="flex gap-4 text-xs font-bold uppercase tracking-widest">
+                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">Editor</button>
+                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">Histórico</button>
+            </div>
+            <button onclick="logout()" class="text-red-500"><i class="fas fa-power-off"></i></button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            <input type="text" id="name" placeholder="Nome do App" class="w-full bg-gray-900 p-3 rounded border border-gray-700 text-white">
-            <div class="flex gap-2">
-                <input type="text" id="pkg" placeholder="com.app" class="w-2/3 bg-gray-900 p-3 rounded border border-gray-700 text-gray-300">
-                <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-gray-900 p-3 rounded border border-gray-700 text-center text-gray-300">
+        <div id="content-editor" class="flex-1 overflow-y-auto p-4 space-y-4">
+            
+            <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
+                <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none placeholder-gray-600 mb-2">
+                <div class="flex gap-2">
+                    <input type="text" id="pkg" placeholder="com.app.v18" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-300">
+                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-center text-gray-300">
+                </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-2">
-                <div onclick="$('f-index').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700 cursor-pointer"><i class="fas fa-code mb-1"></i><span class="text-[8px]">INDEX</span></div>
-                <div onclick="$('f-icon').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700 cursor-pointer"><i class="fas fa-image mb-1"></i><span class="text-[8px]">ICON</span></div>
-                <div onclick="$('f-splash').click()" class="bg-gray-800 h-20 rounded flex flex-col items-center justify-center border border-gray-700 cursor-pointer"><i class="fas fa-mobile mb-1"></i><span class="text-[8px]">SPLASH</span></div>
+            <div class="relative group">
+                <div class="flex justify-between items-end mb-1">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Código HTML (Index)</label>
+                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-upload"></i> Upload Arquivo</button>
+                </div>
+                <textarea id="code-editor" class="w-full h-32 p-2 rounded border border-gray-800 focus:border-green-500 outline-none resize-none" placeholder="<html><body><h1>Olá Mundo</h1></body></html>"></textarea>
+                <input type="file" id="f-index" class="hidden" accept=".html" onchange="loadFile(this)">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div onclick="$('f-icon').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex items-center justify-center cursor-pointer hover:border-blue-500 relative overflow-hidden">
+                    <i class="fas fa-image text-gray-600"></i><span class="text-[9px] ml-2 font-bold text-gray-400">ÍCONE</span>
+                    <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover hidden">
+                </div>
+                <div onclick="$('f-splash').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex items-center justify-center cursor-pointer hover:border-purple-500 relative overflow-hidden">
+                    <i class="fas fa-mobile text-gray-600"></i><span class="text-[9px] ml-2 font-bold text-gray-400">SPLASH</span>
+                    <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover hidden">
+                </div>
+                <input type="file" id="f-icon" accept="image/png" class="hidden" onchange="preview(this, 'prev-icon')">
+                <input type="file" id="f-splash" accept="image/png" class="hidden" onchange="preview(this, 'prev-splash')">
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-[10px] font-bold text-yellow-500 uppercase"><i class="fas fa-key mr-1"></i>Assinatura (Keystore)</label>
+                    <input type="checkbox" id="use-key" class="accent-yellow-500" onchange="$('key-area').classList.toggle('hidden')">
+                </div>
+                <div id="key-area" class="hidden space-y-2 mt-2 border-t border-gray-800 pt-2">
+                    <button onclick="$('f-key').click()" class="w-full bg-black border border-gray-700 text-xs py-2 rounded text-gray-400 hover:text-white" id="btn-key-file">Selecionar Arquivo .keystore</button>
+                    <input type="file" id="f-key" accept=".keystore,.jks" class="hidden" onchange="$('btn-key-file').innerText = this.files[0].name; $('btn-key-file').classList.add('text-yellow-400')">
+                    <input type="text" id="key-pass" placeholder="Senha da Keystore" class="w-full bg-black p-2 rounded border border-gray-700 text-xs">
+                    <input type="text" id="key-alias" placeholder="Alias (Apelido)" class="w-full bg-black p-2 rounded border border-gray-700 text-xs">
+                    <input type="text" id="alias-pass" placeholder="Senha do Alias" class="w-full bg-black p-2 rounded border border-gray-700 text-xs">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-400 select-none">
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-notif"> NOTIF</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-cam"> CAM</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-file"> FILE</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-geo"> GPS</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-vib"> VIB</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-full"> FULL</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-mic"> MIC</label>
+                <label class="p-2 bg-gray-900 rounded text-center border border-gray-800 cursor-pointer hover:bg-gray-800"><input type="checkbox" id="c-wake"> WAKE</label>
             </div>
             
-            <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-center">
-                <label><input type="checkbox" id="c-notif"> NOTIF</label>
-                <label><input type="checkbox" id="c-cam"> CAM</label>
-                <label><input type="checkbox" id="c-file"> FILE</label>
-                <label><input type="checkbox" id="c-geo"> GPS</label>
-                <label><input type="checkbox" id="c-vib"> VIB</label>
-                <label><input type="checkbox" id="c-full"> FULL</label>
-                <label><input type="checkbox" id="c-mic"> MIC</label>
-                <label><input type="checkbox" id="c-wake"> WAKE</label>
-            </div>
-
-            <input type="file" id="f-index" accept=".html" class="hidden">
-            <input type="file" id="f-icon" accept="image/png" class="hidden">
-            <input type="file" id="f-splash" accept="image/png" class="hidden">
-
-            <div id="logs" class="bg-black border border-gray-800 p-2 text-[10px] h-32 overflow-auto font-mono text-green-400 rounded">Logs...</div>
+            <div id="logs" class="text-[9px] font-mono text-gray-500 h-10 overflow-hidden"></div>
         </div>
 
-        <div class="p-4 bg-gray-900 border-t border-gray-800 space-y-2">
-            <button id="btn-go" onclick="build()" class="w-full bg-green-600 font-bold py-3 rounded shadow-lg text-white">FABRICAR APK</button>
-            <a id="btn-dl" href="#" target="_blank" class="hidden w-full bg-blue-600 font-bold py-3 rounded shadow-lg text-white text-center block">BAIXAR</a>
+        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4 space-y-2">
+            <div id="hist-list" class="text-center text-gray-600 text-xs mt-10">Carregando...</div>
+        </div>
+
+        <div class="p-4 bg-gray-900 border-t border-gray-800 shrink-0">
+            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-green-700 to-green-600 font-bold py-3.5 rounded-xl shadow-lg hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2">
+                <i class="fas fa-hammer"></i> FABRICAR
+            </button>
         </div>
     </div>
 
     <script>
         const CFG = { u: "gamerkaua00", r: "Maquina-Apks" };
         const $ = id => document.getElementById(id);
-        const log = m => { const l = $('logs'); l.innerHTML += `<div>> ${m}</div>`; l.scrollTop = l.scrollHeight; };
-        
-        // Auto Login
-        window.onload = () => {
-            const t = localStorage.getItem('tk');
-            if(t && t.startsWith('ghp_')) { $('view-login').classList.add('hidden'); $('view-editor').classList.remove('hidden'); }
-        }
+        const log = m => $('logs').innerText = "> " + m;
 
-        function login() { 
-            const t = $('tkn').value; 
-            if(t.startsWith('ghp_')) { localStorage.setItem('tk', t); location.reload(); } 
-            else alert('Token Inválido'); 
-        }
+        // AUTH
+        window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
+        function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token inválido'); }
         function logout() { localStorage.removeItem('tk'); location.reload(); }
 
-        const toB64 = f => new Promise((r,j) => { const rd = new FileReader(); rd.readAsDataURL(f); rd.onload = () => r(rd.result.split(',')[1]); rd.onerror = j; });
+        // UI
+        function tab(t) {
+            ['editor','history'].forEach(x => {
+                $(`content-${x}`).classList.add('hidden');
+                $(`tab-${x}`).classList.remove('tab-active','text-green-500');
+                $(`tab-${x}`).classList.add('text-gray-500');
+            });
+            $(`content-${t}`).classList.remove('hidden');
+            $(`tab-${t}`).classList.add('tab-active');
+            $(`tab-${t}`).classList.remove('text-gray-500');
+            if(t === 'history') loadHistory();
+        }
+
+        function preview(input, img) { if(input.files[0]){ const r=new FileReader(); r.onload=e=>{ $(img).src=e.target.result; $(img).classList.remove('hidden'); }; r.readAsDataURL(input.files[0]); } }
+        function loadFile(input) { if(input.files[0]){ const r=new FileReader(); r.onload=e=> $('code-editor').value=e.target.result; r.readAsText(input.files[0]); } }
+
+        // API
+        const toB64 = f => new Promise((r,j)=>{const d=new FileReader();d.readAsDataURL(f);d.onload=()=>r(d.result.split(',')[1]);d.onerror=j;});
 
         async function upload(path, content, msg) {
-            const t = localStorage.getItem('tk');
-            const url = `https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${path}`;
-            let sha = null;
-            try { const chk = await fetch(url, {headers:{Authorization:`token ${t}`}}); if(chk.ok) sha = (await chk.json()).sha; } catch(e){}
-            const body = { message: msg, content: content, branch: "main" }; if(sha) body.sha = sha;
-            await fetch(url, { method: 'PUT', headers: {Authorization:`token ${t}`, 'Content-Type':'application/json'}, body: JSON.stringify(body) });
+            const t=localStorage.getItem('tk');
+            const url=`https://api.github.com/repos/${CFG.u}/${CFG.r}/contents/${path}`;
+            let sha=null; try{const c=await fetch(url,{headers:{Authorization:`token ${t}`}});if(c.ok)sha=(await c.json()).sha;}catch(e){}
+            const body={message:msg,content:content,branch:"main"}; if(sha)body.sha=sha;
+            await fetch(url,{method:'PUT',headers:{Authorization:`token ${t}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
         }
 
         async function build() {
-            const btn = $('btn-go'); btn.disabled = true; btn.innerText = "ENVIANDO...";
+            const btn=$('btn-build'); btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> ENVIANDO...';
+            
             try {
-                const name = $('name').value || "App";
-                const pkg = $('pkg').value || "com.app";
-                const ver = $('ver').value || "1.0.0";
+                const name=$('name').value||"AppV18";
+                const html=$('code-editor').value;
+                const fIco=$('f-icon').files[0];
+                const fSpl=$('f-splash').files[0];
+                const fKey=$('f-key').files[0];
 
-                const fIdx = $('f-index').files[0];
-                const fIco = $('f-icon').files[0];
-                const fSpl = $('f-splash').files[0];
+                if(!html) throw "Código HTML vazio!";
 
-                if(!fIdx) return alert("Faltou Index.html");
+                log("Enviando HTML...");
+                await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "Update HTML");
 
-                log("Enviando arquivos...");
-                await upload("www/index.html", await toB64(fIdx), "Index");
-                if(fIco) await upload("www/icon.png", await toB64(fIco), "Icon");
-                if(fSpl) await upload("www/splash.png", await toB64(fSpl), "Splash");
+                if(fIco) { log("Enviando Ícone..."); await upload("www/icon.png", await toB64(fIco), "Icon"); }
+                if(fSpl) { log("Enviando Splash..."); await upload("www/splash.png", await toB64(fSpl), "Splash"); }
 
-                const feat = { 
-                    appName: name, packageId: pkg, version: ver, hasSplash: !!fSpl,
+                // Assinatura
+                let signData = null;
+                if($('use-key').checked && fKey) {
+                    log("Enviando Keystore...");
+                    await upload("www/release.keystore", await toB64(fKey), "Keystore");
+                    signData = {
+                        storePass: $('key-pass').value,
+                        alias: $('key-alias').value,
+                        aliasPass: $('alias-pass').value
+                    };
+                }
+
+                // Config
+                log("Enviando Instruções...");
+                const feat = {
+                    appName: name, packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
+                    hasSplash: !!fSpl, signing: signData,
                     notification: $('c-notif').checked, file: $('c-file').checked, camera: $('c-cam').checked,
                     geolocation: $('c-geo').checked, vibration: $('c-vib').checked, fullscreen: $('c-full').checked,
                     microphone: $('c-mic').checked, insomnia: $('c-wake').checked
@@ -117,34 +185,51 @@
                 
                 await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), `Build: ${name}`);
 
-                btn.innerText = "FABRICANDO... (Aguarde)";
+                btn.innerHTML='FABRICANDO...';
                 monitor();
-            } catch(e) { log("Erro: " + e); btn.disabled = false; btn.innerText = "ERRO"; }
+
+            } catch(e) { alert(e); btn.disabled=false; btn.innerText="FABRICAR"; }
         }
 
         async function monitor() {
-            const t = localStorage.getItem('tk');
-            const int = setInterval(async () => {
-                const r = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`, {headers:{Authorization:`token ${t}`}});
-                const d = await r.json();
-                const run = d.workflow_runs[0];
-                if(run && run.status === "completed") {
+            const t=localStorage.getItem('tk');
+            const int = setInterval(async()=>{
+                const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/actions/runs?per_page=1`,{headers:{Authorization:`token ${t}`}});
+                const d=await r.json(); const run=d.workflow_runs[0];
+                
+                if(run.status === "completed") {
                     clearInterval(int);
-                    // Habilita fabricar de novo
-                    $('btn-go').disabled = false;
-                    $('btn-go').innerText = "FABRICAR NOVAMENTE";
-                    
-                    if(run.conclusion === "success") {
-                        log("SUCESSO!");
-                        const rel = await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`, {headers:{Authorization:`token ${t}`}});
-                        const rd = await rel.json();
-                        if(rd.assets && rd.assets[0]) {
-                            $('btn-dl').href = rd.assets[0].browser_download_url;
-                            $('btn-dl').classList.remove('hidden');
-                        }
-                    } else log("FALHA!");
+                    $('btn-build').disabled=false; $('btn-build').innerHTML='<i class="fas fa-hammer"></i> FABRICAR';
+                    if(run.conclusion==="success") { loadHistory(); alert("✅ Sucesso! Veja a aba Histórico."); }
+                    else alert("❌ Falha!");
+                } else {
+                    // Logs em Tempo Real (Simulado pelo status)
+                    const step = run.status === "in_progress" ? "Processando..." : "Na fila...";
+                    log(`${step} (${parseInt((Date.now()-Date.parse(run.created_at))/1000)}s)`);
                 }
-            }, 5000);
+            }, 3000);
+        }
+
+        async function loadHistory() {
+            const l=$('hist-list'); l.innerHTML='<i class="fas fa-spinner fa-spin"></i>';
+            const t=localStorage.getItem('tk');
+            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases?per_page=5`,{headers:{Authorization:`token ${t}`}});
+            const d=await r.json();
+            l.innerHTML = '';
+            d.forEach(rel => {
+                const asset = rel.assets[0];
+                if(!asset) return;
+                const date = new Date(rel.published_at).toLocaleDateString('pt-BR');
+                l.innerHTML += `
+                    <div class="bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-sm text-green-400">${rel.name || 'App'}</div>
+                            <div class="text-[9px] text-gray-500">${date} • ${(asset.size/1024/1024).toFixed(1)} MB</div>
+                        </div>
+                        <a href="${asset.browser_download_url}" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-500">BAIXAR</a>
+                    </div>
+                `;
+            });
         }
     </script>
 </body>
