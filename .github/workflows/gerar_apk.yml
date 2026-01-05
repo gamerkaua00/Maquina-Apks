@@ -3,9 +3,11 @@ name: Fábrica Turbo V68 (Titan Omni) 🛡️
 on:
   push:
     branches: [ "main", "master" ]
+    # CORREÇÃO ANTI-LOOP: Só roda se estes arquivos mudarem
+    paths:
+      - 'features.json'
+      - 'www/**'
   workflow_dispatch:
-  repository_dispatch:
-    types: [build_app]
 
 permissions:
   contents: write
@@ -24,20 +26,28 @@ jobs:
       - name: 📥 Código
         uses: actions/checkout@v3
 
-      # --- 1. DADOS ---
+      # --- 1. DADOS (Tratamento de Erros) ---
       - name: 🧠 Config
         id: dados
         run: |
+          # Remove arquivos antigos para evitar cache sujo
+          rm -rf app-temp
           if [ -f package.json ]; then mv package.json package.json.bak; fi
           if [ -f config.xml ]; then mv config.xml config.xml.bak; fi
           
           cat <<EOF > ler.py
-          import json, os
+          import json, os, re
           try:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
+          
+          # LIMPEZA EXTRA DO ID
+          raw_id = d.get('packageId', 'com.fabrica.v68')
+          clean_id = re.sub(r'[^a-z0-9\.]', '', raw_id.lower())
+          if '.' not in clean_id: clean_id = f"com.fabrica.{clean_id}"
+          
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v68')}\n")
+              f.write(f"APP_ID={clean_id}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
               f.write(f"APP_NAME={d.get('appName', 'App V68')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
@@ -46,56 +56,32 @@ jobs:
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO START (FILE METHOD - INFALÍVEL) ---
+      # --- 2. NOTIFICAÇÃO START ---
       - name: 🔔 Notificar Início
+        continue-on-error: true
         run: |
-          # Gera arquivos JSON limpos com Python
           cat <<EOF > gen_msg.py
           import json, os
-          
-          # Discord JSON
-          d_msg = {
-              "embeds": [{
-                  "title": "🛡️ Titan V68 Iniciado",
-                  "description": f"**App:** {os.environ['APP_NAME']}",
-                  "color": 3066993,
-                  "fields": [{"name": "ID", "value": os.environ['APP_ID']}]
-              }]
-          }
+          d_msg = { "embeds": [{ "title": "🛡️ Titan V68 Iniciado", "description": f"**App:** {os.environ['APP_NAME']}", "color": 3066993, "fields": [{"name": "ID", "value": os.environ['APP_ID']}] }] }
           with open('discord_start.json', 'w') as f: json.dump(d_msg, f)
-          
-          # Telegram JSON
-          t_msg = {
-              "chat_id": os.environ.get('TG_CHAT'),
-              "text": f"🛡️ <b>V68 START</b>\nApp: {os.environ['APP_NAME']}",
-              "parse_mode": "HTML"
-          }
-          with open('telegram_start.json', 'w') as f: json.dump(t_msg, f)
           EOF
           python3 gen_msg.py
-          
-          # Envia usando CURL lendo do arquivo (-d @file)
-          if [ ! -z "$DISCORD_WEBHOOK" ]; then
-             curl -s -H "Content-Type: application/json" -d @discord_start.json "$DISCORD_WEBHOOK"
-          fi
-          
-          if [ ! -z "$TG_TOKEN" ] && [ ! -z "$TG_CHAT" ]; then
-             curl -s -H "Content-Type: application/json" -d @telegram_start.json "https://api.telegram.org/bot$TG_TOKEN/sendMessage"
-          fi
+          if [ ! -z "$DISCORD_WEBHOOK" ]; then curl -s -H "Content-Type: application/json" -d @discord_start.json "$DISCORD_WEBHOOK"; fi
 
       # --- 3. SETUP ---
       - name: 🛠️ Setup
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
       # --- 4. CRIAÇÃO ---
-      - name: 🏗️ Configurando
+      - name: 🏗️ Criando Projeto
         run: |
+          # O ID já foi limpo no passo 1. Se falhar, o log vai mostrar
+          echo "Gerando App com ID: ${{ env.APP_ID }}"
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
           
@@ -115,10 +101,9 @@ jobs:
                   prefs['SplashScreenDelay'] = '3000'; prefs['ShowSplashScreen'] = 'true'
               else:
                   prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
-
+              
               orient = os.environ.get('ORIENT', 'default')
               if orient != 'default': prefs['Orientation'] = orient
-              
               prefs['StatusBarBackgroundColor'] = os.environ.get('STATUS_COLOR', '#000000')
 
               for k,v in prefs.items():
@@ -129,24 +114,16 @@ jobs:
                       el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       el.set('name',k); el.set('value',v)
 
-              for tag in root.findall('{http://www.w3.org/ns/widgets}access'): root.remove(tag)
-              for tag in root.findall('{http://www.w3.org/ns/widgets}allow-navigation'): root.remove(tag)
-              ET.SubElement(root, '{http://www.w3.org/ns/widgets}access').set('origin', '*')
-              ET.SubElement(root, '{http://www.w3.org/ns/widgets}allow-navigation').set('href', '*')
-              ET.SubElement(root, '{http://www.w3.org/ns/widgets}allow-intent').set('href', '*')
-
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
           except: pass
           EOF
           python3 config.py
 
       # --- 5. PLATAFORMA ---
-      - name: 🔌 Android
+      - name: 🔌 Android Base
         run: |
           cd app-temp
           cordova platform add android@12.0.0
-          
-          # Plugins Base
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-statusbar
           cordova plugin add cordova-plugin-inappbrowser
@@ -156,8 +133,8 @@ jobs:
           cordova plugin add cordova-plugin-screen-orientation
           cordova plugin add cordova-plugin-cleartext
 
-      # --- 6. PLUGINS EXTRAS (EXPANDIDO) ---
-      - name: 🧩 Plugins Extras
+      # --- 6. PLUGINS ---
+      - name: 🧩 Instalando Plugins
         run: |
           cd app-temp
           cat <<EOF > plugins.py
@@ -173,28 +150,22 @@ jobs:
           if d.get('geolocation'): i("cordova-plugin-geolocation")
           if d.get('vibration'): i("cordova-plugin-vibration")
           if d.get('microphone'): i("cordova-plugin-media cordova-plugin-media-capture")
-          if d.get('insomnia'): i("cordova-plugin-insomnia")
           if d.get('flashlight'): i("cordova-plugin-flashlight")
           if d.get('battery'): i("cordova-plugin-battery-status")
-          
           if d.get('biometric'): i("cordova-plugin-fingerprint-aio")
           if d.get('share'): i("cordova-plugin-x-socialsharing")
           if d.get('tts'): i("cordova-plugin-tts")
-          
-          # Novos V68
           if d.get('brightness'): i("cordova-plugin-brightness")
           if d.get('badge'): i("cordova-plugin-badge")
           if d.get('email'): i("cordova-plugin-email-composer")
-          
           if d.get('admob'): i(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId', 'ca-app-pub-xxx')}")
-              
           i("cordova-plugin-android-permissions")
           EOF
           python3 plugins.py
           cordova prepare android
 
-      # --- 7. FINALIZAÇÃO ---
-      - name: ☢️ Injeção Final
+      # --- 7. FINALIZAÇÃO E ICONE ---
+      - name: ☢️ Injeção de Recursos
         run: |
           cd app-temp
           ICON="www/icon.png"
@@ -208,40 +179,23 @@ jobs:
              mkdir -p platforms/android/app/src/main/res/drawable
              cp "$SPLASH" platforms/android/app/src/main/res/drawable/screen.png
           fi
-          
-          cat <<EOF > inject.py
-          import re, os
-          app_id = os.environ['APP_ID']
-          ver = os.environ['APP_VER']
-          try:
-             p = ver.split('.')
-             code = int(p[0])*10000 + int(p[1])*100 + int(p[2])
-          except: code=10000
-          
-          target = None
-          for r, d, f in os.walk("platforms/android"):
-              if "build.gradle" in f and "app" in r: target = os.path.join(r, "build.gradle"); break
-          
-          if target:
-              with open(target,'r') as f: c=f.read()
-              c = re.sub(r'applicationId\s+".*"', f'applicationId "{app_id}"', c)
-              c = re.sub(r'namespace\s+".*"', f'namespace "{app_id}"', c)
-              c = re.sub(r'versionCode\s+\d+', f'versionCode {code}', c)
-              with open(target,'w') as f: f.write(c)
-          EOF
-          python3 inject.py
 
       # --- 8. BUILD ---
-      - name: 📱 Compilar
+      - name: 📱 Compilando
         id: build_apk
         run: |
           cd app-temp
           echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           echo "android.enableJetifier=true" >> platforms/android/gradle.properties
           
-          cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
+          # Tenta buildar
+          if cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33; then
+             echo "Build SUCESSO"
+          else
+             echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
+          fi
           
-          FILE_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "*.apk" | head -n 1)
+          FILE_PATH=$(find platforms/android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -z "$FILE_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
@@ -254,7 +208,7 @@ jobs:
           fi
 
       # --- 9. RELEASE ---
-      - name: 🚀 Release
+      - name: 🚀 Criar Release
         uses: softprops/action-gh-release@v1
         if: env.STATUS == 'SUCESSO'
         with:
@@ -263,57 +217,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO FIM (FILE METHOD + FILE UPLOAD) ---
-      - name: 🔔 Fim
+      # --- 10. NOTIFICAÇÃO FIM ---
+      - name: 🔔 Notificar Fim
         if: always()
         run: |
-          # 1. Gera JSONs com Python
           cat <<EOF > gen_end.py
           import json, os
           status = os.environ.get('STATUS')
           link = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/tag/v{os.environ['GITHUB_RUN_NUMBER']}"
-          app = os.environ['APP_NAME']
+          app = os.environ.get('APP_NAME', 'App')
           
           if status == 'SUCESSO':
-              # Discord Embed Rich
               qr = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={link}"
-              d_msg = {
-                  "embeds": [{
-                      "title": "✅ SUCESSO!",
-                      "description": f"**{app}**\n[Baixar Agora]({link})",
-                      "color": 5763712,
-                      "thumbnail": {"url": qr},
-                      "footer": {"text": "Titan V68"}
-                  }]
-              }
-              # Telegram Text
-              t_msg = {
-                  "chat_id": os.environ.get('TG_CHAT'),
-                  "text": f"✅ <b>{app} PRONTO!</b>\n📥 <a href='{link}'>Link Direto</a>",
-                  "parse_mode": "HTML"
-              }
+              d_msg = { "embeds": [{ "title": "✅ SUCESSO!", "description": f"**{app}**\n[Baixar Agora]({link})", "color": 5763712, "thumbnail": {"url": qr} }] }
           else:
-              d_msg = {"content": "@everyone ❌ FALHA"}
-              t_msg = {"chat_id": os.environ.get('TG_CHAT'), "text": "❌ FALHA"}
-              
+              d_msg = {"content": "❌ FALHA no Build"}
+          
           with open('discord_end.json', 'w') as f: json.dump(d_msg, f)
-          with open('telegram_end.json', 'w') as f: json.dump(t_msg, f)
           EOF
           python3 gen_end.py
-          
-          # 2. Envia Discord
-          if [ ! -z "$DISCORD_WEBHOOK" ]; then
-             curl -s -H "Content-Type: application/json" -d @discord_end.json "$DISCORD_WEBHOOK"
-          fi
-          
-          # 3. Envia Telegram (Arquivo ou Texto)
-          if [ ! -z "$TG_TOKEN" ] && [ ! -z "$TG_CHAT" ]; then
-             FILE="${{ env.FINAL_FILE }}"
-             # Se for sucesso e arquivo existir, envia documento
-             if [ "${{ env.STATUS }}" == "SUCESSO" ] && [ -f "$FILE" ]; then
-                curl -s -F chat_id="$TG_CHAT" -F document=@"$FILE" -F caption="📦 ${{ env.APP_NAME }}" "https://api.telegram.org/bot$TG_TOKEN/sendDocument"
-             else
-                # Se não, envia o JSON de texto
-                curl -s -H "Content-Type: application/json" -d @telegram_end.json "https://api.telegram.org/bot$TG_TOKEN/sendMessage"
-             fi
-          fi
+          if [ ! -z "$DISCORD_WEBHOOK" ]; then curl -s -H "Content-Type: application/json" -d @discord_end.json "$DISCORD_WEBHOOK"; fi
