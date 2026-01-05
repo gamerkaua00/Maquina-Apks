@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fábrica V21 Mega</title>
+    <title>Fábrica V64 Apocalypse</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -18,101 +18,103 @@
 
     <div id="view-login" class="flex-1 flex items-center justify-center p-6 bg-black z-50 absolute inset-0">
         <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
-            <i class="fas fa-dragon text-5xl text-red-600 mb-4"></i>
-            <h1 class="text-xl font-bold mb-4">Fábrica V21</h1>
-            <input type="password" id="tkn" placeholder="Token GitHub" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-red-400">
-            <button onclick="login()" class="w-full bg-red-700 font-bold py-3 rounded hover:bg-red-600">ACESSAR</button>
+            <i class="fas fa-biohazard text-6xl text-red-600 mb-4 animate-pulse"></i>
+            <h1 class="text-xl font-bold mb-4 text-red-500">APOCALYPSE V64</h1>
+            <input type="password" id="tkn" placeholder="GitHub Token (ghp_...)" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-red-400 font-mono text-sm">
+            <button onclick="login()" class="w-full bg-red-700 font-bold py-3 rounded hover:bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]">INICIAR SISTEMA</button>
         </div>
     </div>
 
     <div id="view-main" class="hidden flex flex-col h-full">
         <div class="p-3 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
-            <div class="font-bold text-red-500"><i class="fas fa-box-open mr-2"></i>Mega Pack</div>
-            <div class="flex gap-4 text-xs font-bold uppercase">
-                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">App</button>
+            <div class="font-bold text-red-500"><i class="fas fa-radiation mr-2"></i>V64</div>
+            <div class="flex gap-4 text-xs font-bold uppercase tracking-widest">
+                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">Core</button>
                 <button onclick="tab('plugins')" id="tab-plugins" class="pb-1 text-gray-500">Plugins</button>
-                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">History</button>
+                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">Downloads</button>
             </div>
-            <button onclick="logout()" class="text-gray-500"><i class="fas fa-times"></i></button>
+            <button onclick="logout()" class="text-gray-500"><i class="fas fa-power-off"></i></button>
         </div>
 
         <div id="content-editor" class="flex-1 overflow-y-auto p-4 space-y-4">
             <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
-                <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none mb-2">
+                <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none mb-2 placeholder-gray-700">
                 <div class="flex gap-2">
-                    <input type="text" id="pkg" placeholder="com.app.v21" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs">
-                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs text-center">
+                    <input type="text" id="pkg" placeholder="com.app.v64" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400">
+                    <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs text-center text-gray-400">
                 </div>
             </div>
 
             <div class="relative group">
                 <div class="flex justify-between items-end mb-1">
-                    <label class="text-[10px] font-bold text-gray-500">HTML</label>
-                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded"><i class="fas fa-upload"></i></button>
+                    <label class="text-[10px] font-bold text-gray-500">CÓDIGO FONTE (HTML)</label>
+                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-file-code mr-1"></i>Carregar Arquivo</button>
                 </div>
-                <textarea id="code-editor" class="w-full h-24 p-2 rounded border border-gray-800 outline-none resize-none" placeholder="<html>...</html>"></textarea>
+                <textarea id="code-editor" class="w-full h-32 p-2 rounded border border-gray-800 outline-none resize-none focus:border-red-900" placeholder="<html><body><h1>Olá...</h1></body></html>"></textarea>
                 <input type="file" id="f-index" class="hidden" accept=".html" onchange="loadFile(this)">
             </div>
 
             <div class="grid grid-cols-2 gap-2">
-                <div onclick="$('f-icon').click()" class="bg-gray-900 h-14 rounded border border-gray-800 flex items-center justify-center cursor-pointer relative overflow-hidden">
-                    <i class="fas fa-image text-gray-600"></i><span class="text-[9px] ml-2 font-bold text-gray-400">ICON</span>
+                <div onclick="$('f-icon').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-red-500">
+                    <i class="fas fa-image text-xl text-gray-600 mb-1 group-hover:text-red-500"></i><span class="text-[8px] font-bold text-gray-500">ÍCONE (PNG)</span>
                     <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
-                <div onclick="$('f-splash').click()" class="bg-gray-900 h-14 rounded border border-gray-800 flex items-center justify-center cursor-pointer relative overflow-hidden">
-                    <i class="fas fa-bolt text-gray-600"></i><span class="text-[9px] ml-2 font-bold text-gray-400">SPLASH</span>
+                <div onclick="$('f-splash').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-red-500">
+                    <i class="fas fa-mobile text-xl text-gray-600 mb-1 group-hover:text-red-500"></i><span class="text-[8px] font-bold text-gray-500">SPLASH (PNG)</span>
                     <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
-                <input type="file" id="f-icon" class="hidden" onchange="preview(this,'prev-icon')">
-                <input type="file" id="f-splash" class="hidden" onchange="preview(this,'prev-splash')">
+                <input type="file" id="f-icon" class="hidden" accept="image/png" onchange="preview(this,'prev-icon')">
+                <input type="file" id="f-splash" class="hidden" accept="image/png" onchange="preview(this,'prev-splash')">
             </div>
             
             <div class="grid grid-cols-2 gap-2">
-                <select id="build-type" class="bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-400">
-                    <option value="apk">Gerar APK</option>
-                    <option value="aab">Gerar AAB</option>
-                </select>
-                <select id="orient" class="bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-400">
-                    <option value="default">Rotação Auto</option>
-                    <option value="portrait">Travado Em Pé</option>
-                    <option value="landscape">Travado Deitado</option>
-                </select>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-gray-500">FORMATO</label>
+                    <select id="build-type" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-300">
+                        <option value="apk">APK (Padrão)</option>
+                        <option value="aab">AAB (Play Store)</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-gray-500">ORIENTAÇÃO</label>
+                    <select id="orient" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-300">
+                        <option value="default">Automático</option>
+                        <option value="portrait">Em Pé (Portrait)</option>
+                        <option value="landscape">Deitado (Landscape)</option>
+                    </select>
+                </div>
             </div>
         </div>
 
         <div id="content-plugins" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-            <h3 class="text-xs font-bold text-red-500 uppercase mb-2">Essenciais</h3>
+            <h3 class="text-[10px] font-bold text-red-500 uppercase border-b border-red-900/30 pb-1">Funcionalidades</h3>
             <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-400 select-none">
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-notif" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">NOTIF</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">CAM</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">FILE</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">CÂMERA</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ARQUIVOS</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-geo" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">GPS</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VIB</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VIBRAR</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-mic" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">MIC</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-net" class="chk hidden" checked disabled><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center opacity-50">WIFI</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-clip" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">COPY</div></label>
-            </div>
-
-            <h3 class="text-xs font-bold text-red-500 uppercase mb-2 mt-4">Avançados</h3>
-            <div class="grid grid-cols-3 gap-2 text-[8px] font-bold text-gray-400 select-none">
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIOMETRIA</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">COMPARTILHAR</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VOZ (TTS)</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-local" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">AGENDA</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-key" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">TECLADO PRO</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">SHARE</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VOZ TTS</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-wake" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ACORDADO</div></label>
             </div>
             
             <div class="mt-4 bg-gray-900 border border-gray-800 rounded p-3">
-                <label class="text-[10px] font-bold text-blue-500">ADMOB ID</label>
-                <input type="text" id="ad-id" placeholder="Deixe vazio se não usar" class="w-full bg-black p-2 rounded border border-gray-700 text-xs mt-1">
+                <label class="text-[10px] font-bold text-blue-500 block mb-1">ADMOB (Anúncios)</label>
+                <input type="text" id="ad-id" placeholder="ID do Banner (ca-app-pub...)" class="w-full bg-black p-2 rounded border border-gray-700 text-xs text-gray-300">
             </div>
         </div>
 
-        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4"><div id="hist-list" class="text-center text-xs mt-10">...</div></div>
-        <div id="logs" class="px-4 py-1 text-[9px] font-mono text-gray-500 h-6 overflow-hidden bg-black border-t border-gray-800"></div>
+        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4"><div id="hist-list" class="text-center text-xs mt-10 text-gray-600">Buscando builds...</div></div>
+
+        <div id="logs" class="px-4 py-1 text-[9px] font-mono text-gray-500 h-6 overflow-hidden bg-black border-t border-gray-800 truncate"></div>
 
         <div class="p-4 bg-gray-900 border-t border-gray-800 shrink-0">
-            <button id="btn-build" onclick="build()" class="w-full bg-red-700 font-bold py-3.5 rounded-xl shadow-lg hover:bg-red-600 transition">FABRICAR V21</button>
+            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-red-700 to-red-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
+                <i class="fas fa-radiation-alt"></i> GERAR APLICATIVO
+            </button>
         </div>
     </div>
 
@@ -122,7 +124,7 @@
         const log = m => $('logs').innerText = "> " + m;
 
         window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
-        function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Errado'); }
+        function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Inválido'); }
         function logout() { localStorage.removeItem('tk'); location.reload(); }
 
         function tab(t) {
@@ -144,32 +146,31 @@
         }
 
         async function build() {
-            const btn=$('btn-build'); btn.disabled=true; btn.innerText="ENVIANDO...";
+            const btn=$('btn-build'); btn.disabled=true; btn.innerText="ENVIANDO DADOS...";
             try {
                 const html=$('code-editor').value;
-                if(!html) throw "HTML Vazio!";
+                if(!html) throw "Cole o HTML!";
 
-                log("Subindo Arquivos...");
+                log("Enviando HTML...");
                 await upload("www/index.html", btoa(unescape(encodeURIComponent(html))), "Core");
                 const fIco=$('f-icon').files[0]; if(fIco) await upload("www/icon.png", await toB64(fIco), "Icon");
                 const fSpl=$('f-splash').files[0]; if(fSpl) await upload("www/splash.png", await toB64(fSpl), "Splash");
 
-                log("Configurando...");
+                log("Configurando Bot...");
                 const feat = {
-                    appName: $('name').value||"AppV21", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
+                    appName: $('name').value||"AppV64", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
                     hasSplash: !!fSpl, outputType: $('build-type').value, orientation: $('orient').value, admobId: $('ad-id').value,
                     // Plugins
                     notification: $('c-notif').checked, camera: $('c-cam').checked, file: $('c-file').checked,
                     geolocation: $('c-geo').checked, vibration: $('c-vib').checked, microphone: $('c-mic').checked,
                     biometric: $('c-bio').checked, share: $('c-share').checked, tts: $('c-tts').checked,
-                    clipboard: $('c-clip').checked, localNotif: $('c-local').checked, keyboard: $('c-key').checked,
-                    admob: !!$('ad-id').value
+                    insomnia: $('c-wake').checked, admob: !!$('ad-id').value
                 };
                 
-                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Start");
-                btn.innerText="PROCESSANDO..."; monitor();
+                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build Order");
+                btn.innerText="FABRICANDO..."; monitor();
 
-            } catch(e) { alert(e); btn.disabled=false; btn.innerText="FABRICAR"; }
+            } catch(e) { alert(e); btn.disabled=false; btn.innerText="TENTAR DE NOVO"; }
         }
 
         async function monitor() {
@@ -179,9 +180,11 @@
                 const d=await r.json(); const run=d.workflow_runs[0];
                 if(run.status==="completed") {
                     clearInterval(int);
-                    $('btn-build').disabled=false; $('btn-build').innerText="NOVA FABRICAÇÃO";
+                    $('btn-build').disabled=false; $('btn-build').innerText="NOVA ORDEM";
                     if(run.conclusion==="success") { tab('history'); alert("✅ SUCESSO!"); }
-                    else alert("❌ FALHA!");
+                    else alert("❌ FALHA! Verifique o GitHub.");
+                } else {
+                    log(run.status === "in_progress" ? "O Robô está trabalhando..." : "Na fila...");
                 }
             }, 4000);
         }
