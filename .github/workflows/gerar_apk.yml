@@ -1,4 +1,4 @@
-name: Fábrica Turbo V46 (Sync Panel Fix) 🚀
+name: Fábrica Turbo V47 (Nuclear Fix) ☢️
 
 on:
   push:
@@ -22,214 +22,156 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. CONFIGURAÇÃO DE VARIÁVEIS (LENDO DO PAINEL) ---
-      - name: 🧠 Processando Dados
+      # --- 1. PREPARAÇÃO DOS DADOS ---
+      - name: 🧠 Ler JSON e Definir Variáveis
         id: dados
         run: |
-          # Script Python para ler o JSON enviado pelo painel com segurança
-          cat <<EOF > ler_dados.py
+          # Extrai dados do features.json com Python seguro
+          cat <<EOF > ler.py
           import json, os
+          try:
+              with open('features.json') as f: d = json.load(f)
+          except: d = {}
           
-          def get_val(key, default):
-              try:
-                  with open('features.json') as f:
-                      data = json.load(f)
-                      return data.get(key, default)
-              except:
-                  return default
-          
-          appid = get_val('packageId', 'com.fabrica.app')
-          appver = get_val('version', '1.0.0')
-          appname = get_val('appName', 'App Turbo')
-          
+          # Define valores padrão se falhar
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={appid}\n")
-              f.write(f"APP_VER={appver}\n")
-              f.write(f"APP_NAME={appname}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.nuclear')}\n")
+              f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App Nuclear')}\n")
           EOF
-          python3 ler_dados.py
+          python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO ---
-      - name: 🔔 Discord (Início)
+      # --- 2. NOTIFICAÇÃO TURBO (INÍCIO) ---
+      - name: 🔔 Discord (INÍCIO)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          cat <<EOF > notify_start.py
-          import os, json, urllib.request
-          
-          webhook = os.environ.get('DISCORD_WEBHOOK')
-          if not webhook: exit(0)
-          
-          data = {
-            "username": "Fábrica Bot 🤖",
-            "content": "@everyone 🏭 **Nova ordem de produção!**",
-            "embeds": [{
-              "title": "⚙️ Compilando: ${{ env.APP_NAME }}",
-              "color": 16776960,
-              "fields": [
-                {"name": "🆔 ID", "value": "\`${{ env.APP_ID }}\`", "inline": True},
-                {"name": "🔢 Versão", "value": "${{ env.APP_VER }}", "inline": True}
-              ]
-            }]
-          }
-          
-          headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
-          try:
-              req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
-              urllib.request.urlopen(req)
-          except: pass
-          EOF
-          python3 notify_start.py
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"@everyone 🚨 **FÁBRICA INICIADA!**\n\n⚙️ **App:** ${{ env.APP_NAME }}\n🆔 **ID:** \`${{ env.APP_ID }}\`\n🔢 **Versão:** ${{ env.APP_VER }}\n\n*Aguarde o processamento...*\"}" \
+          $DISCORD_WEBHOOK
 
-      # --- 3. SETUP AMBIENTE ---
-      - name: ☕ Setup Java & Gradle
+      # --- 3. AMBIENTE ---
+      - name: ☕ Java 17 & Ferramentas
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🔨 Forçar Gradle 8.7
+      - name: 🛠️ Android SDK & Cordova
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
-
-      - name: 🛠️ Setup Android SDK
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
           npm install -g cordova
-
-      # --- 4. CRIAÇÃO E CONFIGURAÇÃO (FORCE FIX) ---
-      - name: 🏗️ Criando App (ID Forçado)
-        run: |
-          echo "Criando projeto com ID: ${{ env.APP_ID }}"
-          cordova create app-temp ${{ env.APP_ID }} "AppTempName"
           
-          # Copia arquivos do site
-          rm -rf app-temp/www/*
+      # --- 4. CRIAÇÃO (MÉTODO LIMPO) ---
+      - name: 🏗️ Criando Estrutura
+        run: |
+          # Cria já com o ID e Nome corretos para o Cordova registrar internamente
+          cordova create app-temp ${{ env.APP_ID }} "TempName"
+          
+          # Copia seus arquivos
           cp -r www/* app-temp/www/
           
           cd app-temp
-          if [ -f "../config.xml" ]; then cp "../config.xml" .; fi
-
-          # --- FORÇA BRUTA: ID E VERSÃO ---
-          sed -i 's/widget id="[^"]*"/widget id="${{ env.APP_ID }}"/' config.xml
-          sed -i 's/version="[^"]*"/version="${{ env.APP_VER }}"/' config.xml
+          # Configura versão no XML antes de adicionar plataforma
+          sed -i 's/version="1.0.0"/version="${{ env.APP_VER }}"/' config.xml
           
-          # --- PYTHON PARA AJUSTAR NOME (XML SEGURO) ---
-          cat <<EOF > fix_name.py
-          import xml.etree.ElementTree as ET
-          ET.register_namespace('', "http://www.w3.org/ns/widgets")
-          try:
-              tree = ET.parse('config.xml')
-              root = tree.getroot()
-              for name in root.findall('{http://www.w3.org/ns/widgets}name'):
-                  name.text = '${{ env.APP_NAME }}'
-              
-              # Configurações Padrão
-              perms = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true'}
-              for k, v in perms.items():
-                  found = False
-                  for pref in root.findall('{http://www.w3.org/ns/widgets}preference'):
-                      if pref.get('name') == k: pref.set('value', v); found = True
-                  if not found:
-                      p = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
-                      p.set('name', k); p.set('value', v)
+          # Ajusta o Nome no XML
+          sed -i "s/<name>TempName<\/name>/<name>${{ env.APP_NAME }}<\/name>/" config.xml
 
-              tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-          except: pass
-          EOF
-          python3 fix_name.py
-
-      # --- 5. PLUGINS ---
-      - name: 🔌 Instalando Plugins
+      # --- 5. PLATAFORMA ---
+      - name: 🔌 Adicionando Android
         run: |
           cd app-temp
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
-          
-          # Plugins opcionais baseados no features.json
-          if [ -f "../features.json" ]; then
-             if [ "$(jq -r '.vibration' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-vibration; fi
-             if [ "$(jq -r '.camera' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-camera; fi
-             if [ "$(jq -r '.geolocation' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-geolocation; fi
-             if [ "$(jq -r '.fullscreen' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-fullscreen; fi
-             if [ "$(jq -r '.flashlight' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-flashlight; fi
-             if [ "$(jq -r '.microphone' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-media cordova-plugin-media-capture; fi
-             if [ "$(jq -r '.insomnia' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-insomnia; fi
-             if [ "$(jq -r '.file' ../features.json)" == "true" ]; then cordova plugin add cordova-plugin-file-opener2; fi
-          fi
+          # Adicione outros plugins aqui se necessário...
 
-      # --- 6. INJEÇÃO DE ÍCONE (FORCE FIX) ---
-      - name: 🎨 Injetando Ícone
+      # --- 6. CORREÇÃO NUCLEAR (ID E VERSÃO NO GRADLE) ---
+      - name: ☢️ INJEÇÃO NO GRADLE (Forçar ID)
         run: |
           cd app-temp
-          cat <<EOF > inject_icons.py
-          import os, shutil
-          source = 'www/icon.png'
-          res = 'platforms/android/app/src/main/res'
-          folders = ['mipmap-mdpi', 'mipmap-hdpi', 'mipmap-xhdpi', 'mipmap-xxhdpi', 'mipmap-xxxhdpi']
-          if os.path.exists(source):
-              print(f"✅ Injetando ícone...")
-              for f in folders:
-                  target = os.path.join(res, f)
-                  if os.path.exists(target):
-                      shutil.copy(source, os.path.join(target, 'ic_launcher.png'))
-                      shutil.copy(source, os.path.join(target, 'ic_launcher_round.png'))
-          else:
-              print("⚠️ Ícone não encontrado em www/icon.png")
-          EOF
-          python3 inject_icons.py
+          # Encontra o build.gradle do app e substitui o applicationId na força bruta
+          GRADLE_FILE="platforms/android/app/build.gradle"
+          
+          if [ -f "$GRADLE_FILE" ]; then
+             echo "Encontrado build.gradle. Injetando ID..."
+             # Substitui qualquer applicationId "com.x.x" pelo nosso ID
+             sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' $GRADLE_FILE
+             # Força o namespace também (importante para Android 12+)
+             sed -i 's/namespace ".*"/namespace "${{ env.APP_ID }}"/' $GRADLE_FILE
+          else
+             echo "ERRO CRÍTICO: build.gradle não encontrado!"
+             exit 1
+          fi
 
-      # --- 7. BUILD E RELEASE ---
-      - name: 📱 Build APK
+      # --- 7. ÍCONES (LOCALIZAR E DESTRUIR) ---
+      - name: 🎨 Injetando Ícones (Global)
+        run: |
+          cd app-temp
+          ICON_SOURCE="www/icon.png"
+          
+          if [ -f "$ICON_SOURCE" ]; then
+             echo "Injetando ícones em TODAS as pastas mipmap..."
+             # O comando find procura qualquer pasta que comece com mipmap- dentro de platforms
+             # e copia o ícone para dentro dela
+             find platforms/android -type d -name "mipmap-*" -exec cp $ICON_SOURCE {}/ic_launcher.png \;
+             find platforms/android -type d -name "mipmap-*" -exec cp $ICON_SOURCE {}/ic_launcher_round.png \;
+             find platforms/android -type d -name "mipmap-*" -exec cp $ICON_SOURCE {}/ic_launcher_foreground.png \;
+          else
+             echo "⚠️ AVISO: Ícone não enviado (www/icon.png não existe)"
+          fi
+
+      # --- 8. BUILD ---
+      - name: 📱 Compilando APK
         id: build_apk
         run: |
           cd app-temp
+          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
+          
+          # Build
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
+          
           if [ -z "$APK_PATH" ]; then
-            echo "STATUS_BUILD=FALHA" >> $GITHUB_ENV
-            exit 1
+             echo "STATUS=FALHA" >> $GITHUB_ENV
+             exit 1
           else
-            SAFE_NAME=$(echo "${{ env.APP_NAME }}" | iconv -f utf-8 -t ascii//TRANSLIT | sed 's/[^a-zA-Z0-9]/./g')
-            FINAL_NAME="${SAFE_NAME}_v${{ env.APP_VER }}.apk"
-            mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL_NAME"
-            echo "APK_FINAL=$FINAL_NAME" >> $GITHUB_ENV
-            echo "STATUS_BUILD=SUCESSO" >> $GITHUB_ENV
+             # Prepara nome final
+             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
+             FINAL="App_${SAFE_NAME}_v${{ env.APP_VER }}.apk"
+             mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL"
+             
+             echo "APK_FINAL=$FINAL" >> $GITHUB_ENV
+             echo "STATUS=SUCESSO" >> $GITHUB_ENV
           fi
 
-      - name: 🚀 Release GitHub
+      # --- 9. RELEASE ---
+      - name: 🚀 Publicar no GitHub
         uses: softprops/action-gh-release@v1
-        if: success()
+        if: env.STATUS == 'SUCESSO'
         with:
           tag_name: v${{ github.run_number }}
           name: "${{ env.APP_NAME }} v${{ env.APP_VER }}"
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 🔔 Discord (Fim)
+
+      # --- 10. NOTIFICAÇÃO TURBO (FINAL) ---
+      - name: 🔔 Discord (FIM)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          STATUS: ${{ job.status }}
         run: |
-          cat <<EOF > notify_final.py
-          import os, json, urllib.request
-          webhook = os.environ.get('DISCORD_WEBHOOK')
-          status = os.environ.get('STATUS')
-          if status == 'success':
-              content = "✅ **Sucesso!** APK Disponível na aba Releases."
-          else:
-              content = "❌ **Falha!** Verifique os logs."
-          
-          data = {"content": content}
-          headers = {'Content-Type': 'application/json'}
-          try:
-            req = urllib.request.Request(webhook, data=json.dumps(data).encode('utf-8'), headers=headers)
-            urllib.request.urlopen(req)
-          except: pass
-          EOF
-          python3 notify_final.py
+          if [ "${{ env.STATUS }}" == "SUCESSO" ]; then
+             LINK="https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+             curl -H "Content-Type: application/json" \
+             -d "{\"content\": \"@everyone ✅ **SUCESSO! O APK ESTÁ PRONTO!**\n\n📱 **App:** ${{ env.APP_NAME }}\n📂 **Download:** [Clique aqui para Baixar]($LINK)\n\n*Produção finalizada.*\"}" \
+             $DISCORD_WEBHOOK
+          else
+             LOG="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+             curl -H "Content-Type: application/json" \
+             -d "{\"content\": \"@everyone ❌ **FALHA CRÍTICA NA PRODUÇÃO!**\n\nOcorreu um erro ao compilar o aplicativo.\n[Ver Logs de Erro]($LOG)\"}" \
+             $DISCORD_WEBHOOK
+          fi
