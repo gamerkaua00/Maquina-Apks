@@ -1,4 +1,4 @@
-name: Fábrica Turbo V47 (Nuclear Fix) ☢️
+name: Fábrica Turbo V48 (Hunter Fix) 🏹
 
 on:
   push:
@@ -22,114 +22,111 @@ jobs:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. PREPARAÇÃO DOS DADOS ---
-      - name: 🧠 Ler JSON e Definir Variáveis
+      # --- 1. DADOS ---
+      - name: 🧠 Ler Dados
         id: dados
         run: |
-          # Extrai dados do features.json com Python seguro
           cat <<EOF > ler.py
           import json, os
           try:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
-          
-          # Define valores padrão se falhar
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.nuclear')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.hunter')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App Nuclear')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App Hunter')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO TURBO (INÍCIO) ---
-      - name: 🔔 Discord (INÍCIO)
+      # --- 2. NOTIFICAÇÃO (Com Debug) ---
+      - name: 🔔 Discord (Início)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"@everyone 🚨 **FÁBRICA INICIADA!**\n\n⚙️ **App:** ${{ env.APP_NAME }}\n🆔 **ID:** \`${{ env.APP_ID }}\`\n🔢 **Versão:** ${{ env.APP_VER }}\n\n*Aguarde o processamento...*\"}" \
-          $DISCORD_WEBHOOK
+          echo "Tentando enviar notificação..."
+          curl -v -H "Content-Type: application/json" \
+          -d "{\"content\": \"@everyone 🏹 **FÁBRICA V48 INICIADA!**\n\n⚙️ **App:** ${{ env.APP_NAME }}\n🆔 **ID:** \`${{ env.APP_ID }}\`\n\n*Gerando arquivos do sistema...*\"}" \
+          $DISCORD_WEBHOOK || echo "Erro ao enviar webhook"
 
       # --- 3. AMBIENTE ---
-      - name: ☕ Java 17 & Ferramentas
+      - name: ☕ Setup Java & Gradle
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🛠️ Android SDK & Cordova
+      - name: 🛠️ Setup Android SDK
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
           npm install -g cordova
-          
-      # --- 4. CRIAÇÃO (MÉTODO LIMPO) ---
-      - name: 🏗️ Criando Estrutura
+
+      # --- 4. CRIAÇÃO ---
+      - name: 🏗️ Criando Base
         run: |
-          # Cria já com o ID e Nome corretos para o Cordova registrar internamente
+          # Cria o projeto
           cordova create app-temp ${{ env.APP_ID }} "TempName"
-          
-          # Copia seus arquivos
           cp -r www/* app-temp/www/
           
           cd app-temp
-          # Configura versão no XML antes de adicionar plataforma
+          # Configura XML Básico
           sed -i 's/version="1.0.0"/version="${{ env.APP_VER }}"/' config.xml
-          
-          # Ajusta o Nome no XML
           sed -i "s/<name>TempName<\/name>/<name>${{ env.APP_NAME }}<\/name>/" config.xml
 
-      # --- 5. PLATAFORMA ---
-      - name: 🔌 Adicionando Android
+      # --- 5. PLATAFORMA E PREPARAÇÃO (FIX OBRIGATÓRIO) ---
+      - name: 🔌 Adicionando Plataforma e Gerando Arquivos
         run: |
           cd app-temp
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
-          # Adicione outros plugins aqui se necessário...
+          
+          echo "⚡ FORÇANDO GERAÇÃO DE ARQUIVOS..."
+          cordova prepare android
 
-      # --- 6. CORREÇÃO NUCLEAR (ID E VERSÃO NO GRADLE) ---
-      - name: ☢️ INJEÇÃO NO GRADLE (Forçar ID)
+      # --- 6. CAÇANDO O GRADLE (FIX V48) ---
+      - name: 🏹 Caçando e Editando Gradle
         run: |
           cd app-temp
-          # Encontra o build.gradle do app e substitui o applicationId na força bruta
-          GRADLE_FILE="platforms/android/app/build.gradle"
           
-          if [ -f "$GRADLE_FILE" ]; then
-             echo "Encontrado build.gradle. Injetando ID..."
-             # Substitui qualquer applicationId "com.x.x" pelo nosso ID
-             sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' $GRADLE_FILE
-             # Força o namespace também (importante para Android 12+)
-             sed -i 's/namespace ".*"/namespace "${{ env.APP_ID }}"/' $GRADLE_FILE
+          # Procura o arquivo build.gradle onde quer que ele esteja
+          GRADLE_PATH=$(find platforms/android -name "build.gradle" | grep "app/build.gradle" | head -n 1)
+          
+          if [ -z "$GRADLE_PATH" ]; then
+             echo "⚠️ 'app/build.gradle' não achado. Tentando qualquer build.gradle..."
+             GRADLE_PATH=$(find platforms/android -name "build.gradle" | head -n 1)
+          fi
+          
+          if [ -f "$GRADLE_PATH" ]; then
+             echo "✅ ALVO ENCONTRADO: $GRADLE_PATH"
+             echo "💉 Injetando ID: ${{ env.APP_ID }}"
+             
+             # Injeção Cirúrgica
+             sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' "$GRADLE_PATH"
+             sed -i 's/namespace ".*"/namespace "${{ env.APP_ID }}"/' "$GRADLE_PATH"
           else
-             echo "ERRO CRÍTICO: build.gradle não encontrado!"
+             echo "❌ ERRO FATAL: Nenhum build.gradle foi gerado pelo Cordova."
              exit 1
           fi
 
-      # --- 7. ÍCONES (LOCALIZAR E DESTRUIR) ---
-      - name: 🎨 Injetando Ícones (Global)
+      # --- 7. ÍCONES (FIND & REPLACE) ---
+      - name: 🎨 Injetando Ícones
         run: |
           cd app-temp
-          ICON_SOURCE="www/icon.png"
-          
-          if [ -f "$ICON_SOURCE" ]; then
-             echo "Injetando ícones em TODAS as pastas mipmap..."
-             # O comando find procura qualquer pasta que comece com mipmap- dentro de platforms
-             # e copia o ícone para dentro dela
-             find platforms/android -type d -name "mipmap-*" -exec cp $ICON_SOURCE {}/ic_launcher.png \;
-             find platforms/android -type d -name "mipmap-*" -exec cp $ICON_SOURCE {}/ic_launcher_round.png \;
-             find platforms/android -type d -name "mipmap-*" -exec cp $ICON_SOURCE {}/ic_launcher_foreground.png \;
-          else
-             echo "⚠️ AVISO: Ícone não enviado (www/icon.png não existe)"
+          ICON="www/icon.png"
+          if [ -f "$ICON" ]; then
+             echo "✅ Ícone detectado. Substituindo em todas as pastas..."
+             find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
+             find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
+             find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_foreground.png \;
           fi
 
       # --- 8. BUILD ---
-      - name: 📱 Compilando APK
+      - name: 📱 Compilando
         id: build_apk
         run: |
           cd app-temp
           echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           
-          # Build
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
@@ -138,40 +135,35 @@ jobs:
              echo "STATUS=FALHA" >> $GITHUB_ENV
              exit 1
           else
-             # Prepara nome final
-             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
-             FINAL="App_${SAFE_NAME}_v${{ env.APP_VER }}.apk"
+             SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
+             FINAL="App_${SAFE}_v${{ env.APP_VER }}.apk"
              mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL"
-             
              echo "APK_FINAL=$FINAL" >> $GITHUB_ENV
              echo "STATUS=SUCESSO" >> $GITHUB_ENV
           fi
 
       # --- 9. RELEASE ---
-      - name: 🚀 Publicar no GitHub
+      - name: 🚀 Publicar
         uses: softprops/action-gh-release@v1
         if: env.STATUS == 'SUCESSO'
         with:
           tag_name: v${{ github.run_number }}
-          name: "${{ env.APP_NAME }} v${{ env.APP_VER }}"
           files: ${{ env.APK_FINAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO TURBO (FINAL) ---
-      - name: 🔔 Discord (FIM)
+      # --- 10. NOTIFICAÇÃO FINAL ---
+      - name: 🔔 Discord (Final)
         if: always() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           if [ "${{ env.STATUS }}" == "SUCESSO" ]; then
              LINK="https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
-             curl -H "Content-Type: application/json" \
-             -d "{\"content\": \"@everyone ✅ **SUCESSO! O APK ESTÁ PRONTO!**\n\n📱 **App:** ${{ env.APP_NAME }}\n📂 **Download:** [Clique aqui para Baixar]($LINK)\n\n*Produção finalizada.*\"}" \
-             $DISCORD_WEBHOOK
+             MSG="@everyone ✅ **SUCESSO!**\n\n📱 **App:** ${{ env.APP_NAME }}\n📂 **Baixar:** [Clique Aqui]($LINK)"
           else
              LOG="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-             curl -H "Content-Type: application/json" \
-             -d "{\"content\": \"@everyone ❌ **FALHA CRÍTICA NA PRODUÇÃO!**\n\nOcorreu um erro ao compilar o aplicativo.\n[Ver Logs de Erro]($LOG)\"}" \
-             $DISCORD_WEBHOOK
+             MSG="@everyone ❌ **ERRO CRÍTICO**\n\nFalha na compilação. [Ver Logs]($LOG)"
           fi
+          
+          curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" $DISCORD_WEBHOOK
