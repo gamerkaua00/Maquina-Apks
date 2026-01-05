@@ -1,4 +1,4 @@
-name: Fábrica Turbo V64 (Apocalypse) ☢️
+name: Fábrica Turbo V65 (Intelligence) 🧠
 
 on:
   push:
@@ -24,8 +24,8 @@ jobs:
       - name: 📥 Código
         uses: actions/checkout@v3
 
-      # --- 1. DADOS ---
-      - name: 🧠 Config
+      # --- 1. CONFIGURAÇÃO ---
+      - name: 🧠 Ler Dados
         id: dados
         run: |
           if [ -f package.json ]; then mv package.json package.json.bak; fi
@@ -36,38 +36,64 @@ jobs:
           try:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
+          
+          # Cria lista de plugins ativos para o log
+          plugins = []
+          if d.get('camera'): plugins.append('Camera')
+          if d.get('biometric'): plugins.append('Biometria')
+          if d.get('admob'): plugins.append('AdMob')
+          if d.get('notification'): plugins.append('Push')
+          plug_str = ", ".join(plugins) if plugins else "Básico"
+
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v64')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v65')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V64')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V65')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
               f.write(f"OUT_TYPE={d.get('outputType', 'apk')}\n")
               f.write(f"ORIENT={d.get('orientation', 'default')}\n")
+              f.write(f"STATUS_COLOR={d.get('statusBarColor', '#000000')}\n")
+              f.write(f"ACTIVE_PLUGINS={plug_str}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO HÍBRIDA (PYTHON + CURL BACKUP) ---
-      - name: 🔔 Start (Híbrido)
+      # --- 2. NOTIFICAÇÃO RICA (INÍCIO) ---
+      - name: 🔔 Notificar Início
         run: |
-          # Tenta Python Primeiro
           cat <<EOF > notify.py
-          import os, json, urllib.request, urllib.parse, sys
-          try:
-              d_url = os.environ.get('DISCORD_WEBHOOK')
-              if d_url:
-                  msg = {"content": "@everyone ☢️ **V64 INICIADA**\nApp: ${{ env.APP_NAME }}"}
-                  urllib.request.urlopen(urllib.request.Request(d_url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'}))
-              
-              t_token = os.environ.get('TG_TOKEN')
-              t_chat = os.environ.get('TG_CHAT')
-              if t_token and t_chat:
-                  text = f"☢️ <b>V64 Iniciada</b>\nApp: ${{ env.APP_NAME }}"
-                  urllib.request.urlopen(f"https://api.telegram.org/bot{t_token}/sendMessage", data=urllib.parse.urlencode({"chat_id": t_chat, "text": text, "parse_mode": "HTML"}).encode())
-          except: sys.exit(1) # Falha para ativar o Curl
-          EOF
+          import os, json, urllib.request, urllib.parse
           
-          # Se Python falhar, usa Curl
-          python3 notify.py || curl -s -X POST -H "Content-Type: application/json" -d "{\"content\": \"@everyone ⚠️ V64 (Curl): Build Iniciado\"}" $DISCORD_WEBHOOK
+          app = os.environ['APP_NAME']
+          plugs = os.environ['ACTIVE_PLUGINS']
+          
+          # Discord (Rich Embed)
+          d_url = os.environ.get('DISCORD_WEBHOOK')
+          if d_url:
+              embed = {
+                  "title": "🧠 Fábrica V65 Iniciada",
+                  "color": 3066993,
+                  "fields": [
+                      {"name": "📱 App", "value": app, "inline": True},
+                      {"name": "🔌 Plugins", "value": plugs, "inline": True}
+                  ]
+              }
+              try:
+                  req = urllib.request.Request(d_url, data=json.dumps({"embeds": [embed]}).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except: pass
+
+          # Telegram
+          t_token = os.environ.get('TG_TOKEN')
+          t_chat = os.environ.get('TG_CHAT')
+          if t_token and t_chat:
+              try:
+                  text = f"🧠 <b>V65 Iniciada</b>\n📱 {app}\n🔌 {plugs}"
+                  url = f"https://api.telegram.org/bot{t_token}/sendMessage"
+                  data = urllib.parse.urlencode({"chat_id": t_chat, "text": text, "parse_mode": "HTML"}).encode()
+                  urllib.request.urlopen(url, data=data)
+              except: pass
+          EOF
+          python3 notify.py
 
       # --- 3. SETUP ---
       - name: 🛠️ Setup
@@ -80,7 +106,7 @@ jobs:
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
       # --- 4. CRIAÇÃO ---
-      - name: 🏗️ Config
+      - name: 🏗️ Configurando
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
@@ -97,13 +123,20 @@ jobs:
               for n in root.findall('{http://www.w3.org/ns/widgets}name'): n.text = os.environ['APP_NAME']
               
               prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true', 'AndroidInsecureFileModeEnabled': 'true'}
+              
+              # Splash
               if os.environ.get('HAS_SPLASH') == 'True':
                   prefs['SplashScreenDelay'] = '3000'; prefs['ShowSplashScreen'] = 'true'
               else:
                   prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
 
+              # Orientação e Cor
               orient = os.environ.get('ORIENT', 'default')
               if orient != 'default': prefs['Orientation'] = orient
+              
+              # Cor da Barra (Novo V65)
+              prefs['StatusBarBackgroundColor'] = os.environ.get('STATUS_COLOR', '#000000')
+              prefs['StatusBarStyle'] = 'lightcontent'
 
               for k,v in prefs.items():
                   found = False
@@ -130,17 +163,14 @@ jobs:
         run: |
           cd app-temp
           cordova platform add android@12.0.0
-          
-          # ⚠️ CORREÇÃO CRÍTICA: NÃO instalar cordova-plugin-whitelist
-          # Ele é incompatível com Cordova Android 10+ e causa o erro "Cannot find symbol Whitelist"
-          
-          # Plugins Essenciais (Pesquisados)
+          # Plugins Essenciais
           cordova plugin add cordova-plugin-ionic-webview
-          cordova plugin add cordova-plugin-inappbrowser  # Para abrir links externos
-          cordova plugin add cordova-plugin-network-information # Para checar internet
-          cordova plugin add cordova-plugin-device # Info do aparelho
-          cordova plugin add cordova-plugin-dialogs # Alertas nativos
-          cordova plugin add cordova-plugin-screen-orientation # Travar tela
+          cordova plugin add cordova-plugin-statusbar # Para a cor funcionar
+          cordova plugin add cordova-plugin-inappbrowser
+          cordova plugin add cordova-plugin-network-information
+          cordova plugin add cordova-plugin-device
+          cordova plugin add cordova-plugin-dialogs
+          cordova plugin add cordova-plugin-screen-orientation
 
       # --- 6. PLUGINS OPCIONAIS ---
       - name: 🧩 Plugins Extras
@@ -244,8 +274,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO FINAL (HÍBRIDA) ---
-      - name: 🔔 Final (Híbrido)
+      # --- 10. NOTIFICAÇÃO FINAL (CORRIGIDA) ---
+      - name: 🔔 Notificar Fim
         if: always()
         run: |
           cat <<EOF > notify_end.py
@@ -257,35 +287,39 @@ jobs:
           app_name = os.environ.get('APP_NAME')
           dl_link = f"https://github.com/{repo}/releases/tag/v{run_id}"
           
-          # --- DISCORD ---
-          d_url = os.environ.get('DISCORD_WEBHOOK')
-          if d_url:
-              try:
-                  if status == 'SUCESSO':
-                      msg = {"content": f"@everyone ✅ **SUCESSO**\nApp: {app_name}\n[Baixar]({dl_link})"}
-                  else:
-                      msg = {"content": "@everyone ❌ **FALHA**"}
-                  urllib.request.urlopen(urllib.request.Request(d_url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'}))
-              except: pass # Se falhar, o Curl abaixo tenta
-
-          # --- TELEGRAM ---
+          # --- TELEGRAM (Envio de Arquivo se der) ---
           t_token = os.environ.get('TG_TOKEN')
           t_chat = os.environ.get('TG_CHAT')
           if t_token and t_chat and status == 'SUCESSO':
               try:
-                  txt = f"✅ <b>{app_name}</b>\n📥 <a href='{dl_link}'>Baixar Agora</a>"
+                  txt = f"✅ <b>{app_name} PRONTO!</b>\n📥 <a href='{dl_link}'>Baixar</a>"
                   fname = os.environ.get('FINAL_FILE')
                   
-                  # Tenta mandar arquivo via Curl (subprocess)
+                  # Tenta mandar arquivo via Curl
                   if fname and os.path.exists(fname) and os.path.getsize(fname) < 50000000:
                       import subprocess
                       cmd = f'curl -s -F chat_id="{t_chat}" -F document=@"{fname}" -F caption="{txt}" -F parse_mode="HTML" https://api.telegram.org/bot{t_token}/sendDocument'
                       subprocess.run(cmd, shell=True)
                   else:
-                      # Manda texto
+                      # Manda Texto
                       url = f"https://api.telegram.org/bot{t_token}/sendMessage"
                       data = urllib.parse.urlencode({"chat_id": t_chat, "text": txt, "parse_mode": "HTML"}).encode()
                       urllib.request.urlopen(url, data=data)
               except: pass
+
+          # --- DISCORD ---
+          d_url = os.environ.get('DISCORD_WEBHOOK')
+          if d_url:
+              try:
+                  if status == 'SUCESSO':
+                      qr = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={dl_link}"
+                      embed = {"title": "✅ APK PRONTO!", "description": f"**{app_name}**\n[Baixar]({dl_link})", "color": 5763712, "thumbnail": {"url": qr}}
+                      msg = {"content": "@everyone Sucesso!", "embeds": [embed]}
+                  else:
+                      msg = {"content": "@everyone ❌ FALHA"}
+                  
+                  req = urllib.request.Request(d_url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except: pass
           EOF
-          python3 notify_end.py || curl -s -X POST -H "Content-Type: application/json" -d "{\"content\": \"@everyone ✅ V64 FINALIZADA (Modo de Segurança)\"}" $DISCORD_WEBHOOK
+          python3 notify_end.py
