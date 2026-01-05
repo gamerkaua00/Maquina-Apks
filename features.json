@@ -1,1 +1,1 @@
-{"packageId":"com.visualstudio.app","version":"1.0.1","notification":false,"camera":false,"geolocation":false,"fullscreen":true,"vibration":false,"microphone":false,"flashlight":false,"file":true,"clipboard":true,"network":true,"bat":false,"statusbar":false,"browser":true,"toast":false,"insomnia":true,"splashscreen":false}
+{"appName":"VocalStudio","packageId":"com.appstudiovocal.app","version":"1.0.2","notification":false,"camera":false,"geolocation":false,"fullscreen":true,"vibration":false,"microphone":false,"flashlight":false,"browser":true,"insomnia":true}
