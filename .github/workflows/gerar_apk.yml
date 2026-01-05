@@ -1,4 +1,4 @@
-name: Fábrica Turbo V66 (Evolution) 🧬
+name: Fábrica Turbo V67 (God Mode) 🌩️
 
 on:
   push:
@@ -37,30 +37,50 @@ jobs:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v66')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v67')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V66')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V67')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
-              f.write(f"ORIENT={d.get('orientation', 'default')}\n")
-              f.write(f"STATUS_COLOR={d.get('statusBarColor', '#000000')}\n")
-              f.write(f"USER_AGENT={d.get('userAgent', '')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO (CURL - FORÇA BRUTA) ---
+      # --- 2. NOTIFICAÇÃO PROFISSIONAL ---
       - name: 🔔 Notificar Início
         run: |
-          MSG="🚀 V66 INICIADA: ${{ env.APP_NAME }}"
+          cat <<EOF > notify.py
+          import os, json, urllib.request, urllib.parse
           
-          # Discord Curl
-          if [ ! -z "$DISCORD_WEBHOOK" ]; then
-            curl -s -H "Content-Type: application/json" -d "{\"content\": \"@everyone $MSG\"}" $DISCORD_WEBHOOK
-          fi
+          app = os.environ['APP_NAME']
+          ver = os.environ['APP_VER']
           
-          # Telegram Curl
-          if [ ! -z "$TG_TOKEN" ] && [ ! -z "$TG_CHAT" ]; then
-            curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" -d chat_id=$TG_CHAT -d text="$MSG"
-          fi
+          # DISCORD (RICH EMBED)
+          d_url = os.environ.get('DISCORD_WEBHOOK')
+          if d_url:
+              embed = {
+                  "title": "🌩️ Fábrica V67 Iniciada",
+                  "color": 9127167,
+                  "fields": [
+                      {"name": "App", "value": app, "inline": True},
+                      {"name": "Versão", "value": ver, "inline": True}
+                  ],
+                  "footer": {"text": "Modo Deus Ativado"}
+              }
+              try:
+                  req = urllib.request.Request(d_url, data=json.dumps({"embeds": [embed]}).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except: pass
+
+          # TELEGRAM (JSON POST FIX)
+          t_token = os.environ.get('TG_TOKEN')
+          t_chat = os.environ.get('TG_CHAT')
+          if t_token and t_chat:
+              try:
+                  msg = {"chat_id": t_chat, "text": f"🌩️ <b>V67 START</b>\nApp: {app}", "parse_mode": "HTML"}
+                  req = urllib.request.Request(f"https://api.telegram.org/bot{t_token}/sendMessage", data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except Exception as e: print(f"Erro Telegram: {e}")
+          EOF
+          python3 notify.py
 
       # --- 3. SETUP ---
       - name: 🛠️ Setup
@@ -72,8 +92,8 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CONFIGURAÇÃO ---
-      - name: 🏗️ Configurando
+      # --- 4. CRIAÇÃO ---
+      - name: 🏗️ Core
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
@@ -96,15 +116,6 @@ jobs:
               else:
                   prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
 
-              orient = os.environ.get('ORIENT', 'default')
-              if orient != 'default': prefs['Orientation'] = orient
-              
-              prefs['StatusBarBackgroundColor'] = os.environ.get('STATUS_COLOR', '#000000')
-              
-              # User Agent Override
-              ua = os.environ.get('USER_AGENT')
-              if ua: prefs['OverrideUserAgent'] = ua
-
               for k,v in prefs.items():
                   found = False
                   for p in root.findall('{http://www.w3.org/ns/widgets}preference'):
@@ -113,6 +124,7 @@ jobs:
                       el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       el.set('name',k); el.set('value',v)
 
+              # ACESSO TOTAL
               for tag in root.findall('{http://www.w3.org/ns/widgets}access'): root.remove(tag)
               for tag in root.findall('{http://www.w3.org/ns/widgets}allow-navigation'): root.remove(tag)
               ET.SubElement(root, '{http://www.w3.org/ns/widgets}access').set('origin', '*')
@@ -130,7 +142,7 @@ jobs:
           cd app-temp
           cordova platform add android@12.0.0
           
-          # Plugins Padrão (Sem Whitelist)
+          # Plugins Essenciais (Sempre Instala)
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-statusbar
           cordova plugin add cordova-plugin-inappbrowser
@@ -139,9 +151,20 @@ jobs:
           cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-screen-orientation
           cordova plugin add cordova-plugin-cleartext
+          
+          # Plugins Extras (Massive)
+          cordova plugin add cordova-plugin-battery-status
+          cordova plugin add cordova-plugin-vibration
+          cordova plugin add cordova-plugin-globalization
+          cordova plugin add cordova-plugin-splashscreen
+          
+          # Configura MultiDex para aguentar tantos plugins
+          echo "cdvMinSdkVersion=24" >> platforms/android/gradle.properties
+          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
+          echo "android.enableJetifier=true" >> platforms/android/gradle.properties
 
-      # --- 6. PLUGINS E EXTRAS ---
-      - name: 🧩 Plugins Extras
+      # --- 6. PLUGINS OPCIONAIS ---
+      - name: 🧩 Opcionais
         run: |
           cd app-temp
           cat <<EOF > plugins.py
@@ -151,18 +174,17 @@ jobs:
           except: d = {}
           def i(p): subprocess.run(f"cordova plugin add {p}", shell=True)
           
-          if d.get('notification'): i("cordova-plugin-x-toast")
-          if d.get('file'): i("cordova-plugin-file-opener2")
           if d.get('camera'): i("cordova-plugin-camera")
+          if d.get('file'): i("cordova-plugin-file-opener2")
           if d.get('geolocation'): i("cordova-plugin-geolocation")
-          if d.get('vibration'): i("cordova-plugin-vibration")
           if d.get('microphone'): i("cordova-plugin-media cordova-plugin-media-capture")
-          if d.get('insomnia'): i("cordova-plugin-insomnia")
+          if d.get('flashlight'): i("cordova-plugin-flashlight")
+          if d.get('device-motion'): i("cordova-plugin-device-motion")
           
           if d.get('biometric'): i("cordova-plugin-fingerprint-aio")
           if d.get('share'): i("cordova-plugin-x-socialsharing")
           if d.get('tts'): i("cordova-plugin-tts")
-          if d.get('spinner'): i("cordova-plugin-spinner-dialog") # Spinner
+          if d.get('notification'): i("cordova-plugin-x-toast")
           
           if d.get('admob'): i(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId', 'ca-app-pub-xxx')}")
               
@@ -187,6 +209,7 @@ jobs:
              cp "$SPLASH" platforms/android/app/src/main/res/drawable/screen.png
           fi
           
+          # Gradle Fixes
           cat <<EOF > inject.py
           import re, os
           app_id = os.environ['APP_ID']
@@ -205,6 +228,11 @@ jobs:
               c = re.sub(r'applicationId\s+".*"', f'applicationId "{app_id}"', c)
               c = re.sub(r'namespace\s+".*"', f'namespace "{app_id}"', c)
               c = re.sub(r'versionCode\s+\d+', f'versionCode {code}', c)
+              
+              # Enable MultiDex
+              if "multiDexEnabled true" not in c:
+                  c = c.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
+              
               with open(target,'w') as f: f.write(c)
           EOF
           python3 inject.py
@@ -214,18 +242,14 @@ jobs:
         id: build_apk
         run: |
           cd app-temp
-          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
-          echo "android.enableJetifier=true" >> platforms/android/gradle.properties
-          
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           FILE_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "*.apk" | head -n 1)
           if [ -z "$FILE_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
-             EXT="${FILE_PATH##*.}"
              SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
-             FINAL="App_${SAFE}_v${{ env.APP_VER }}.${EXT}"
+             FINAL="App_${SAFE}_v${{ env.APP_VER }}.apk"
              mv "$FILE_PATH" "$GITHUB_WORKSPACE/$FINAL"
              echo "FINAL_FILE=$FINAL" >> $GITHUB_ENV
              echo "STATUS=SUCESSO" >> $GITHUB_ENV
@@ -241,35 +265,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO FINAL (CURL - SEM PYTHON) ---
-      - name: 🔔 Notificar Fim
+      # --- 10. NOTIFICAÇÃO FINAL (CURL PARA TELEGRAM) ---
+      - name: 🔔 Fim
         if: always()
         run: |
           STATUS="${{ env.STATUS }}"
-          APP="${{ env.APP_NAME }}"
           LINK="https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+          APP="${{ env.APP_NAME }}"
           
-          if [ "$STATUS" == "SUCESSO" ]; then
-             MSG="✅ APK PRONTO: $APP - Baixar: $LINK"
-             TG_MSG="✅ <b>$APP PRONTO!</b>%0A📥 <a href='$LINK'>Baixar Agora</a>"
-             FILE="${{ env.FINAL_FILE }}"
-          else
-             MSG="❌ FALHA CRÍTICA NO BUILD"
-             TG_MSG="❌ <b>FALHA CRÍTICA</b>"
-          fi
-          
-          # Discord
+          # --- DISCORD EMBED ---
           if [ ! -z "$DISCORD_WEBHOOK" ]; then
-             curl -s -H "Content-Type: application/json" -d "{\"content\": \"@everyone $MSG\"}" $DISCORD_WEBHOOK
+             if [ "$STATUS" == "SUCESSO" ]; then
+                # JSON complexo para embed bonito
+                JSON="{\"embeds\": [{\"title\": \"✅ SUCESSO!\", \"description\": \"**$APP** Está pronto.\", \"color\": 5763712, \"fields\": [{\"name\": \"Download\", \"value\": \"[Clique Aqui]($LINK)\"}]}]}"
+             else
+                JSON="{\"content\": \"❌ FALHA CRÍTICA\"}"
+             fi
+             curl -H "Content-Type: application/json" -d "$JSON" $DISCORD_WEBHOOK
           fi
           
-          # Telegram
+          # --- TELEGRAM (CURL POST JSON - INFALÍVEL) ---
           if [ ! -z "$TG_TOKEN" ] && [ ! -z "$TG_CHAT" ]; then
-             # Tenta enviar arquivo se for SUCESSO
-             if [ "$STATUS" == "SUCESSO" ] && [ -f "$FILE" ]; then
-                curl -s -F chat_id="$TG_CHAT" -F document=@"$FILE" -F caption="📦 $APP" https://api.telegram.org/bot$TG_TOKEN/sendDocument
+             if [ "$STATUS" == "SUCESSO" ]; then
+                MSG="✅ <b>$APP PRONTO!</b>\n📥 <a href=\"$LINK\">BAIXAR AGORA</a>"
              else
-                # Fallback texto
-                curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" -d chat_id=$TG_CHAT -d text="$TG_MSG" -d parse_mode="HTML"
+                MSG="❌ <b>ERRO NO BUILD</b>"
              fi
+             
+             # Envia JSON puro via Curl (evita erro de URL)
+             curl -X POST -H "Content-Type: application/json" \
+             -d "{\"chat_id\": \"$TG_CHAT\", \"text\": \"$MSG\", \"parse_mode\": \"HTML\", \"disable_web_page_preview\": true}" \
+             "https://api.telegram.org/bot$TG_TOKEN/sendMessage"
           fi
