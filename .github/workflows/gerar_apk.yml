@@ -1,4 +1,4 @@
-name: Fábrica Turbo V49 (XML Safe Fix) 🛡️
+name: Fábrica Turbo V50 (No False Positives) 🚀
 
 on:
   push:
@@ -31,67 +31,74 @@ jobs:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           
-          # Salva nas variáveis de ambiente
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v49')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v50')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V49')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V50')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. NOTIFICAÇÃO INICIAL ---
+      # --- 2. NOTIFICAÇÃO ---
       - name: 🔔 Discord (Start)
         if: env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"@everyone 🛡️ **FÁBRICA V49 INICIADA!**\n\n⚙️ **App:** ${{ env.APP_NAME }}\n🆔 **ID:** \`${{ env.APP_ID }}\`\"}" \
+          -d "{\"content\": \"@everyone 🏭 **FÁBRICA V50**\n\n⚙️ **App:** ${{ env.APP_NAME }}\n🆔 **ID:** \`${{ env.APP_ID }}\`\"}" \
           $DISCORD_WEBHOOK || true
 
       # --- 3. SETUP AMBIENTE ---
-      - name: ☕ Setup Java 17
+      - name: ☕ Setup Java & Cordova
         uses: actions/setup-java@v3
         with: { distribution: 'temurin', java-version: '17' }
 
-      - name: 🛠️ Setup Cordova
+      - name: 🛠️ Instalar Ferramentas
         run: |
           npm install -g cordova
-          # Baixa Gradle 8.7 manualmente para garantir
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CRIAÇÃO E EDIÇÃO SEGURA DO XML ---
-      - name: 🏗️ Criando App e Configurando XML
+      # --- 4. CRIAÇÃO E EDIÇÃO ROBUSTA ---
+      - name: 🏗️ Criando App
         run: |
-          echo "Criando projeto..."
+          # Cria o projeto
           cordova create app-temp ${{ env.APP_ID }} "TempName"
+          
+          # Remove config.xml antigo se existir na pasta www para não dar conflito
+          rm -f www/config.xml
+          
+          # Copia arquivos do usuário
           cp -r www/* app-temp/www/
           
           cd app-temp
           
-          # --- AQUI ESTÁ A CORREÇÃO MÁGICA ---
-          # Nada de 'sed'. Usamos Python para editar o XML sem quebrar a estrutura.
+          # PYTHON PARA EDITAR CONFIG.XML (Lendo ENV direto)
           cat <<EOF > edit_xml.py
           import xml.etree.ElementTree as ET
+          import os
           
-          # Registra namespaces para o XML não ficar 'sujo'
+          # Pega variáveis do sistema
+          app_id = os.environ.get('APP_ID')
+          app_ver = os.environ.get('APP_VER')
+          app_name = os.environ.get('APP_NAME')
+          
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
           
           try:
               tree = ET.parse('config.xml')
               root = tree.getroot()
               
-              # 1. Muda o ID e Versão
-              root.set('id', '${{ env.APP_ID }}')
-              root.set('version', '${{ env.APP_VER }}')
+              print(f"🔧 Aplicando ID: {app_id}")
+              root.set('id', app_id)
+              root.set('version', app_ver)
               
-              # 2. Muda o Nome
+              print(f"🔧 Aplicando Nome: {app_name}")
               for name in root.findall('{http://www.w3.org/ns/widgets}name'):
-                  name.text = '${{ env.APP_NAME }}'
+                  name.text = app_name
               
-              # 3. Adiciona permissões padrão
+              # Permissões
               prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true'}
               for k, v in prefs.items():
                   found = False
@@ -103,53 +110,51 @@ jobs:
                       new_p.set('name', k); new_p.set('value', v)
 
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-              print("✅ XML Configurado com Sucesso!")
           except Exception as e:
-              print(f"❌ Erro no XML: {e}")
+              print(f"❌ Erro XML: {e}")
               exit(1)
           EOF
           python3 edit_xml.py
 
-      # --- 5. ADICIONAR PLATAFORMA ---
-      - name: 🔌 Adicionando Android (Verbose)
+      # --- 5. PLATAFORMA (SEM TRAVA DE ERRO) ---
+      - name: 🔌 Adicionando Android
         run: |
           cd app-temp
-          echo "Adicionando plataforma..."
-          # O --verbose vai nos mostrar se houver erro
-          cordova platform add android@12.0.0 --verbose
+          # Adiciona plataforma e plugins
+          cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
           
-          # VERIFICAÇÃO DE SEGURANÇA
-          if [ ! -d "platforms/android" ]; then
-             echo "❌ ERRO CRÍTICO: A pasta 'platforms/android' NÃO FOI CRIADA."
-             echo "O comando 'cordova platform add' falhou."
-             exit 1
-          fi
+          # Força a preparação dos arquivos (Garante que build.gradle exista)
+          cordova prepare android
 
-      # --- 6. INJEÇÃO NO GRADLE (SÓ SE A PASTA EXISTIR) ---
+      # --- 6. CORREÇÃO GRADLE (CAÇADOR) ---
       - name: 💉 Injeção ID no Gradle
         run: |
           cd app-temp
-          # Procura o build.gradle certo
+          # Procura build.gradle em qualquer lugar dentro de platforms/android
           GRADLE=$(find platforms/android -name "build.gradle" | grep "app/build.gradle" | head -n 1)
           
           if [ -f "$GRADLE" ]; then
-             echo "🔧 Ajustando Gradle em: $GRADLE"
+             echo "🔧 Injetando ID no Gradle: $GRADLE"
              sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' "$GRADLE"
              sed -i 's/namespace ".*"/namespace "${{ env.APP_ID }}"/' "$GRADLE"
           else
-             echo "⚠️ build.gradle não achado, mas vamos tentar seguir com o XML..."
+             echo "⚠️ build.gradle não achado. O ID pode ficar incorreto no AndroidManifest."
           fi
 
-      # --- 7. ÍCONES ---
+      # --- 7. ÍCONES (CAÇADOR) ---
       - name: 🎨 Injetando Ícones
         run: |
           cd app-temp
           ICON="www/icon.png"
           if [ -f "$ICON" ]; then
-             echo "Copiando ícones..."
+             echo "✅ Ícone encontrado! Substituindo..."
+             # Substitui em todas as pastas mipmap-* encontradas
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
+             find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_foreground.png \;
+          else
+             echo "⚠️ 'www/icon.png' não encontrado. Usando ícone padrão."
           fi
 
       # --- 8. BUILD ---
@@ -159,17 +164,21 @@ jobs:
           cd app-temp
           echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           
+          # Compilação
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
+          # Localiza o APK
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
           
           if [ -z "$APK_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV
              exit 1
           else
+             # Renomeia
              SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
              FINAL="App_${SAFE}_v${{ env.APP_VER }}.apk"
              mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL"
+             
              echo "APK_FINAL=$FINAL" >> $GITHUB_ENV
              echo "STATUS=SUCESSO" >> $GITHUB_ENV
           fi
@@ -193,6 +202,6 @@ jobs:
           if [ "${{ env.STATUS }}" == "SUCESSO" ]; then
              MSG="@everyone ✅ **SUCESSO!**\nApp: ${{ env.APP_NAME }}\n[Baixar Aqui](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})"
           else
-             MSG="@everyone ❌ **ERRO!** Verifique o GitHub Actions."
+             MSG="@everyone ❌ **ERRO CRÍTICO!** Verifique o GitHub Actions."
           fi
           curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" $DISCORD_WEBHOOK || true
