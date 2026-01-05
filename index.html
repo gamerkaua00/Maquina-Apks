@@ -3,35 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fábrica V65 Intelligence</title>
+    <title>Fábrica V66 Evolution</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body{background:#000;color:#e5e7eb;font-family:sans-serif}
         .hidden{display:none!important}
-        .tab-active{border-bottom:2px solid #06b6d4;color:#06b6d4}
-        #code-editor{background:#111;color:#67e8f9;font-family:monospace;font-size:11px;white-space:pre;overflow:auto}
-        .chk:checked+div{background:#164e63;border-color:#06b6d4;color:#fff}
+        .tab-active{border-bottom:2px solid #f59e0b;color:#f59e0b}
+        #code-editor{background:#111;color:#fcd34d;font-family:monospace;font-size:11px;white-space:pre;overflow:auto}
+        .chk:checked+div{background:#451a03;border-color:#f59e0b;color:#fff}
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
     <div id="view-login" class="flex-1 flex items-center justify-center p-6 bg-black z-50 absolute inset-0">
-        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800 shadow-2xl shadow-cyan-900/20">
-            <i class="fas fa-brain text-6xl text-cyan-500 mb-4 animate-pulse"></i>
-            <h1 class="text-xl font-bold mb-4 text-cyan-400">V65 INTELLIGENCE</h1>
-            <input type="password" id="tkn" placeholder="GitHub Token" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-cyan-400 font-mono text-sm">
-            <button onclick="login()" class="w-full bg-cyan-700 font-bold py-3 rounded hover:bg-cyan-600 shadow-lg transition">ACESSAR SISTEMA</button>
+        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-sm text-center border border-gray-800">
+            <i class="fas fa-dna text-6xl text-amber-500 mb-4 animate-pulse"></i>
+            <h1 class="text-xl font-bold mb-4 text-amber-500">V66 EVOLUTION</h1>
+            <input type="password" id="tkn" placeholder="GitHub Token" class="w-full bg-black border border-gray-700 rounded p-3 text-center mb-4 text-amber-500 font-mono text-sm">
+            <button onclick="login()" class="w-full bg-amber-700 font-bold py-3 rounded hover:bg-amber-600 shadow-lg transition">ENTRAR</button>
         </div>
     </div>
 
     <div id="view-main" class="hidden flex flex-col h-full">
         <div class="p-3 bg-gray-900 border-b border-gray-800 flex justify-between items-center shadow-lg shrink-0">
-            <div class="font-bold text-cyan-500"><i class="fas fa-microchip mr-2"></i>V65</div>
+            <div class="font-bold text-amber-500"><i class="fas fa-project-diagram mr-2"></i>V66</div>
             <div class="flex gap-4 text-xs font-bold uppercase tracking-widest">
-                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">Core</button>
+                <button onclick="tab('editor')" id="tab-editor" class="tab-active pb-1">App</button>
+                <button onclick="tab('interface')" id="tab-interface" class="pb-1 text-gray-500">UI/UX</button>
                 <button onclick="tab('plugins')" id="tab-plugins" class="pb-1 text-gray-500">Plugins</button>
-                <button onclick="tab('history')" id="tab-history" class="pb-1 text-gray-500">Builds</button>
             </div>
             <button onclick="logout()" class="text-gray-500 hover:text-red-500"><i class="fas fa-power-off"></i></button>
         </div>
@@ -40,85 +40,92 @@
             <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
                 <input type="text" id="name" placeholder="Nome do App" class="w-full bg-transparent text-lg font-bold outline-none mb-2 placeholder-gray-700">
                 <div class="flex gap-2">
-                    <input type="text" id="pkg" placeholder="com.app.v65" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400">
+                    <input type="text" id="pkg" placeholder="com.app.v66" class="w-2/3 bg-black/30 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400">
                     <input type="text" id="ver" placeholder="1.0.0" class="w-1/3 bg-black/30 p-2 rounded border border-gray-700 text-xs text-center text-gray-400">
                 </div>
             </div>
 
             <div class="relative group">
                 <div class="flex justify-between items-end mb-1">
-                    <label class="text-[10px] font-bold text-gray-500">HTML SOURCE</label>
-                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-file-code mr-1"></i>Carregar</button>
+                    <label class="text-[10px] font-bold text-gray-500">HTML</label>
+                    <button onclick="$('f-index').click()" class="text-[9px] bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"><i class="fas fa-file-code mr-1"></i> Carregar</button>
                 </div>
-                <textarea id="code-editor" class="w-full h-32 p-2 rounded border border-gray-800 outline-none resize-none focus:border-cyan-900" placeholder="<html>...</html>"></textarea>
+                <textarea id="code-editor" class="w-full h-32 p-2 rounded border border-gray-800 outline-none resize-none focus:border-amber-900" placeholder="<html>...</html>"></textarea>
                 <input type="file" id="f-index" class="hidden" accept=".html" onchange="loadFile(this)">
             </div>
 
             <div class="grid grid-cols-2 gap-2">
-                <div onclick="$('f-icon').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-cyan-500">
-                    <i class="fas fa-image text-xl text-gray-600 mb-1 group-hover:text-cyan-500"></i><span class="text-[8px] font-bold text-gray-500">ÍCONE</span>
+                <div onclick="$('f-icon').click()" class="bg-gray-900 h-14 rounded border border-gray-800 flex items-center justify-center cursor-pointer relative overflow-hidden group hover:border-amber-500">
+                    <i class="fas fa-image text-xl text-gray-600 mb-1 group-hover:text-amber-500"></i><span class="text-[8px] font-bold text-gray-500">ÍCONE</span>
                     <img id="prev-icon" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
-                <div onclick="$('f-splash').click()" class="bg-gray-900 h-16 rounded border border-gray-800 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group hover:border-cyan-500">
-                    <i class="fas fa-mobile text-xl text-gray-600 mb-1 group-hover:text-cyan-500"></i><span class="text-[8px] font-bold text-gray-500">SPLASH</span>
+                <div onclick="$('f-splash').click()" class="bg-gray-900 h-14 rounded border border-gray-800 flex items-center justify-center cursor-pointer relative overflow-hidden group hover:border-amber-500">
+                    <i class="fas fa-mobile text-xl text-gray-600 mb-1 group-hover:text-amber-500"></i><span class="text-[8px] font-bold text-gray-500">SPLASH</span>
                     <img id="prev-splash" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
                 <input type="file" id="f-icon" class="hidden" accept="image/png" onchange="preview(this,'prev-icon')">
                 <input type="file" id="f-splash" class="hidden" accept="image/png" onchange="preview(this,'prev-splash')">
             </div>
-            
-            <div class="grid grid-cols-3 gap-2">
-                <div>
-                    <label class="text-[9px] font-bold text-gray-500 block mb-1">FORMATO</label>
-                    <select id="build-type" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-300">
-                        <option value="apk">APK</option>
-                        <option value="aab">AAB</option>
-                    </select>
+        </div>
+
+        <div id="content-interface" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-amber-500 uppercase">Visual & Comportamento</label>
+                
+                <div class="grid grid-cols-2 gap-2 text-[9px] font-bold text-gray-400 select-none">
+                    <label class="cursor-pointer relative"><input type="checkbox" id="c-spinner" class="chk hidden"><div class="p-3 bg-gray-900 rounded border border-gray-800 text-center transition">LOADING SPINNER</div></label>
+                    <label class="cursor-pointer relative"><input type="checkbox" id="c-pull" class="chk hidden"><div class="p-3 bg-gray-900 rounded border border-gray-800 text-center transition">PULL TO REFRESH</div></label>
                 </div>
-                <div>
-                    <label class="text-[9px] font-bold text-gray-500 block mb-1">ROTAÇÃO</label>
-                    <select id="orient" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs outline-none text-gray-300">
-                        <option value="default">Auto</option>
-                        <option value="portrait">Em Pé</option>
-                        <option value="landscape">Deitado</option>
-                    </select>
+
+                <div class="space-y-1 mt-2">
+                    <label class="text-[9px] font-bold text-gray-500">USER AGENT (Identidade do App)</label>
+                    <input type="text" id="u-agent" placeholder="Ex: MeuApp/1.0 (Android)" class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-xs text-gray-300">
                 </div>
-                <div>
-                    <label class="text-[9px] font-bold text-gray-500 block mb-1">COR BARRA</label>
-                    <input type="color" id="status-color" value="#000000" class="w-full h-[34px] bg-gray-900 border border-gray-800 rounded cursor-pointer">
+
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500">COR STATUS BAR</label>
+                        <input type="color" id="status-color" value="#000000" class="w-full h-8 bg-gray-900 border border-gray-800 rounded cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500">ORIENTAÇÃO</label>
+                        <select id="orient" class="w-full h-8 bg-gray-900 border border-gray-800 rounded text-[10px] text-gray-300 outline-none">
+                            <option value="default">Auto</option>
+                            <option value="portrait">Em Pé</option>
+                            <option value="landscape">Deitado</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="content-plugins" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-            <h3 class="text-[10px] font-bold text-cyan-500 uppercase border-b border-cyan-900/30 pb-1">Funcionalidades</h3>
             <div class="grid grid-cols-4 gap-2 text-[8px] font-bold text-gray-400 select-none">
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-notif" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">NOTIF</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-cam" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">CÂMERA</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ARQUIVOS</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-file" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">FILE</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-geo" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">GPS</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VIBRAR</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-vib" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VIB</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-mic" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">MIC</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIOMETRIA</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-bio" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">BIO ID</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-share" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">SHARE</div></label>
-                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">VOZ TTS</div></label>
+                <label class="cursor-pointer relative"><input type="checkbox" id="c-tts" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">TTS</div></label>
                 <label class="cursor-pointer relative"><input type="checkbox" id="c-wake" class="chk hidden"><div class="p-2 bg-gray-900 rounded border border-gray-800 text-center transition">ACORDADO</div></label>
             </div>
             
             <div class="mt-4 bg-gray-900 border border-gray-800 rounded p-3">
-                <label class="text-[10px] font-bold text-blue-500 block mb-1">ADMOB (Anúncios)</label>
-                <input type="text" id="ad-id" placeholder="ID do Banner (ca-app-pub...)" class="w-full bg-black p-2 rounded border border-gray-700 text-xs text-gray-300">
+                <label class="text-[10px] font-bold text-amber-500 block mb-1">ADMOB (Banner ID)</label>
+                <input type="text" id="ad-id" placeholder="ca-app-pub..." class="w-full bg-black p-2 rounded border border-gray-700 text-xs text-gray-300">
             </div>
         </div>
-
-        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4"><div id="hist-list" class="text-center text-xs mt-10 text-gray-600">Buscando builds...</div></div>
 
         <div id="logs" class="px-4 py-1 text-[9px] font-mono text-gray-500 h-6 overflow-hidden bg-black border-t border-gray-800 truncate"></div>
 
         <div class="p-4 bg-gray-900 border-t border-gray-800 shrink-0">
-            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-cyan-700 to-cyan-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
-                <i class="fas fa-cogs"></i> INICIAR V65
+            <button id="btn-build" onclick="build()" class="w-full bg-gradient-to-r from-amber-700 to-amber-600 font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition active:scale-95 flex items-center justify-center gap-2">
+                <i class="fas fa-cogs"></i> INICIAR V66
             </button>
+            <a id="btn-dl" href="#" target="_blank" class="hidden mt-2 w-full bg-blue-600 font-bold py-2 rounded text-center text-xs">BAIXAR ÚLTIMO</a>
         </div>
     </div>
 
@@ -127,14 +134,13 @@
         const $ = id => document.getElementById(id);
         const log = m => $('logs').innerText = "> " + m;
 
-        window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); loadHistory(); } };
+        window.onload = () => { if(localStorage.getItem('tk')) { $('view-login').classList.add('hidden'); $('view-main').classList.remove('hidden'); checkLast(); } };
         function login() { const t=$('tkn').value; if(t.startsWith('ghp_')){localStorage.setItem('tk',t); location.reload();}else alert('Token Inválido'); }
         function logout() { localStorage.removeItem('tk'); location.reload(); }
 
         function tab(t) {
-            ['editor','plugins','history'].forEach(x => { $(`content-${x}`).classList.add('hidden'); $(`tab-${x}`).classList.remove('tab-active','text-cyan-500'); });
+            ['editor','interface','plugins'].forEach(x => { $(`content-${x}`).classList.add('hidden'); $(`tab-${x}`).classList.remove('tab-active','text-amber-500'); });
             $(`content-${t}`).classList.remove('hidden'); $(`tab-${t}`).classList.add('tab-active');
-            if(t==='history') loadHistory();
         }
 
         function preview(input, img) { if(input.files[0]){ const r=new FileReader(); r.onload=e=>{ $(img).src=e.target.result; $(img).classList.remove('hidden'); }; r.readAsDataURL(input.files[0]); } }
@@ -162,9 +168,11 @@
 
                 log("Configurando Bot...");
                 const feat = {
-                    appName: $('name').value||"AppV65", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
-                    hasSplash: !!fSpl, outputType: $('build-type').value, orientation: $('orient').value, admobId: $('ad-id').value,
-                    statusBarColor: $('status-color').value, // Nova feature
+                    appName: $('name').value||"AppV66", packageId: $('pkg').value||"com.app", version: $('ver').value||"1.0.0",
+                    hasSplash: !!fSpl, orientation: $('orient').value, admobId: $('ad-id').value,
+                    statusBarColor: $('status-color').value, userAgent: $('u-agent').value,
+                    // Interface
+                    spinner: $('c-spinner').checked, pullToRefresh: $('c-pull').checked,
                     // Plugins
                     notification: $('c-notif').checked, camera: $('c-cam').checked, file: $('c-file').checked,
                     geolocation: $('c-geo').checked, vibration: $('c-vib').checked, microphone: $('c-mic').checked,
@@ -172,8 +180,8 @@
                     insomnia: $('c-wake').checked, admob: !!$('ad-id').value
                 };
                 
-                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build V65");
-                btn.innerText="PRODUZINDO..."; monitor();
+                await upload("features.json", btoa(unescape(encodeURIComponent(JSON.stringify(feat)))), "Build V66");
+                btn.innerText="FABRICANDO..."; monitor();
 
             } catch(e) { alert(e); btn.disabled=false; btn.innerText="TENTAR DE NOVO"; }
         }
@@ -185,25 +193,22 @@
                 const d=await r.json(); const run=d.workflow_runs[0];
                 if(run.status==="completed") {
                     clearInterval(int);
-                    $('btn-build').disabled=false; $('btn-build').innerText="CRIAR NOVO";
-                    if(run.conclusion==="success") { tab('history'); alert("✅ SUCESSO!"); }
+                    $('btn-build').disabled=false; $('btn-build').innerText="NOVA ORDEM";
+                    if(run.conclusion==="success") { alert("✅ SUCESSO!"); checkLast(); }
                     else alert("❌ FALHA! Verifique o GitHub.");
-                } else {
-                    log(run.status === "in_progress" ? "Trabalhando..." : "Na fila...");
-                }
+                } else log("Robô trabalhando...");
             }, 4000);
         }
 
-        async function loadHistory() {
-            const l=$('hist-list'); l.innerHTML='Carregando...';
+        async function checkLast() {
             const t=localStorage.getItem('tk');
-            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases?per_page=5`,{headers:{Authorization:`token ${t}`}});
+            const r=await fetch(`https://api.github.com/repos/${CFG.u}/${CFG.r}/releases/latest`,{headers:{Authorization:`token ${t}`}});
             const d=await r.json();
-            l.innerHTML = '';
-            d.forEach(rel => {
-                const asset = rel.assets[0]; if(!asset) return;
-                l.innerHTML += `<div class="bg-gray-800 p-2 mb-2 rounded flex justify-between items-center border border-gray-700"><div><div class="font-bold text-xs text-cyan-400">${rel.name}</div><div class="text-[9px] text-gray-500">${new Date(rel.published_at).toLocaleDateString()}</div></div><a href="${asset.browser_download_url}" class="bg-cyan-700 text-white px-3 py-1 rounded text-xs font-bold">BAIXAR</a></div>`;
-            });
+            if(d.assets && d.assets[0]) {
+                $('btn-dl').href = d.assets[0].browser_download_url;
+                $('btn-dl').classList.remove('hidden');
+                $('btn-dl').innerText = "BAIXAR: " + d.name;
+            }
         }
     </script>
 </body>
