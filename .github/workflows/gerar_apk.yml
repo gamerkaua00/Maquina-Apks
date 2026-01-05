@@ -1,4 +1,4 @@
-name: Fábrica Turbo V58 (Ultimate) 💎
+name: Fábrica Turbo V60 (Galactic) 🚀
 
 on:
   push:
@@ -19,11 +19,11 @@ jobs:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
     steps:
-      - name: 📥 Baixando Código
+      - name: 📥 Código
         uses: actions/checkout@v3
 
       # --- 1. DADOS ---
-      - name: 🧠 Processar Configuração
+      - name: 🧠 Config
         id: dados
         run: |
           if [ -f package.json ]; then mv package.json package.json.bak; fi
@@ -35,39 +35,32 @@ jobs:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v58')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v60')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V58')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V60')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
+              f.write(f"OUT_TYPE={d.get('outputType', 'apk')}\n")
+              f.write(f"ORIENT={d.get('orientation', 'default')}\n")
           EOF
           python3 ler.py
 
-      # --- 2. DISCORD COM AVATAR E PING ---
-      - name: 🔔 Notificação (Start)
+      # --- 2. NOTIFICAÇÃO (INÍCIO) ---
+      - name: 🔔 Start
         run: |
           cat <<EOF > notify.py
           import os, json, urllib.request
           url = os.environ.get('DISCORD_WEBHOOK')
           if url:
-              # Link direto para o ícone no repo para usar de avatar
-              repo = "${{ github.repository }}"
-              icon_url = f"https://raw.githubusercontent.com/{repo}/main/www/icon.png"
-              
-              msg = {
-                  "username": "Fábrica V58",
-                  "avatar_url": icon_url,
-                  "content": "@everyone 🏭 **BUILD INICIADO**\n📱 App: ${{ env.APP_NAME }}\n🔐 Assinatura: Verificando...",
-                  "allowed_mentions": {"parse": ["everyone"]}
-              }
+              msg = {"content": "@everyone 🚀 **DECOLANDO V60**\nApp: ${{ env.APP_NAME }}\nTipo: ${{ env.OUT_TYPE }}", "allowed_mentions": {"parse": ["everyone"]}}
               try:
-                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
                   urllib.request.urlopen(req)
-              except Exception as e: print(e)
+              except: pass
           EOF
           python3 notify.py
 
       # --- 3. SETUP ---
-      - name: 🛠️ Setup Tools
+      - name: 🛠️ Setup
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
@@ -76,18 +69,15 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CRIAÇÃO E CONFIGURAÇÃO ---
-      - name: 🏗️ Criando App
+      # --- 4. CRIAR E CONFIGURAR XML (ORIENTAÇÃO) ---
+      - name: 🏗️ Criar
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
           
           cd app-temp
-          # Configura XML e Build.json para Assinatura
           cat <<EOF > config_builder.py
           import xml.etree.ElementTree as ET, os, json
-          
-          # 1. XML
           ET.register_namespace('', "http://www.w3.org/ns/widgets")
           try:
               tree = ET.parse('config.xml')
@@ -97,10 +87,16 @@ jobs:
               for n in root.findall('{http://www.w3.org/ns/widgets}name'): n.text = os.environ['APP_NAME']
               
               prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true', 'AndroidInsecureFileModeEnabled': 'true'}
+              
+              # Splash
               if os.environ.get('HAS_SPLASH') == 'True':
                   prefs['SplashScreenDelay'] = '3000'; prefs['ShowSplashScreen'] = 'true'
               else:
                   prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
+
+              # Orientação
+              orient = os.environ.get('ORIENT', 'default')
+              if orient != 'default': prefs['Orientation'] = orient
 
               for k,v in prefs.items():
                   found = False
@@ -112,30 +108,18 @@ jobs:
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
           except: pass
           
-          # 2. BUILD.JSON (Keystore)
+          # Keystore Builder
           try:
               with open('../features.json') as f: data = json.load(f)
               signing = data.get('signing')
               if signing:
-                  print("🔐 Configurando Assinatura...")
-                  build_cfg = {
-                      "android": {
-                          "release": {
-                              "keystore": "www/release.keystore",
-                              "storePassword": signing['storePass'],
-                              "alias": signing['alias'],
-                              "password": signing['aliasPass'],
-                              "keystoreType": ""
-                          }
-                      }
-                  }
-                  with open('build.json', 'w') as f: json.dump(build_cfg, f)
-                  with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_TYPE=--release\n")
+                  print("🔐 Keystore detectada")
+                  cfg = {"android": {"release": {"keystore": "www/release.keystore", "storePassword": signing['storePass'], "alias": signing['alias'], "password": signing['aliasPass'], "keystoreType": ""}}}
+                  with open('build.json', 'w') as f: json.dump(cfg, f)
+                  with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_FLAGS=--release\n")
               else:
-                  print("🔓 Modo Debug (Sem Assinatura)")
-                  with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_TYPE=--debug\n")
-          except: 
-              with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_TYPE=--debug\n")
+                  with open(os.environ['GITHUB_ENV'], 'a') as f: f.write("BUILD_FLAGS=--debug\n")
+          except: pass
           EOF
           python3 config_builder.py
 
@@ -146,7 +130,7 @@ jobs:
           cordova platform add android@12.0.0
           cordova plugin add cordova-plugin-ionic-webview
 
-      # --- 6. PLUGINS ---
+      # --- 6. PLUGINS (NOVOS) ---
       - name: 🧩 Plugins
         run: |
           cd app-temp
@@ -157,6 +141,7 @@ jobs:
           except: d = {}
           def i(p): subprocess.run(f"cordova plugin add {p}", shell=True)
           
+          # Básicos
           if d.get('notification'): i("cordova-plugin-x-toast")
           if d.get('file'): i("cordova-plugin-file-opener2")
           if d.get('camera'): i("cordova-plugin-camera")
@@ -165,31 +150,36 @@ jobs:
           if d.get('fullscreen'): i("cordova-plugin-fullscreen")
           if d.get('microphone'): i("cordova-plugin-media cordova-plugin-media-capture")
           if d.get('insomnia'): i("cordova-plugin-insomnia")
+          
+          # Novos V60
+          if d.get('biometric'): i("cordova-plugin-fingerprint-aio")
+          if d.get('share'): i("cordova-plugin-x-socialsharing")
+          if d.get('tts'): i("cordova-plugin-tts")
+          if d.get('admob'): 
+              print("Instalando AdMob...")
+              i(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId', 'ca-app-pub-xxx')}")
+              
           i("cordova-plugin-android-permissions")
           EOF
           python3 plugins.py
           cordova prepare android
 
-      # --- 7. INJEÇÃO FINAL ---
+      # --- 7. FINALIZAÇÃO ---
       - name: ☢️ Injeção Final
         run: |
           cd app-temp
           ICON="www/icon.png"
           SPLASH="www/splash.png"
-          
-          # Ícones
           if [ -f "$ICON" ]; then
              find platforms/android -name "ic_launcher*.xml" -delete
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
           fi
-          # Splash
           if [ -f "$SPLASH" ]; then
              mkdir -p platforms/android/app/src/main/res/drawable
              cp "$SPLASH" platforms/android/app/src/main/res/drawable/screen.png
           fi
           
-          # Gradle Injections
           cat <<EOF > inject.py
           import re, os
           app_id = os.environ['APP_ID']
@@ -212,7 +202,7 @@ jobs:
           EOF
           python3 inject.py
 
-      # --- 8. BUILD DINÂMICO ---
+      # --- 8. BUILD (AAB ou APK) ---
       - name: 📱 Compilar
         id: build_apk
         run: |
@@ -220,24 +210,25 @@ jobs:
           echo "android.useAndroidX=true" >> platforms/android/gradle.properties
           echo "android.enableJetifier=true" >> platforms/android/gradle.properties
           
-          # Usa a variável BUILD_TYPE (--debug ou --release)
-          echo "Compilando modo: ${{ env.BUILD_TYPE }}"
-          cordova build android ${{ env.BUILD_TYPE }} --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
+          # Define se é APK ou AAB
+          PKG_TYPE="apk"
+          if [ "${{ env.OUT_TYPE }}" == "aab" ]; then PKG_TYPE="bundle"; fi
           
-          # Procura qualquer APK gerado
-          APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "*.apk" | head -n 1)
+          echo "Compilando: $PKG_TYPE em modo ${{ env.BUILD_FLAGS }}"
           
-          if [ -z "$APK_PATH" ]; then
+          cordova build android ${{ env.BUILD_FLAGS }} --packageType=$PKG_TYPE -- --gradleArg=-PcdvCompileSdkVersion=33
+          
+          # Procura o arquivo gerado (apk ou aab)
+          FILE_PATH=$(find "$GITHUB_WORKSPACE" -type f \( -name "*.apk" -o -name "*.aab" \) | head -n 1)
+          
+          if [ -z "$FILE_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
+             EXT="${FILE_PATH##*.}"
              SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
-             # Se for release, adiciona _signed
-             TYPE="Debug"
-             if [[ "${{ env.BUILD_TYPE }}" == *"--release"* ]]; then TYPE="Release"; fi
-             
-             FINAL="App_${SAFE}_v${{ env.APP_VER }}_${TYPE}.apk"
-             mv "$APK_PATH" "$GITHUB_WORKSPACE/$FINAL"
-             echo "APK_FINAL=$FINAL" >> $GITHUB_ENV
+             FINAL="App_${SAFE}_v${{ env.APP_VER }}.${EXT}"
+             mv "$FILE_PATH" "$GITHUB_WORKSPACE/$FINAL"
+             echo "FINAL_FILE=$FINAL" >> $GITHUB_ENV
              echo "STATUS=SUCESSO" >> $GITHUB_ENV
           fi
 
@@ -247,12 +238,12 @@ jobs:
         if: env.STATUS == 'SUCESSO'
         with:
           tag_name: v${{ github.run_number }}
-          files: ${{ env.APK_FINAL }}
+          files: ${{ env.FINAL_FILE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO FIM ---
-      - name: 🔔 Discord (Fim)
+      # --- 10. NOTIFICAÇÃO (QR CODE + FIX) ---
+      - name: 🔔 Discord (QR Code)
         if: always()
         run: |
           cat <<EOF > notify_end.py
@@ -260,24 +251,25 @@ jobs:
           url = os.environ.get('DISCORD_WEBHOOK')
           status = os.environ.get('STATUS')
           repo = "${{ github.repository }}"
-          icon_url = f"https://raw.githubusercontent.com/{repo}/main/www/icon.png"
+          run_id = "${{ github.run_number }}"
           
           if url:
               if status == 'SUCESSO':
-                  link = f"https://github.com/{repo}/releases/tag/v${{ github.run_number }}"
-                  msg = {
-                      "username": "Fábrica V58",
-                      "avatar_url": icon_url,
-                      "content": f"@everyone ✅ **SUCESSO!**\n📱 App: ${{ env.APP_NAME }}\n📂 [BAIXAR AGORA]({link})",
-                      "allowed_mentions": {"parse": ["everyone"]}
+                  link = f"https://github.com/{repo}/releases/tag/v{run_id}"
+                  # Gera QR Code usando API pública
+                  qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={link}"
+                  
+                  embed = {
+                      "title": "✅ SUCESSO!",
+                      "description": f"**App:** ${{ env.APP_NAME }}\n**Versão:** ${{ env.APP_VER }}\n[Clique para Baixar]({link})",
+                      "color": 5763712,
+                      "thumbnail": {"url": qr_url},
+                      "footer": {"text": "Aponte a câmera para baixar"}
                   }
+                  msg = {"content": "@everyone APK Pronto!", "embeds": [embed], "allowed_mentions": {"parse": ["everyone"]}}
               else:
-                  msg = {
-                      "username": "Fábrica V58",
-                      "avatar_url": icon_url,
-                      "content": "@everyone ❌ **ERRO CRÍTICO**",
-                      "allowed_mentions": {"parse": ["everyone"]}
-                  }
+                  msg = {"content": "@everyone ❌ **FALHA CRÍTICA**", "allowed_mentions": {"parse": ["everyone"]}}
+              
               try:
                   req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
                   urllib.request.urlopen(req)
