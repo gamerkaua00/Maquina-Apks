@@ -1,4 +1,4 @@
-name: Fábrica Turbo V56 (No Splash & Discord Log) 🤖
+name: Fábrica Turbo V57 (Version Fix) 🧬
 
 on:
   push:
@@ -16,15 +16,13 @@ jobs:
     
     env:
       JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
-      CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-all.zip"
-      # Passa o secret explicitamente
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
     steps:
       - name: 📥 Baixando Código
         uses: actions/checkout@v3
 
-      # --- 1. DADOS E LIMPEZA ---
+      # --- 1. DADOS ---
       - name: 🧹 Ler Dados
         id: dados
         run: |
@@ -37,26 +35,33 @@ jobs:
               with open('features.json') as f: d = json.load(f)
           except: d = {}
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v56')}\n")
+              f.write(f"APP_ID={d.get('packageId', 'com.fabrica.v57')}\n")
               f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V56')}\n")
+              f.write(f"APP_NAME={d.get('appName', 'App V57')}\n")
               f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
           EOF
           python3 ler.py
 
-      # --- 2. DISCORD DEBUGGER (VERIFICA O PROBLEMA) ---
-      - name: 🔍 Debug Discord Conexão
+      # --- 2. DISCORD (PYTHON PURO) ---
+      - name: 🔔 Discord (Início)
         run: |
-          echo "Testando Webhook..."
-          if [ -z "$DISCORD_WEBHOOK" ]; then
-            echo "❌ ERRO: O Secret DISCORD_WEBHOOK está vazio ou não existe!"
-          else
-            echo "✅ Secret detectado. Tentando enviar..."
-            # Usa curl verbose para mostrar o erro exato
-            curl -v -H "Content-Type: application/json" \
-            -d "{\"content\": \"@everyone 🏭 **FÁBRICA V56**\n\n⚙️ App: ${{ env.APP_NAME }}\n🚫 Splash: ${{ env.HAS_SPLASH }}\"}" \
-            $DISCORD_WEBHOOK || echo "Falha no CURL"
-          fi
+          cat <<EOF > notify.py
+          import os, json, urllib.request
+          url = os.environ.get('DISCORD_WEBHOOK')
+          if url:
+              msg = {
+                  "username": "Fábrica V57",
+                  "content": "@everyone 🧬 **BUILD INICIADO**\n📱 App: ${{ env.APP_NAME }}\n🔢 Versão: ${{ env.APP_VER }}\n🆔 ID: ${{ env.APP_ID }}"
+              }
+              try:
+                  req = urllib.request.Request(url, data=json.dumps(msg).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+                  print("✅ Discord Notificado!")
+              except Exception as e: print(f"❌ Erro Discord: {e}")
+          else:
+              print("⚠️ Webhook não configurado.")
+          EOF
+          python3 notify.py
 
       # --- 3. SETUP ---
       - name: 🛠️ Setup Tools
@@ -68,8 +73,8 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-      # --- 4. CRIAÇÃO E LÓGICA NO-SPLASH ---
-      - name: 🏗️ Configurando XML (Com Lógica Splash)
+      # --- 4. CRIAR APP ---
+      - name: 🏗️ Criando Estrutura
         run: |
           cordova create app-temp ${{ env.APP_ID }} "TempName"
           cp -r www/* app-temp/www/
@@ -85,25 +90,15 @@ jobs:
               root.set('version', os.environ['APP_VER'])
               for n in root.findall('{http://www.w3.org/ns/widgets}name'): n.text = os.environ['APP_NAME']
               
-              # Configurações Padrão
-              prefs = {
-                  'AndroidPersistentFileLocation': 'Compatibility',
-                  'AllowFileAccess': 'true',
-                  'AndroidInsecureFileModeEnabled': 'true'
-              }
+              prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true', 'AndroidInsecureFileModeEnabled': 'true'}
               
-              # LÓGICA DO SPLASH
-              has_splash = os.environ.get('HAS_SPLASH') == 'True'
-              
-              if not has_splash:
-                  print("🚫 SPLASH DESATIVADO (Delay 0)")
-                  prefs['SplashScreenDelay'] = '0'
-                  prefs['ShowSplashScreen'] = 'false'
-                  prefs['FadeSplashScreen'] = 'false'
-              else:
-                  print("✅ SPLASH ATIVADO")
+              # Splash Logic
+              if os.environ.get('HAS_SPLASH') == 'True':
                   prefs['SplashScreenDelay'] = '3000'
                   prefs['ShowSplashScreen'] = 'true'
+              else:
+                  prefs['SplashScreenDelay'] = '0'
+                  prefs['ShowSplashScreen'] = 'false'
 
               for k,v in prefs.items():
                   found = False
@@ -112,11 +107,8 @@ jobs:
                   if not found:
                       el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
                       el.set('name',k); el.set('value',v)
-                      
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-          except Exception as e:
-              print(f"Erro XML: {e}")
-              exit(1)
+          except: exit(1)
           EOF
           python3 edit.py
 
@@ -128,55 +120,89 @@ jobs:
           cordova plugin add cordova-plugin-ionic-webview
 
       # --- 6. PLUGINS ---
-      - name: 🧩 Plugins
+      - name: 🧩 Instalando Plugins
         run: |
           cd app-temp
           cat <<EOF > plugins.py
-          import json, os, subprocess
+          import json, subprocess
           try:
               with open('../features.json') as f: d = json.load(f)
           except: d = {}
-          def install(p): subprocess.run(f"cordova plugin add {p}", shell=True)
-
-          if d.get('notification'): install("cordova-plugin-x-toast")
-          if d.get('file'): install("cordova-plugin-file-opener2")
-          if d.get('camera'): install("cordova-plugin-camera")
-          if d.get('geolocation'): install("cordova-plugin-geolocation")
-          if d.get('vibration'): install("cordova-plugin-vibration")
-          if d.get('fullscreen'): install("cordova-plugin-fullscreen")
-          if d.get('microphone'): install("cordova-plugin-media cordova-plugin-media-capture")
-          if d.get('insomnia'): install("cordova-plugin-insomnia")
-          install("cordova-plugin-android-permissions")
+          def i(p): subprocess.run(f"cordova plugin add {p}", shell=True)
+          
+          if d.get('notification'): i("cordova-plugin-x-toast")
+          if d.get('file'): i("cordova-plugin-file-opener2")
+          if d.get('camera'): i("cordova-plugin-camera")
+          if d.get('geolocation'): i("cordova-plugin-geolocation")
+          if d.get('vibration'): i("cordova-plugin-vibration")
+          if d.get('fullscreen'): i("cordova-plugin-fullscreen")
+          if d.get('microphone'): i("cordova-plugin-media cordova-plugin-media-capture")
+          if d.get('insomnia'): i("cordova-plugin-insomnia")
+          i("cordova-plugin-android-permissions")
           EOF
           python3 plugins.py
           cordova prepare android
 
-      # --- 7. ÍCONES (FIND & DELETE OLD) ---
-      - name: 🎨 Injetando Ícones e ID
+      # --- 7. INJEÇÃO NUCLEAR (ID + VERSÃO + ÍCONES) ---
+      - name: ☢️ Injeção Final (Gradle & Icons)
         run: |
           cd app-temp
+          
+          # 1. ÍCONES
           ICON="www/icon.png"
           SPLASH="www/splash.png"
-          
-          # ÍCONE
           if [ -f "$ICON" ]; then
              find platforms/android -name "ic_launcher*.xml" -delete
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
              find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
           fi
-          
-          # SPLASH (Se existir)
           if [ -f "$SPLASH" ]; then
-             # Copia splash para drawable (padrão antigo) para garantir
              mkdir -p platforms/android/app/src/main/res/drawable
              cp "$SPLASH" platforms/android/app/src/main/res/drawable/screen.png
           fi
+
+          # 2. GRADLE (ID e VERSÃO)
+          cat <<EOF > inject_gradle.py
+          import re, os
           
-          GRADLE=$(find platforms/android -name "build.gradle" | grep "app/build.gradle" | head -n 1)
-          if [ -f "$GRADLE" ]; then
-             sed -i 's/applicationId ".*"/applicationId "${{ env.APP_ID }}"/' "$GRADLE"
-             sed -i 's/namespace ".*"/namespace "${{ env.APP_ID }}"/' "$GRADLE"
-          fi
+          app_id = os.environ['APP_ID']
+          ver = os.environ['APP_VER']
+          
+          # Calcula VersionCode (Ex: 1.0.2 -> 10002)
+          try:
+              parts = ver.split('.')
+              # Garante 3 partes
+              while len(parts) < 3: parts.append('0')
+              # Fórmula: Maior*10000 + Menor*100 + Patch
+              v_code = int(parts[0])*10000 + int(parts[1])*100 + int(parts[2])
+          except:
+              v_code = 10000 # Fallback
+          
+          print(f"🔧 Injetando -> ID: {app_id} | Ver: {ver} | Code: {v_code}")
+          
+          # Procura o arquivo
+          target = None
+          for root, dirs, files in os.walk("platforms/android"):
+              if "build.gradle" in files and "app" in root:
+                  target = os.path.join(root, "build.gradle")
+                  break
+          
+          if target:
+              with open(target, 'r') as f: content = f.read()
+              
+              # Substituições
+              content = re.sub(r'applicationId\s+".*"', f'applicationId "{app_id}"', content)
+              content = re.sub(r'namespace\s+".*"', f'namespace "{app_id}"', content)
+              content = re.sub(r'versionName\s+".*"', f'versionName "{ver}"', content)
+              content = re.sub(r'versionCode\s+\d+', f'versionCode {v_code}', content)
+              
+              with open(target, 'w') as f: f.write(content)
+              print("✅ Gradle Atualizado com Sucesso!")
+          else:
+              print("❌ build.gradle não encontrado!")
+              exit(1)
+          EOF
+          python3 inject_gradle.py
 
       # --- 8. BUILD ---
       - name: 📱 Compilando
@@ -188,7 +214,6 @@ jobs:
           cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33
           
           APK_PATH=$(find "$GITHUB_WORKSPACE" -type f -name "app-debug.apk" | head -n 1)
-          
           if [ -z "$APK_PATH" ]; then
              echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
           else
@@ -209,14 +234,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- 10. NOTIFICAÇÃO FINAL ---
+      # --- 10. DISCORD FIM ---
       - name: 🔔 Discord (Fim)
         if: always()
         run: |
-          if [ -z "$DISCORD_WEBHOOK" ]; then echo "Sem webhook."; exit 0; fi
-          if [ "${{ env.STATUS }}" == "SUCESSO" ]; then
-             MSG="{\"content\": \"@everyone ✅ **SUCESSO!**\n[Baixar APK](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})\"}"
-          else
-             MSG="{\"content\": \"@everyone ❌ **ERRO CRÍTICO.**\"}"
-          fi
-          curl -H "Content-Type: application/json" -d "$MSG" $DISCORD_WEBHOOK || true
+          cat <<EOF > notify_end.py
+          import os, json, urllib.request
+          url = os.environ.get('DISCORD_WEBHOOK')
+          if url:
+              status = os.environ.get('STATUS')
+              if status == 'SUCESSO':
+                  content = "@everyone ✅ **SUCESSO! APK PRONTO**\n[Baixar Agora](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})"
+              else:
+                  content = "@everyone ❌ **FALHA NO BUILD**"
+              
+              try:
+                  req = urllib.request.Request(url, data=json.dumps({"content": content}).encode(), headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req)
+              except: pass
+          EOF
+          python3 notify_end.py
