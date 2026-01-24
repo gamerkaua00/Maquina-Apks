@@ -1,9 +1,7 @@
-name: Fábrica Turbo V68 (Titan Omni) 🛡️
+name: Fábrica V68 (Stable Core)
 
 on:
   push:
-    branches: [ "main", "master" ]
-    # CORREÇÃO ANTI-LOOP: Só roda se estes arquivos mudarem
     paths:
       - 'features.json'
       - 'www/**'
@@ -17,223 +15,274 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      JAVA_HOME: "/usr/lib/jvm/temurin-17-jdk-amd64"
+      # Secrets opcionais para notificação
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
-      - name: 📥 Código
-        uses: actions/checkout@v3
+      - name: 📥 Baixar Código
+        uses: actions/checkout@v4
 
-      # --- 1. DADOS (Tratamento de Erros) ---
-      - name: 🧠 Config
-        id: dados
+      # --- CONFIGURAÇÃO DO AMBIENTE (MODERNIZADO) ---
+      
+      - name: ☕ Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 🛠️ Instalar Cordova
+        run: npm install -g cordova
+
+      # --- LÓGICA DE BUILD ---
+
+      - name: 🧠 Ler Configurações (Python)
+        id: config
         run: |
-          # Remove arquivos antigos para evitar cache sujo
-          rm -rf app-temp
-          if [ -f package.json ]; then mv package.json package.json.bak; fi
-          if [ -f config.xml ]; then mv config.xml config.xml.bak; fi
-          
-          cat <<EOF > ler.py
-          import json, os, re
+          # Script seguro para ler JSON e exportar variáveis de ambiente
+          cat <<EOF > read_config.py
+          import json, os
           try:
-              with open('features.json') as f: d = json.load(f)
-          except: d = {}
+              with open('features.json', 'r') as f:
+                  data = json.load(f)
+          except:
+              data = {}
           
-          # LIMPEZA EXTRA DO ID
-          raw_id = d.get('packageId', 'com.fabrica.v68')
-          clean_id = re.sub(r'[^a-z0-9\.]', '', raw_id.lower())
-          if '.' not in clean_id: clean_id = f"com.fabrica.{clean_id}"
+          # Mapeamento seguro com valores padrão
+          env_vars = {
+              "APP_ID": data.get('packageId', 'com.v68.app'),
+              "APP_VER": data.get('version', '1.0.0'),
+              "APP_NAME": data.get('appName', 'V68 App'),
+              "HAS_SPLASH": str(data.get('hasSplash', False)),
+              "ORIENT": data.get('orientation', 'default'),
+              "STATUS_COLOR": data.get('statusBarColor', '#000000')
+          }
           
           with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"APP_ID={clean_id}\n")
-              f.write(f"APP_VER={d.get('version', '1.0.0')}\n")
-              f.write(f"APP_NAME={d.get('appName', 'App V68')}\n")
-              f.write(f"HAS_SPLASH={d.get('hasSplash', False)}\n")
-              f.write(f"ORIENT={d.get('orientation', 'default')}\n")
-              f.write(f"STATUS_COLOR={d.get('statusBarColor', '#000000')}\n")
+              for k, v in env_vars.items():
+                  f.write(f"{k}={v}\n")
           EOF
-          python3 ler.py
+          python3 read_config.py
 
-      # --- 2. NOTIFICAÇÃO START ---
-      - name: 🔔 Notificar Início
-        continue-on-error: true
+      - name: 🏗️ Criar Projeto Cordova
         run: |
-          cat <<EOF > gen_msg.py
-          import json, os
-          d_msg = { "embeds": [{ "title": "🛡️ Titan V68 Iniciado", "description": f"**App:** {os.environ['APP_NAME']}", "color": 3066993, "fields": [{"name": "ID", "value": os.environ['APP_ID']}] }] }
-          with open('discord_start.json', 'w') as f: json.dump(d_msg, f)
-          EOF
-          python3 gen_msg.py
-          if [ ! -z "$DISCORD_WEBHOOK" ]; then curl -s -H "Content-Type: application/json" -d @discord_start.json "$DISCORD_WEBHOOK"; fi
-
-      # --- 3. SETUP ---
-      - name: 🛠️ Setup
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          npm install -g cordova
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip
-          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
-
-      # --- 4. CRIAÇÃO ---
-      - name: 🏗️ Criando Projeto
-        run: |
-          # O ID já foi limpo no passo 1. Se falhar, o log vai mostrar
-          echo "Gerando App com ID: ${{ env.APP_ID }}"
-          cordova create app-temp ${{ env.APP_ID }} "TempName"
-          cp -r www/* app-temp/www/
+          # Cria o projeto limpo
+          cordova create app ${{ env.APP_ID }} "AppV68"
           
-          cd app-temp
-          cat <<EOF > config.py
+          # Copia os arquivos WWW
+          cp -r www/* app/www/
+          
+          # Configura o config.xml via Python
+          cd app
+          cat <<EOF > update_xml.py
           import xml.etree.ElementTree as ET, os
-          ET.register_namespace('', "http://www.w3.org/ns/widgets")
+          
+          # Namespace padrão do Widget
+          NS = "http://www.w3.org/ns/widgets"
+          ET.register_namespace('', NS)
+          
           try:
               tree = ET.parse('config.xml')
               root = tree.getroot()
+              
+              # Atributos básicos
               root.set('id', os.environ['APP_ID'])
               root.set('version', os.environ['APP_VER'])
-              for n in root.findall('{http://www.w3.org/ns/widgets}name'): n.text = os.environ['APP_NAME']
+              root.set('xmlns:cdv', 'http://cordova.apache.org/ns/1.0')
               
-              prefs = {'AndroidPersistentFileLocation': 'Compatibility', 'AllowFileAccess': 'true', 'AndroidInsecureFileModeEnabled': 'true'}
-              if os.environ.get('HAS_SPLASH') == 'True':
-                  prefs['SplashScreenDelay'] = '3000'; prefs['ShowSplashScreen'] = 'true'
-              else:
-                  prefs['SplashScreenDelay'] = '0'; prefs['ShowSplashScreen'] = 'false'
+              # Nome do App
+              name_tag = root.find(f'{{{NS}}}name')
+              if name_tag is not None: name_tag.text = os.environ['APP_NAME']
               
-              orient = os.environ.get('ORIENT', 'default')
-              if orient != 'default': prefs['Orientation'] = orient
-              prefs['StatusBarBackgroundColor'] = os.environ.get('STATUS_COLOR', '#000000')
-
-              for k,v in prefs.items():
+              # Preferências
+              def set_pref(name, value):
                   found = False
-                  for p in root.findall('{http://www.w3.org/ns/widgets}preference'):
-                      if p.get('name') == k: p.set('value',v); found=True
+                  for p in root.findall(f'{{{NS}}}preference'):
+                      if p.get('name') == name:
+                          p.set('value', value)
+                          found = True
                   if not found:
-                      el = ET.SubElement(root, '{http://www.w3.org/ns/widgets}preference')
-                      el.set('name',k); el.set('value',v)
+                      el = ET.SubElement(root, f'{{{NS}}}preference')
+                      el.set('name', name)
+                      el.set('value', value)
+
+              # Configurações Android
+              set_pref('AndroidXEnabled', 'true')
+              set_pref('GradlePluginGoogleServicesEnabled', 'true')
+              set_pref('GradlePluginKotlinEnabled', 'true')
+              
+              # Splash Screen e Cores
+              if os.environ.get('HAS_SPLASH') == 'True':
+                  set_pref('SplashScreenDelay', '3000')
+                  set_pref('ShowSplashScreen', 'true')
+                  set_pref('SplashScreen', 'screen')
+                  set_pref('SplashScreenSpinnerColor', 'white')
+              else:
+                  set_pref('SplashScreenDelay', '0')
+                  set_pref('ShowSplashScreen', 'false')
+
+              # Orientação e Cor da Barra
+              orient = os.environ.get('ORIENT', 'default')
+              if orient != 'default': set_pref('Orientation', orient)
+              set_pref('StatusBarBackgroundColor', os.environ.get('STATUS_COLOR', '#000000'))
+              
+              # Permissões de Navegação (Allow All)
+              for tag in ['access', 'allow-navigation', 'allow-intent']:
+                  for existing in root.findall(f'{{{NS}}}{tag}'):
+                      root.remove(existing)
+                  ET.SubElement(root, f'{{{NS}}}{tag}').set('origin', '*')
+                  if tag != 'access':
+                      root.find(f'{{{NS}}}{tag}').set('href', '*')
 
               tree.write('config.xml', encoding='utf-8', xml_declaration=True)
-          except: pass
+          except Exception as e:
+              print(f"Erro XML: {e}")
           EOF
-          python3 config.py
+          python3 update_xml.py
 
-      # --- 5. PLATAFORMA ---
-      - name: 🔌 Android Base
+      - name: 🔌 Adicionar Plataforma Android
         run: |
-          cd app-temp
+          cd app
+          # Android 12.0.0 (API 33) requer Java 11+
           cordova platform add android@12.0.0
+          
+          # Plugins Base Essenciais
           cordova plugin add cordova-plugin-ionic-webview
           cordova plugin add cordova-plugin-statusbar
-          cordova plugin add cordova-plugin-inappbrowser
-          cordova plugin add cordova-plugin-network-information
-          cordova plugin add cordova-plugin-device
-          cordova plugin add cordova-plugin-dialogs
           cordova plugin add cordova-plugin-screen-orientation
-          cordova plugin add cordova-plugin-cleartext
+          cordova plugin add cordova-plugin-whitelist
 
-      # --- 6. PLUGINS ---
-      - name: 🧩 Instalando Plugins
+      - name: 🧩 Instalar Plugins Selecionados
         run: |
-          cd app-temp
-          cat <<EOF > plugins.py
+          cd app
+          cat <<EOF > install_plugins.py
           import json, subprocess
           try:
               with open('../features.json') as f: d = json.load(f)
           except: d = {}
-          def i(p): subprocess.run(f"cordova plugin add {p}", shell=True)
+
+          def add(p):
+              print(f"Instalando: {p}")
+              subprocess.run(f"cordova plugin add {p}", shell=True)
+
+          if d.get('notification'): add("cordova-plugin-x-toast")
+          if d.get('camera'): add("cordova-plugin-camera")
+          if d.get('file'): add("cordova-plugin-file-opener2")
+          if d.get('geolocation'): add("cordova-plugin-geolocation")
+          if d.get('vibration'): add("cordova-plugin-vibration")
+          if d.get('microphone'): add("cordova-plugin-media")
+          if d.get('flashlight'): add("cordova-plugin-flashlight")
+          if d.get('battery'): add("cordova-plugin-battery-status")
+          if d.get('insomnia'): add("cordova-plugin-insomnia")
           
-          if d.get('notification'): i("cordova-plugin-x-toast")
-          if d.get('file'): i("cordova-plugin-file-opener2")
-          if d.get('camera'): i("cordova-plugin-camera")
-          if d.get('geolocation'): i("cordova-plugin-geolocation")
-          if d.get('vibration'): i("cordova-plugin-vibration")
-          if d.get('microphone'): i("cordova-plugin-media cordova-plugin-media-capture")
-          if d.get('flashlight'): i("cordova-plugin-flashlight")
-          if d.get('battery'): i("cordova-plugin-battery-status")
-          if d.get('biometric'): i("cordova-plugin-fingerprint-aio")
-          if d.get('share'): i("cordova-plugin-x-socialsharing")
-          if d.get('tts'): i("cordova-plugin-tts")
-          if d.get('brightness'): i("cordova-plugin-brightness")
-          if d.get('badge'): i("cordova-plugin-badge")
-          if d.get('email'): i("cordova-plugin-email-composer")
-          if d.get('admob'): i(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId', 'ca-app-pub-xxx')}")
-          i("cordova-plugin-android-permissions")
+          # Plugins Complexos
+          if d.get('biometric'): add("cordova-plugin-fingerprint-aio")
+          if d.get('share'): add("cordova-plugin-x-socialsharing")
+          if d.get('tts'): add("cordova-plugin-tts")
+          
+          # AdMob (Requer configuração de variáveis se usado)
+          if d.get('admob') and d.get('admobId'):
+              add(f"cordova-plugin-admob-plus --variable APP_ID_ANDROID={d.get('admobId')}")
+
+          # Permissões Genéricas
+          add("cordova-plugin-android-permissions")
           EOF
-          python3 plugins.py
+          python3 install_plugins.py
+
+      - name: 🖼️ Processar Ícones e Splash
+        run: |
+          cd app
+          
+          # Caminhos
+          ICON_SRC="../www/icon.png"
+          SPLASH_SRC="../www/splash.png"
+          RES_DIR="platforms/android/app/src/main/res"
+          
+          # Injeção Bruta de Ícone (Substitui mipmap padrão)
+          if [ -f "$ICON_SRC" ]; then
+             echo "Copiando ícones..."
+             cp "$ICON_SRC" "$RES_DIR/mipmap-hdpi/ic_launcher.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-mdpi/ic_launcher.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-xhdpi/ic_launcher.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-xxhdpi/ic_launcher.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-xxxhdpi/ic_launcher.png"
+             # Versão Round
+             cp "$ICON_SRC" "$RES_DIR/mipmap-hdpi/ic_launcher_round.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-mdpi/ic_launcher_round.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-xhdpi/ic_launcher_round.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-xxhdpi/ic_launcher_round.png"
+             cp "$ICON_SRC" "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
+          fi
+          
+          # Injeção Splash
+          if [ -f "$SPLASH_SRC" ]; then
+             echo "Copiando splash..."
+             mkdir -p "$RES_DIR/drawable"
+             cp "$SPLASH_SRC" "$RES_DIR/drawable/screen.png"
+             
+             # Cria tema de splash simples via XML para evitar erros
+             cat <<XML > "$RES_DIR/drawable/splash_bg.xml"
+             <?xml version="1.0" encoding="utf-8"?>
+             <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+                 <item android:drawable="@color/cdv_splashscreen_background" />
+                 <item>
+                     <bitmap android:gravity="center" android:src="@drawable/screen" />
+                 </item>
+             </layer-list>
+             XML
+          fi
+
+      - name: 📱 Compilar APK
+        id: build_step
+        run: |
+          cd app
+          # Prepara (Cordova -> Gradle)
           cordova prepare android
-
-      # --- 7. FINALIZAÇÃO E ICONE ---
-      - name: ☢️ Injeção de Recursos
-        run: |
-          cd app-temp
-          ICON="www/icon.png"
-          SPLASH="www/splash.png"
-          if [ -f "$ICON" ]; then
-             find platforms/android -name "ic_launcher*.xml" -delete
-             find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher.png \;
-             find platforms/android -type d -name "mipmap-*" -exec cp "$ICON" {}/ic_launcher_round.png \;
-          fi
-          if [ -f "$SPLASH" ]; then
-             mkdir -p platforms/android/app/src/main/res/drawable
-             cp "$SPLASH" platforms/android/app/src/main/res/drawable/screen.png
-          fi
-
-      # --- 8. BUILD ---
-      - name: 📱 Compilando
-        id: build_apk
-        run: |
-          cd app-temp
-          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
-          echo "android.enableJetifier=true" >> platforms/android/gradle.properties
           
-          # Tenta buildar
-          if cordova build android --debug --packageType=apk -- --gradleArg=-PcdvCompileSdkVersion=33; then
-             echo "Build SUCESSO"
-          else
-             echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
-          fi
+          # Build APK (Debug para evitar necessidade de Keysystore)
+          cordova build android --debug
           
-          FILE_PATH=$(find platforms/android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
-          if [ -z "$FILE_PATH" ]; then
-             echo "STATUS=FALHA" >> $GITHUB_ENV; exit 1
+          # Encontra o arquivo gerado
+          APK_PATH=$(find platforms/android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          
+          if [ -f "$APK_PATH" ]; then
+             echo "APK encontrado em: $APK_PATH"
+             
+             # Renomeia para algo amigável
+             SAFE_NAME=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
+             NEW_NAME="${SAFE_NAME}_v${{ env.APP_VER }}.apk"
+             mv "$APK_PATH" "../$NEW_NAME"
+             
+             echo "FINAL_APK=$NEW_NAME" >> $GITHUB_ENV
+             echo "STATUS=SUCCESS" >> $GITHUB_ENV
           else
-             EXT="${FILE_PATH##*.}"
-             SAFE=$(echo "${{ env.APP_NAME }}" | sed 's/[^a-zA-Z0-9]/_/g')
-             FINAL="App_${SAFE}_v${{ env.APP_VER }}.${EXT}"
-             mv "$FILE_PATH" "$GITHUB_WORKSPACE/$FINAL"
-             echo "FINAL_FILE=$FINAL" >> $GITHUB_ENV
-             echo "STATUS=SUCESSO" >> $GITHUB_ENV
+             echo "Erro: APK não foi gerado."
+             exit 1
           fi
 
-      # --- 9. RELEASE ---
+      # --- SAÍDA ---
+
+      - name: 📤 Upload Artifact (Garantia)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.FINAL_APK }}
+          path: ${{ env.FINAL_APK }}
+
       - name: 🚀 Criar Release
         uses: softprops/action-gh-release@v1
-        if: env.STATUS == 'SUCESSO'
+        if: env.STATUS == 'SUCCESS'
         with:
-          tag_name: v${{ github.run_number }}
-          files: ${{ env.FINAL_FILE }}
+          tag_name: build-${{ github.run_number }}
+          name: "V68: ${{ env.APP_NAME }} (v${{ env.APP_VER }})"
+          body: "Compilação automática Titan V68.\nData: $(date)"
+          files: ${{ env.FINAL_APK }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # --- 10. NOTIFICAÇÃO FIM ---
-      - name: 🔔 Notificar Fim
-        if: always()
-        run: |
-          cat <<EOF > gen_end.py
-          import json, os
-          status = os.environ.get('STATUS')
-          link = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/tag/v{os.environ['GITHUB_RUN_NUMBER']}"
-          app = os.environ.get('APP_NAME', 'App')
-          
-          if status == 'SUCESSO':
-              qr = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={link}"
-              d_msg = { "embeds": [{ "title": "✅ SUCESSO!", "description": f"**{app}**\n[Baixar Agora]({link})", "color": 5763712, "thumbnail": {"url": qr} }] }
-          else:
-              d_msg = {"content": "❌ FALHA no Build"}
-          
-          with open('discord_end.json', 'w') as f: json.dump(d_msg, f)
-          EOF
-          python3 gen_end.py
-          if [ ! -z "$DISCORD_WEBHOOK" ]; then curl -s -H "Content-Type: application/json" -d @discord_end.json "$DISCORD_WEBHOOK"; fi
